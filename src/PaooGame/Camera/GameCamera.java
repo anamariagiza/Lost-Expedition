@@ -7,9 +7,10 @@ import PaooGame.States.GameState;
 import PaooGame.Map.Map;
 import PaooGame.States.State;
 
-/*! \class public class GameCamera
-    \brief Implementeaza notiunea de camera a jocului.
-    Camera decide ce portiune din harta este vizibila pe ecran.
+/*!
+ * \class public class GameCamera
+ * \brief Implementeaza notiunea de camera a jocului.
+ * Camera decide ce portiune din harta este vizibila pe ecran.
  */
 public class GameCamera {
 
@@ -58,10 +59,8 @@ public class GameCamera {
 
         int mapWidthPx = currentMap.getWidth() * Tile.TILE_WIDTH;
         int mapHeightPx = currentMap.getHeight() * Tile.TILE_HEIGHT;
-
         float visibleWidth = game.GetGameWindow().GetWndWidth() / zoomLevel;
         float visibleHeight = game.GetGameWindow().GetWndHeight() / zoomLevel;
-
         if (xOffset < 0) {
             xOffset = 0;
         } else if (xOffset + visibleWidth > mapWidthPx) {
@@ -109,7 +108,6 @@ public class GameCamera {
         if (zoomLevel <= 0.1f) this.zoomLevel = 0.1f;
         else if (zoomLevel >= 4.0f) this.zoomLevel = 4.0f;
         else this.zoomLevel = zoomLevel;
-
         if (game.GetRefLinks().GetPlayer() != null) {
             centerOnEntity(game.GetRefLinks().GetPlayer());
         } else {

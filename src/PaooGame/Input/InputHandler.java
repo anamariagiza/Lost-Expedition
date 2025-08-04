@@ -1,22 +1,26 @@
 package PaooGame.Input;
-
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 
-/*! \class public class InputHandler
-    \brief Gestioneaza intrarile de la tastatura si mouse.
+/*!
+ * \class public class InputHandler
+ * \brief Gestioneaza intrarile de la tastatura si mouse.
  */
 public class InputHandler implements KeyListener, MouseListener, MouseMotionListener {
 
-    private boolean[] keys; // Starea tastelor (apasate/eliberate)
-    private boolean mouseLeftPressed; // Starea butonului stanga al mouse-ului
-    private int mouseX, mouseY; // Coordonatele curente ale mouse-ului
+    private boolean[] keys;
+    // Starea tastelor (apasate/eliberate)
+    private boolean mouseLeftPressed;
+    // Starea butonului stanga al mouse-ului
+    private int mouseX, mouseY;
+    // Coordonatele curente ale mouse-ului
 
     public InputHandler() {
-        keys = new boolean[256]; // Pentru codurile ASCII extinse ale tastelor
+        keys = new boolean[256];
+        // Pentru codurile ASCII extinse ale tastelor
     }
 
     // Metode KeyListener
@@ -103,9 +107,14 @@ public class InputHandler implements KeyListener, MouseListener, MouseMotionList
     }
 
     // Metoda pentru a detecta apasarea unei taste o singura data (nu tinut apasat)
+    // ATENTIE: Aceasta metoda este redundanta daca KeyManager.isKeyJustPressed este folosita.
+    // O lasam aici pentru a mentine codul original al InputHandler, dar in general
+    // logica de "justPressed" ar trebui sa fie centralizata in KeyManager.
     public boolean isKeyJustPressed(int keyCode) {
         if (keyCode < keys.length) {
             boolean pressed = keys[keyCode];
+            // Acest flag nu este resetat aici, deci va fi true atata timp cat tasta este apasata.
+            // Pentru "justPressed" adevarat, este nevoie de o logica de debounce (cum e in KeyManager).
             return pressed;
         }
         return false;

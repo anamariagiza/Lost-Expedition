@@ -5,7 +5,11 @@ import java.awt.event.KeyListener;
 
 public class KeyManager implements KeyListener {
     public boolean up, down, left, right, enter, space, escape;
-    public boolean z; // NOU: variabila pentru tasta Z
+    public boolean z;
+    public boolean shift;
+    public boolean eKey; // NOU: variabila pentru tasta E
+    public boolean nKey; // NOU: variabila pentru tasta N
+    public boolean pKey; // NOU: variabila pentru tasta P
     public boolean[] keys;
     private boolean[] justPressed;
     private boolean[] cantPress;
@@ -17,6 +21,7 @@ public class KeyManager implements KeyListener {
     }
 
     public void Update() {
+        // Logica pentru justPressed / cantPress
         for (int i = 0; i < keys.length; i++) {
             if (cantPress[i] && !keys[i]) {
                 cantPress[i] = false;
@@ -36,13 +41,28 @@ public class KeyManager implements KeyListener {
         enter = keys[KeyEvent.VK_ENTER];
         space = keys[KeyEvent.VK_SPACE];
         escape = keys[KeyEvent.VK_ESCAPE];
-        z = keys[KeyEvent.VK_Z]; // NOU: seteaza starea pentru tasta Z
+        z = keys[KeyEvent.VK_Z];
+        shift = keys[KeyEvent.VK_SHIFT];
+        eKey = keys[KeyEvent.VK_E];
+        nKey = keys[KeyEvent.VK_N];
+        pKey = keys[KeyEvent.VK_P];
     }
 
     public boolean isKeyJustPressed(int keyCode) {
         if (keyCode < 0 || keyCode >= keys.length)
             return false;
         return justPressed[keyCode];
+    }
+
+    // NOU: Metoda pentru a reseta toate starile justPressed si cantPress
+    // Aceasta va fi apelata la schimbarea starii jocului (ex: din meniu in joc)
+    public void clearKeys() {
+        for (int i = 0; i < keys.length; i++) {
+            justPressed[i] = false;
+            cantPress[i] = false;
+            keys[i] = false; // Asigură-te că și starea reală a tastei e resetată
+        }
+        up = down = left = right = enter = space = escape = z = shift = eKey = nKey = pKey = false;
     }
 
     @Override

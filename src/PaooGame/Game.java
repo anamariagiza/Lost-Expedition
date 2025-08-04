@@ -4,19 +4,22 @@ import PaooGame.GameWindow.GameWindow;
 import PaooGame.Graphics.Assets;
 import PaooGame.Tiles.Tile;
 import PaooGame.States.State;
-import PaooGame.States.LoadingScreenState; // NOU: Starea de incarcare
-import PaooGame.Input.KeyManager; // NOU: KeyManager
-import PaooGame.Entities.Player; // ATENTIE: PaooGame.Entities.Player
-import PaooGame.Camera.GameCamera; // NOU: GameCamera
+import PaooGame.States.LoadingScreenState;
+import PaooGame.Input.KeyManager;
+import PaooGame.Input.MouseManager;
+import PaooGame.Entities.Player;
+import PaooGame.Camera.GameCamera;
 
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferStrategy;
 
-/*! \class Game
-    \brief Clasa principala a intregului proiect. Implementeaza Game - Loop (Update -> Draw)
-    Gestioneaza starea curenta a jocului (meniu, joc, pauza etc.)
-    si input-ul utilizatorului.
+/*!
+ * \class Game
+ * \brief Clasa principala a intregului proiect.
+ * Implementeaza Game - Loop (Update -> Draw)
+ * Gestioneaza starea curenta a jocului (meniu, joc, pauza etc.)
+ * si input-ul utilizatorului.
  */
 public class Game implements Runnable
 {
@@ -26,53 +29,55 @@ public class Game implements Runnable
     private BufferStrategy  bs;
     private Graphics        g;
 
-    private State currentState; // Referinta la starea curenta (va fi setata de State.SetState())
+    private State currentState;
+    private State previousState = null;
 
     private KeyManager keyManager;
-    private RefLinks refLink; // Obiectul RefLinks
+    private MouseManager mouseManager;
+    private RefLinks refLink;
 
     private boolean fullScreenMode = false;
-
-    // Player si GameCamera sunt membri ai clasei Game (sau gestionati prin RefLinks)
-    // Player va fi setat in RefLinks de LoadingScreenState
-    // Camera va fi initializata aici si pasata la RefLinks
-    private Player player; // Va fi setat prin SetPlayer in RefLinks
+    private Player player;
     private GameCamera gameCamera;
 
-    /*! \fn public Game(String title, int width, int height)
-        \brief Constructor de initializare al clasei Game.
-
-        \param title Titlul ferestrei.
-        \param width Latimea ferestrei in pixeli.
-        \param height Inaltimea ferestrei in pixeli.
+    /*!
+     * \fn public Game(String title, int width, int height)
+     * \brief Constructor de initializare al clasei Game.
+     * \param title Titlul ferestrei.
+     * \param width Latimea ferestrei in pixeli.
+     * \param height Inaltimea ferestrei in pixeli.
      */
     public Game(String title, int width, int height)
     {
         wnd = new GameWindow(title, width, height);
         runState = false;
-        keyManager = new KeyManager(); // Initialize KeyManager here
-        gameCamera = new GameCamera(this, 0, 0); // Initialize GameCamera here, pass 'this'
-        refLink = new RefLinks(this); // Initialize RefLinks here, passing 'this' (Game object)
+        keyManager = new KeyManager();
+        mouseManager = new MouseManager();
+        gameCamera = new GameCamera(this, 0, 0);
+        refLink = new RefLinks(this);
     }
 
-    /*! \fn private void InitGame()
-        \brief  Metoda construieste fereastra jocului, initializeaza aseturile, si starea initiala.
+    /*!
+     * \fn private void InitGame()
+     * \brief  Metoda construieste fereastra jocului, initializeaza aseturile, si starea initiala.
      */
     private void InitGame()
     {
         wnd.BuildGameWindow();
         wnd.GetCanvas().addKeyListener(keyManager);
+        wnd.GetCanvas().addMouseListener(mouseManager);
+        wnd.GetCanvas().addMouseMotionListener(mouseManager);
         wnd.GetCanvas().setFocusable(true);
         wnd.GetCanvas().requestFocusInWindow();
 
         Assets.Init();
 
-        // Starea initiala va fi LoadingScreenState
-        refLink.SetState(new LoadingScreenState(refLink)); // Setam starea initiala prin RefLinks
+        refLink.SetState(new LoadingScreenState(refLink));
     }
 
-    /*! \fn public void run()
-        \brief Functia ce va rula in thread-ul creat (Game Loop).
+    /*!
+     * \fn public void run()
+     * \brief Functia ce va rula in thread-ul creat (Game Loop).
      */
     public void run()
     {
@@ -82,7 +87,6 @@ public class Game implements Runnable
 
         final int framesPerSecond   = 60;
         final double timeFrame      = 1000000000 / framesPerSecond;
-
         while (runState == true)
         {
             currentTime = System.nanoTime();
@@ -95,8 +99,9 @@ public class Game implements Runnable
         }
     }
 
-    /*! \fn public synchronized void StartGame()
-        \brief Creaza si starteaza firul separat de executie (thread).
+    /*!
+     * \fn public synchronized void StartGame()
+     * \brief Creaza si starteaza firul separat de executie (thread).
      */
     public synchronized void StartGame()
     {
@@ -112,8 +117,9 @@ public class Game implements Runnable
         }
     }
 
-    /*! \fn public synchronized void stop()
-        \brief Opreste executie thread-ului.
+    /*!
+     * \fn public synchronized void stop()
+     * \brief Opreste executie thread-ului.
      */
     public synchronized void StopGame()
     {
@@ -135,27 +141,33 @@ public class Game implements Runnable
         }
     }
 
-    /*! \fn private void Update()
-        \brief Actualizeaza starea elementelor din joc, delegand catre starea curenta.
-        De asemenea, gestioneaza input-ul global, cum ar fi comutarea fullscreen.
+    /*!
+     * \fn private void Update()
+     * \brief Actualizeaza starea elementelor din joc, delegand catre starea curenta.
+     * De asemenea, gestioneaza input-ul global, cum ar fi comutarea fullscreen.
      */
     private void Update()
     {
         keyManager.Update();
+        mouseManager.Update();
 
         if (keyManager.isKeyJustPressed(KeyEvent.VK_F11)) {
             fullScreenMode = !fullScreenMode;
             wnd.setFullScreen(fullScreenMode);
         }
 
-        currentState = State.GetState(); // Obtinem starea curenta din State.GetState()
+        // LINIA CRITICA: SCOS this.previousState = State.GetState(); de aici.
+        // `previousState` este setat doar de `setPreviousState()` apelat din `GameState`!
+
+        currentState = State.GetState();
         if (currentState != null) {
             currentState.Update();
         }
     }
 
-    /*! \fn private void Draw()
-        \brief Deseneaza elementele grafice in fereastra, delegand catre starea curenta.
+    /*!
+     * \fn private void Draw()
+     * \brief Deseneaza elementele grafice in fereastra, delegand catre starea curenta.
      */
     private void Draw()
     {
@@ -175,7 +187,7 @@ public class Game implements Runnable
         g = bs.getDrawGraphics();
         g.clearRect(0, 0, wnd.GetWndWidth(), wnd.GetWndHeight());
 
-        currentState = State.GetState(); // Obtinem starea curenta din State.GetState()
+        currentState = State.GetState();
         if (currentState != null) {
             currentState.Draw(g);
         }
@@ -184,46 +196,79 @@ public class Game implements Runnable
         g.dispose();
     }
 
-    /*! \fn public GameWindow GetGameWindow()
-        \brief Returneaza referinta catre fereastra jocului.
+    /*!
+     * \fn public GameWindow GetGameWindow()
+     * \brief Returneaza referinta catre fereastra jocului.
      */
     public GameWindow GetGameWindow() {
         return wnd;
     }
 
-    /*! \fn public KeyManager GetKeyManager()
-        \brief Returneaza referinta catre obiectul de gestionare a input-ului.
+    /*!
+     * \fn public KeyManager GetKeyManager()
+     * \brief Returneaza referinta catre obiectul de gestionare a input-ului tastaturii.
      */
     public KeyManager GetKeyManager() {
         return keyManager;
     }
 
-    /*! \fn public Player GetPlayer()
-        \brief Returneaza referinta catre obiectul Player.
+    /*!
+     * \fn public MouseManager GetMouseManager()
+     * \brief Returneaza referinta catre obiectul de gestionare a input-ului mouse-ului.
+     */
+    public MouseManager GetMouseManager() {
+        return mouseManager;
+    }
+
+
+    /*!
+     * \fn public Player GetPlayer()
+     * \brief Returneaza referinta catre obiectul Player.
      */
     public Player GetPlayer() {
         return player;
     }
 
-    /*! \fn public void setPlayer(Player player)
-        \brief Seteaza referinta catre obiectul Player.
-        Folosit de LoadingScreenState pentru a seta playerul in Game.
+    /*!
+     * \fn public void setPlayer(Player player)
+     * \brief Seteaza referinta catre obiectul Player.
+     * Folosit de LoadingScreenState pentru a seta playerul in Game.
      */
     public void setPlayer(Player player) {
         this.player = player;
     }
 
-    /*! \fn public GameCamera GetGameCamera()
-        \brief Returneaza referinta catre obiectul GameCamera.
+    /*!
+     * \fn public GameCamera GetGameCamera()
+     * \brief Returneaza referinta catre obiectul GameCamera.
      */
     public GameCamera GetGameCamera() {
         return gameCamera;
     }
 
-    /*! \fn public RefLinks GetRefLinks()
-        \brief Returneaza referinta catre obiectul RefLinks.
+    /*!
+     * \fn public RefLinks GetRefLinks()
+     * \brief Returneaza referinta catre obiectul RefLinks.
      */
     public RefLinks GetRefLinks() {
         return refLink;
+    }
+
+    /*!
+     * \fn public State getPreviousState()
+     * \brief Returneaza referinta catre starea anterioara a jocului.
+     */
+    public State getPreviousState() {
+        System.out.println("DEBUG: getPreviousState() returneaza: " + (previousState != null ? previousState.getClass().getSimpleName() : "null"));
+        return previousState;
+    }
+
+    /*!
+     * \fn public void setPreviousState(State previousState)
+     * \brief Seteaza referinta catre starea anterioara a jocului.
+     * \param previousState Starea anterioara a jocului.
+     */
+    public void setPreviousState(State previousState) {
+        this.previousState = previousState;
     }
 }

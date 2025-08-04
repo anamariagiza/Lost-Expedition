@@ -10,5 +10,3 @@ public class Main
         paooGame.StartGame();
     }
 }
-
-

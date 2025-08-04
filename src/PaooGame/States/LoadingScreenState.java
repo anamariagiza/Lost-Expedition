@@ -1,7 +1,7 @@
 package PaooGame.States;
 
-import PaooGame.Graphics.Assets;
 import PaooGame.RefLinks;
+import PaooGame.Graphics.Assets;
 import PaooGame.Tiles.Tile;
 import PaooGame.Map.Map;
 import PaooGame.Entities.Player;
@@ -9,18 +9,19 @@ import PaooGame.Entities.Player;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 
-/*! \class public class LoadingScreenState extends State
-    \brief Implementeaza starea de incarcare a jocului (splash screen cu bara de progres).
-    In aceasta stare se va afisa logo-ul si o bara de progres pe masura ce se incarca toate asset-urile mari
-    ale jocului in background.
+/*!
+ * \class public class LoadingScreenState extends State
+ * \brief Implementeaza starea de incarcare a jocului (splash screen cu bara de progres).
+ * In aceasta stare se va afisa logo-ul si o bara de progres pe masura ce se incarca toate asset-urile mari
+ * ale jocului in background.
  */
 public class LoadingScreenState extends State {
 
     private long startTime;
-    private final int MIN_LOADING_TIME_MS = 2000; // Timp minim de afisare (2 secunde)
+    private final int MIN_LOADING_TIME_MS = 2000;
     private volatile boolean assetsLoaded = false;
     private volatile boolean tilesInitialized = false;
-    private volatile float progress = 0.0f; // Progresul incarcarii (0.0 - 1.0)
+    private volatile float progress = 0.0f;
     private Thread loadingThread;
 
     public LoadingScreenState(RefLinks refLink) {
@@ -35,10 +36,9 @@ public class LoadingScreenState extends State {
                 Assets.LoadGameAssets();
                 progress = 0.5f;
 
-                // NOU: Verificăm acum dacă playerIdleAllDirections sau playerIdleDown (ca indicator) s-a încărcat corect
                 if (Assets.playerIdleAllDirections == null || Assets.playerIdleAllDirections.length == 0 || Assets.playerIdleAllDirections[0] == null) {
                     System.err.println("Eroare critica: Cadrele de animatie pentru 'Idle' ale playerului nu au fost incarcate corect. Animațiile nu vor functiona.");
-                    assetsLoaded = false; // Va bloca trecerea la meniu
+                    assetsLoaded = false;
                 } else {
                     assetsLoaded = true;
                 }
@@ -52,27 +52,23 @@ public class LoadingScreenState extends State {
                 progress = 0.75f;
                 System.out.println("LoadingScreenState: Dale initializate. Progres: " + progress * 100 + "%");
 
-
                 // Pasul 3: Creare obiecte joc (Player, Map) - necesare pentru GameState (25% progres)
-                // Acestea trebuie create ABIA ACUM, dupa ce Assets si Tiles sunt gata.
                 System.out.println("LoadingScreenState: Incepe crearea obiectelor jocului...");
                 Player player = new Player(refLink.GetGame(), 100, 100);
                 refLink.SetPlayer(player);
 
                 Map map = new Map(refLink);
                 refLink.SetMap(map);
-                System.out.println("LoadingScreenState: Obiecte joc create. Progres: " + progress * 100 + "%");
-
+                System.out.println("LoadingScreenState: Obiecte joc created. Progres: " + progress * 100 + "%");
 
                 // Finalizarea incarcarii
                 progress = 1.0f;
                 System.out.println("LoadingScreenState: Incarcare completa. Progres: " + progress * 100 + "%");
-
             } catch (Exception e) {
                 System.err.println("Eroare la incarcarea asset-urilor sau initializarea dalelor/obiectelor joc: " + e.getMessage());
                 e.printStackTrace();
                 assetsLoaded = false;
-                progress = -1.0f; // Indica eroare
+                progress = -1.0f;
             }
         });
         loadingThread.start();
@@ -116,20 +112,17 @@ public class LoadingScreenState extends State {
 
         g.setColor(Color.GRAY);
         g.fillRect(barX, barY, barWidth, barHeight);
-
         g.setColor(new Color(50, 205, 50));
         int currentProgressWidth = (int)(barWidth * progress);
         g.fillRect(barX, barY, currentProgressWidth, barHeight);
 
         g.setColor(Color.WHITE);
         g.drawRect(barX, barY, barWidth, barHeight);
-
         String progressText = (int)(progress * 100) + "% Loaded";
         g.setFont(new Font("Arial", Font.BOLD, 14));
         FontMetrics fm = g.getFontMetrics();
         int textWidth = fm.stringWidth(progressText);
         g.drawString(progressText, barX + (barWidth - textWidth) / 2, barY - 10);
-
         String statusMessage = "Loading Game Assets...";
         if (progress >= 0.75f && progress < 1.0f) {
             statusMessage = "Initializing Game Components...";
