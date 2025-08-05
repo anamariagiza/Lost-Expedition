@@ -14,13 +14,10 @@ import PaooGame.Tiles.Tile;
 import PaooGame.Utils.DatabaseManager;
 import PaooGame.Graphics.Assets;
 
-import java.awt.Graphics;
+import java.awt.*;
 import java.awt.event.KeyEvent;
-import java.awt.Color;
 import java.awt.image.BufferedImage;
-import java.awt.Font;
-import java.awt.FontMetrics;
-import java.awt.Rectangle;
+import java.awt.geom.Ellipse2D;
 import java.util.ArrayList;
 
 /*!
@@ -40,11 +37,7 @@ public class GameState extends State {
 
     private float currentZoomTarget = 1.0f;
     private boolean loadFromSaveOnInit = false;
-
     private String currentObjective = "Exploreaza jungla.";
-
-    private Rectangle pauseButtonBounds;
-    private boolean isHoveringPause = false;
 
     private ArrayList<Entity> entities;
 
@@ -70,7 +63,7 @@ public class GameState extends State {
         InitLevelInternal(this.currentLevelIndex, false);
         System.out.println("✓ GameState initializat (joc nou)");
         refLink.GetGameCamera().setZoomLevel(currentZoomTarget);
-        initUIElements();
+        updateObjectiveText();
     }
 
     /*!
@@ -89,45 +82,8 @@ public class GameState extends State {
         InitLevelInternal(this.currentLevelIndex, loadFromSaveOnInit);
         System.out.println("✓ GameState initializat (loadFromSave: " + loadFromSaveOnInit + ")");
         refLink.GetGameCamera().setZoomLevel(currentZoomTarget);
-        initUIElements();
-    }
-
-    /*!
-     * \fn private void initUIElements()
-     * \brief Initializeaza pozitia si dimensiunile elementelor UI din joc.
-     */
-    private void initUIElements() {
         updateObjectiveText();
     }
-
-    /*!
-     * \fn public int getPuzzlesSolved()
-     * \brief Returneaza numarul de puzzle-uri rezolvate in Nivelul 2.
-     */
-    public int getPuzzlesSolved() {
-        return puzzlesSolved;
-    }
-
-    /*!
-     * \fn public int getTotalPuzzlesLevel2()
-     * \brief Returneaza numarul total de puzzle-uri pentru Nivelul 2.
-     */
-    public int getTotalPuzzlesLevel2() {
-        return TOTAL_PUZZLES_LEVEL2;
-    }
-
-    /*!
-     * \fn public void puzzleSolved()
-     * \brief Metoda apelata de clasa PuzzleState cand un puzzle este rezolvat.
-     */
-    public void puzzleSolved() {
-        this.puzzlesSolved++;
-        collectionMessage = "Puzzle rezolvat!";
-        collectionMessageTime = System.currentTimeMillis();
-        updateObjectiveText();
-        System.out.println("DEBUG GameState: Un puzzle a fost rezolvat! Total: " + puzzlesSolved);
-    }
-
 
     /*!
      * \fn private void updateObjectiveText()
@@ -142,8 +98,7 @@ public class GameState extends State {
                     currentObjective = "Obiectiv: Ai cheia de nivel! Acum gaseste cheia usii!";
                 } else if (!hasLevelKey && hasDoorKey) {
                     currentObjective = "Obiectiv: Ai cheia usii! Acum gaseste cheia pentru pestera!";
-                }
-                else {
+                } else {
                     currentObjective = "Obiectiv: Ai ambele chei! Acum gaseste intrarea in pestera!";
                 }
                 break;
@@ -200,7 +155,8 @@ public class GameState extends State {
             this.puzzlesSolved = 0;
 
             if (currentLevelIndex == 0) { // Nivel 1 (Jungla)
-                playerStartX = 100; playerStartY = 100;
+                playerStartX = 100;
+                playerStartY = 100;
             } else if (currentLevelIndex == 1) { // Nivelul 2 (Pestera)
                 playerStartX = 100 * Tile.TILE_WIDTH;
                 playerStartY = 100 * Tile.TILE_HEIGHT;
@@ -252,7 +208,6 @@ public class GameState extends State {
                 entities.add(new Animal(refLink, 10 * Tile.TILE_WIDTH, 36 * Tile.TILE_HEIGHT, 8 * Tile.TILE_WIDTH, 11 * Tile.TILE_WIDTH, Animal.AnimalType.MONKEY));
                 entities.add(new Animal(refLink, 89 * Tile.TILE_WIDTH, 29 * Tile.TILE_HEIGHT, 88 * Tile.TILE_WIDTH, 91 * Tile.TILE_WIDTH, Animal.AnimalType.MONKEY));
                 entities.add(new Animal(refLink, 84 * Tile.TILE_WIDTH, 57 * Tile.TILE_HEIGHT, 82 * Tile.TILE_WIDTH, 85 * Tile.TILE_WIDTH, Animal.AnimalType.BAT));
-
                 entities.add(new Trap(refLink, 20 * Tile.TILE_WIDTH, 20 * Tile.TILE_HEIGHT, Assets.spikeTrapImage));
                 if (Assets.smallTrapAnim != null && Assets.smallTrapAnim.length > 0) {
                     entities.add(new Trap(refLink, 30 * Tile.TILE_WIDTH, 15 * Tile.TILE_HEIGHT, Assets.smallTrapAnim[0]));
@@ -269,7 +224,6 @@ public class GameState extends State {
                 entities.add(new Animal(refLink, 200, 200, 100, 400, Animal.AnimalType.BAT));
                 entities.add(new Trap(refLink, 600, 300, Assets.spikeTrapImage));
                 currentObjective = "Obiectiv: Rezolva " + puzzlesSolved + "/" + TOTAL_PUZZLES_LEVEL2 + " puzzle-uri si gaseste cheia usii!";
-
                 entities.add(new Trap(refLink, 25 * Tile.TILE_WIDTH, 25 * Tile.TILE_HEIGHT, Assets.smallTrapAnim != null && Assets.smallTrapAnim.length > 0 ? Assets.smallTrapAnim[0] : Assets.spikeTrapImage));
                 entities.add(new Trap(refLink, 35 * Tile.TILE_WIDTH, 30 * Tile.TILE_HEIGHT, Assets.smallTrapAnim != null && Assets.smallTrapAnim.length > 0 ? Assets.smallTrapAnim[0] : Assets.spikeTrapImage));
 
@@ -347,7 +301,8 @@ public class GameState extends State {
             }
             // Conditie pentru activarea unui puzzle in Nivelul 2 cu 'E'
             else if (currentLevelIndex == 1 && puzzlesSolved < TOTAL_PUZZLES_LEVEL2) {
-                if (player.GetX() / Tile.TILE_WIDTH > 24 && player.GetY() / Tile.TILE_HEIGHT > 24 && player.GetX() / Tile.TILE_WIDTH < 26 && player.GetY() / Tile.TILE_HEIGHT < 26 &&
+                if (player.GetX() / Tile.TILE_WIDTH > 24 && player.GetX() / Tile.TILE_WIDTH < 26 &&
+                        player.GetY() / Tile.TILE_HEIGHT > 24 && player.GetY() / Tile.TILE_HEIGHT < 26 &&
                         refLink.GetKeyManager().isKeyJustPressed(KeyEvent.VK_E)) {
                     System.out.println("DEBUG GameState: Jucator la masuta puzzle. Activare PuzzleState!");
                     refLink.GetGame().setPreviousState(this);
@@ -409,6 +364,7 @@ public class GameState extends State {
         drawUI(g);
     }
 
+
     /*!
      * \fn private void drawUI(Graphics g)
      * \brief Deseneaza toate elementele de interfata din joc.
@@ -439,7 +395,6 @@ public class GameState extends State {
         g.drawString("DEBUG: Puzzle-uri Nivel 2: " + puzzlesSolved + "/" + TOTAL_PUZZLES_LEVEL2, 10, 240 + 30);
 
         drawMiniMap(g);
-
         if (collectionMessage != null) {
             g.setColor(Color.YELLOW);
             g.setFont(new Font("Arial", Font.BOLD, 24));
@@ -455,7 +410,6 @@ public class GameState extends State {
      */
     private void drawHealthBar(Graphics g) {
         if (player == null) return;
-
         int barWidth = 150;
         int barHeight = 20;
         int x = 10;
@@ -484,8 +438,7 @@ public class GameState extends State {
      * \brief Deseneaza mini-harta in coltul dreapta sus.
      */
     private void drawMiniMap(Graphics g) {
-        if (currentMap == null || player == null || currentMap.getFogOfWar() == null) return;
-
+        if (currentMap == null || player == null) return;
         int miniMapWidth = 200;
         int miniMapHeight = 200;
         int padding = 10;
@@ -496,28 +449,26 @@ public class GameState extends State {
         g.fillRect(miniMapX, miniMapY, miniMapWidth, miniMapHeight);
         g.setColor(Color.WHITE);
         g.drawRect(miniMapX, miniMapY, miniMapWidth, miniMapHeight);
-
         float mapScaleX = (float)miniMapWidth / (currentMap.getWidth() * Tile.TILE_WIDTH);
         float mapScaleY = (float)miniMapHeight / (currentMap.getHeight() * Tile.TILE_HEIGHT);
 
         for (int yTile = 0; yTile < currentMap.getHeight(); yTile++) {
             for (int xTile = 0; xTile < currentMap.getWidth(); xTile++) {
-                if (currentMap.getFogOfWar().isTileRevealed(xTile, yTile)) {
-                    Tile tile = currentMap.GetTile(xTile, yTile);
-                    if (tile != null) {
-                        if (tile.IsSolid()) {
-                            g.setColor(Color.DARK_GRAY);
-                        } else {
-                            g.setColor(new Color(50, 100, 50));
-                        }
-                        g.fillRect(miniMapX + (int)(xTile * Tile.TILE_WIDTH * mapScaleX),
-                                miniMapY + (int)(yTile * Tile.TILE_HEIGHT * mapScaleY),
-                                (int)(Tile.TILE_WIDTH * mapScaleX) + 1,
-                                (int)(Tile.TILE_HEIGHT * mapScaleY) + 1);
+                Tile tile = currentMap.GetTile(xTile, yTile);
+                if (tile != null) {
+                    if (tile.IsSolid()) {
+                        g.setColor(Color.DARK_GRAY);
+                    } else {
+                        g.setColor(new Color(50, 100, 50));
                     }
+                    g.fillRect(miniMapX + (int)(xTile * Tile.TILE_WIDTH * mapScaleX),
+                            miniMapY + (int)(yTile * Tile.TILE_HEIGHT * mapScaleY),
+                            (int)(Tile.TILE_WIDTH * mapScaleX) + 1,
+                            (int)(Tile.TILE_HEIGHT * mapScaleY) + 1);
                 }
             }
         }
+
 
         int playerMiniMapX = miniMapX + (int)(player.GetX() * mapScaleX);
         int playerMiniMapY = miniMapY + (int)(player.GetY() * mapScaleY);
@@ -525,7 +476,6 @@ public class GameState extends State {
 
         g.setColor(Color.CYAN);
         g.fillOval(playerMiniMapX, playerMiniMapY, playerMiniMapSize, playerMiniMapSize);
-
         for(Entity e : entities) {
             if (e instanceof Key) {
                 Key k = (Key)e;
@@ -575,6 +525,34 @@ public class GameState extends State {
         updateObjectiveText();
         System.out.println("DEBUG GameState: Cheia usii Nivel 2 a fost marcata ca fiind colectata.");
     }
+
+    // Metode adăugate pentru rezolvarea erorilor din PuzzleState.java
+    /*!
+     * \fn public void puzzleSolved()
+     * \brief Marcheaza rezolvarea unui puzzle.
+     */
+    public void puzzleSolved() {
+        this.puzzlesSolved++;
+        updateObjectiveText();
+        System.out.println("DEBUG GameState: Un puzzle a fost rezolvat. Total: " + this.puzzlesSolved);
+    }
+
+    /*!
+     * \fn public int getPuzzlesSolved()
+     * \brief Returneaza numarul de puzzle-uri rezolvate.
+     */
+    public int getPuzzlesSolved() {
+        return puzzlesSolved;
+    }
+
+    /*!
+     * \fn public int getTotalPuzzlesLevel2()
+     * \brief Returneaza numarul total de puzzle-uri pentru nivelul 2.
+     */
+    public int getTotalPuzzlesLevel2() {
+        return TOTAL_PUZZLES_LEVEL2;
+    }
+
 
     public Map GetMap() {
         return currentMap;

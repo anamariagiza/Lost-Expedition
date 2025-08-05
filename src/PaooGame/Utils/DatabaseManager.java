@@ -286,7 +286,7 @@ public class DatabaseManager {
      * \fn public SettingsData loadSettingsData()
      * \brief Incarca setarile jocului din tabela 'game_settings'.
      * \return Un obiect SettingsData cu setarile incarcate, ou setari implicite (true, true, 100)
-     * in caz de eroare sau daca nu exista inregistrare.
+     * in caz de eroare ou daca nu exista inregistrare.
      */
     public SettingsData loadSettingsData() {
         String sql = "SELECT sound_enabled, music_enabled, volume FROM game_settings WHERE id = 1;";

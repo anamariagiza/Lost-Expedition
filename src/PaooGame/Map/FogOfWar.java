@@ -2,6 +2,7 @@ package PaooGame.Map;
 
 import PaooGame.Entities.Player;
 import PaooGame.Tiles.Tile;
+import PaooGame.RefLinks;
 
 /*!
  * \class public class FogOfWar
@@ -10,21 +11,22 @@ import PaooGame.Tiles.Tile;
  */
 public class FogOfWar {
 
+    private RefLinks refLink;
     private int mapWidthTiles;
     private int mapHeightTiles;
     private boolean[][] revealedTiles; // True daca dala a fost descoperita permanent
 
-    // NOU: Nu mai avem currentVisibilityTiles aici, vizibilitatea curenta se calculeaza la desen
-    // NOU: Raza de vizibilitate a jucatorului in pixeli
-    private static final int VISION_RADIUS_PIXELS = 150; // Raza vizuala a jucatorului in pixeli
+    private static final int VISION_RADIUS_TILES = 5; // Raza de vizibilitate a jucatorului in dale
 
     /*!
-     * \fn public FogOfWar(int mapWidthTiles, int mapHeightTiles)
+     * \fn public FogOfWar(RefLinks refLink, int mapWidthTiles, int mapHeightTiles)
      * \brief Constructorul clasei FogOfWar.
+     * \param refLink Referinta catre obiectul RefLinks.
      * \param mapWidthTiles Latimea hartii in dale.
      * \param mapHeightTiles Inaltimea hartii in dale.
      */
-    public FogOfWar(int mapWidthTiles, int mapHeightTiles) {
+    public FogOfWar(RefLinks refLink, int mapWidthTiles, int mapHeightTiles) {
+        this.refLink = refLink;
         this.mapWidthTiles = mapWidthTiles;
         this.mapHeightTiles = mapHeightTiles;
         revealedTiles = new boolean[mapWidthTiles][mapHeightTiles];
@@ -32,40 +34,47 @@ public class FogOfWar {
     }
 
     /*!
-     * \fn public void update(Player player)
+     * \fn public void update()
      * \brief Actualizeaza starea Fog of War pe baza pozitiei jucatorului.
      * Marcheaza dalele ca fiind descoperite permanent.
-     * \param player Referinta catre obiectul Player.
      */
-    public void update(Player player) {
-        // Coordonatele centrului jucatorului in pixeli in lumea hartii
-        int playerCenterX = (int)(player.GetX() + player.GetWidth() / 2);
-        int playerCenterY = (int)(player.GetY() + player.GetHeight() / 2);
+    public void update() {
+        if (refLink.GetPlayer() == null) return;
 
-        // Convertim raza de vizibilitate din pixeli in dale
-        int visionRadiusTiles = (int) Math.ceil((double) VISION_RADIUS_PIXELS / Tile.TILE_WIDTH);
+        int playerTileX = (int) ((refLink.GetPlayer().GetX() + refLink.GetPlayer().GetWidth() / 2) / Tile.TILE_WIDTH);
+        int playerTileY = (int) ((refLink.GetPlayer().GetY() + refLink.GetPlayer().GetHeight() / 2) / Tile.TILE_HEIGHT);
 
-        // Iteram prin dalele din jurul jucatorului pentru a le marca ca "descoperite"
-        // Facem o iterare mai larga pentru a acoperi intreaga raza vizuala
-        for (int yOffset = -visionRadiusTiles -1; yOffset <= visionRadiusTiles + 1; yOffset++) {
-            for (int xOffset = -visionRadiusTiles -1; xOffset <= visionRadiusTiles + 1; xOffset++) {
-                int checkTileX = playerCenterX / Tile.TILE_WIDTH + xOffset;
-                int checkTileY = playerCenterY / Tile.TILE_HEIGHT + yOffset;
+        for (int yOffset = -VISION_RADIUS_TILES; yOffset <= VISION_RADIUS_TILES; yOffset++) {
+            for (int xOffset = -VISION_RADIUS_TILES; xOffset <= VISION_RADIUS_TILES; xOffset++) {
+                int checkX = playerTileX + xOffset;
+                int checkY = playerTileY + yOffset;
 
-                if (checkTileX >= 0 && checkTileX < mapWidthTiles && checkTileY >= 0 && checkTileY < mapHeightTiles) {
-                    // Calculam centrul dalei in pixeli
-                    int tilePixelCenterX = checkTileX * Tile.TILE_WIDTH + Tile.TILE_WIDTH / 2;
-                    int tilePixelCenterY = checkTileY * Tile.TILE_HEIGHT + Tile.TILE_HEIGHT / 2;
-
-                    // Verificam distanta de la centrul jucatorului la centrul dalei
-                    double distance = Math.sqrt(Math.pow(playerCenterX - tilePixelCenterX, 2) + Math.pow(playerCenterY - tilePixelCenterY, 2));
-
-                    if (distance <= VISION_RADIUS_PIXELS) {
-                        revealedTiles[checkTileX][checkTileY] = true;
+                if (checkX >= 0 && checkX < mapWidthTiles && checkY >= 0 && checkY < mapHeightTiles) {
+                    double distance = Math.sqrt(Math.pow(xOffset, 2) + Math.pow(yOffset, 2));
+                    if (distance <= VISION_RADIUS_TILES) {
+                        revealedTiles[checkX][checkY] = true;
                     }
                 }
             }
         }
+    }
+
+    /*!
+     * \fn public boolean isTileVisible(int x, int y)
+     * \brief Verifica daca o dala este in raza vizuala curenta a jucatorului.
+     * \param x Coordonata X a dalei.
+     * \param y Coordonata Y a dalei.
+     * \return True daca dala este in raza vizuala, false altfel.
+     */
+    public boolean isTileVisible(int x, int y) {
+        if (refLink.GetPlayer() == null) return false;
+
+        int playerTileX = (int) ((refLink.GetPlayer().GetX() + refLink.GetPlayer().GetWidth() / 2) / Tile.TILE_WIDTH);
+        int playerTileY = (int) ((refLink.GetPlayer().GetY() + refLink.GetPlayer().GetHeight() / 2) / Tile.TILE_HEIGHT);
+
+        double distance = Math.sqrt(Math.pow(playerTileX - x, 2) + Math.pow(playerTileY - y, 2));
+
+        return distance <= VISION_RADIUS_TILES;
     }
 
     /*!
@@ -80,13 +89,5 @@ public class FogOfWar {
             return false;
         }
         return revealedTiles[x][y];
-    }
-
-    /*!
-     * \fn public int getVisionRadiusPixels()
-     * \brief Returneaza raza de vizibilitate a jucatorului in pixeli.
-     */
-    public int getVisionRadiusPixels() {
-        return VISION_RADIUS_PIXELS;
     }
 }

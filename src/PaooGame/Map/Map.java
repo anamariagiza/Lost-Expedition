@@ -4,6 +4,7 @@ import PaooGame.Tiles.Tile;
 import PaooGame.RefLinks;
 import PaooGame.Camera.GameCamera;
 import PaooGame.Graphics.Assets;
+import PaooGame.Map.FogOfWar;
 
 import java.awt.*;
 import java.io.IOException;
@@ -46,7 +47,8 @@ public class Map {
         }
 
         loadMap(path);
-        fogOfWar = new FogOfWar(width, height);
+        // NOU: Initializam FogOfWar dupa ce harta este incarcata si stim dimensiunile
+        fogOfWar = new FogOfWar(refLink, width, height);
     }
 
     /*!
@@ -54,15 +56,14 @@ public class Map {
      * \brief Actualizeaza starea hartii (daca e cazul, pentru animatii etc.).
      */
     public void Update() {
-        if (fogOfWar != null && refLink.GetPlayer() != null) {
-            fogOfWar.update(refLink.GetPlayer());
+        if (fogOfWar != null) {
+            fogOfWar.update();
         }
     }
 
     /*!
      * \fn public void Draw(Graphics g)
      * \brief Deseneaza harta pe ecran, ajustand pozitiile cu offset-ul camerei si zoom.
-     * NOU: Harta este desenata in intregime, iar Fog of War este desenat deasupra de GameState.
      * \param g Contextul grafic in care sa se realizeze desenarea.
      */
     public void Draw(Graphics g) {
@@ -95,7 +96,6 @@ public class Map {
                     int scaledTileHeight = (int)(Tile.TILE_HEIGHT * zoom);
 
                     if (tile != null) {
-                        // Desenam dala normal, fara a aplica aici logica Fog of War
                         tile.Draw(g, drawX, drawY, scaledTileWidth, scaledTileHeight, currentMapTilesetImage);
                     } else {
                         g.setColor(Color.RED);
@@ -105,7 +105,6 @@ public class Map {
                 }
             }
         }
-        // NOU: Masca de Fog of War nu mai e desenata aici. GameState va face asta.
     }
 
     /*!
@@ -184,7 +183,7 @@ public class Map {
      * Este folosita pentru verificarea coliziunilor.
      * \param x Coordonata X (coloana) a dalei.
      * \param y Coordonata Y (rand) a dalei.
-     * \return Obiectul Tile de la pozitia specificata, sau o dala solida implicita daca coordonatele sunt invalide.
+     * \return Obiectul Tile de la pozitia specificata, ou o dala solida implicita daca coordonatele sunt invalide.
      */
     public Tile GetTile(int x, int y) {
         if (tilesGidsLayers == null || tilesGidsLayers.isEmpty()) {
@@ -194,7 +193,7 @@ public class Map {
         int[][] baseLayerGids = tilesGidsLayers.get(0);
 
         if (x < 0 || y < 0 || x >= width || y >= height) {
-            return Tile.grassTileSolid;
+            return Tile.GetTile(Tile.GRASS_TILE_GID_SOLID);
         }
 
         int gid = baseLayerGids[x][y];
@@ -209,11 +208,7 @@ public class Map {
         return height;
     }
 
-    /*!
-     * \fn public FogOfWar getFogOfWar()
-     * \brief Returneaza instanta de FogOfWar pentru harta.
-     */
-    public FogOfWar getFogOfWar() { // NOU: Getter pentru FogOfWar
+    public FogOfWar getFogOfWar() {
         return fogOfWar;
     }
 }
