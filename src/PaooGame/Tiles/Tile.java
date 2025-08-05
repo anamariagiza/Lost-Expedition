@@ -24,7 +24,6 @@ public class Tile
     public static final int TREE_TILE_GID = 4;
     public static final int SOIL_TILE_GID = 5;
 
-
     public static final int TILE_WIDTH  = SpriteSheet.getTileWidth();
     public static final int TILE_HEIGHT = SpriteSheet.getTileHeight();
 
@@ -34,7 +33,6 @@ public class Tile
     public static Tile mountainTile;
     public static Tile waterTile;
     public static Tile treeTile;
-
 
     protected final int id;
 
@@ -68,7 +66,6 @@ public class Tile
         if (!tiles.containsKey(TREE_TILE_GID)) tiles.put(TREE_TILE_GID, treeTile);
     }
 
-
     /*!
      * \fn public void Update()
      * \brief Actualizeaza proprietatile dalei.
@@ -99,13 +96,27 @@ public class Tile
     }
 
     /*!
+     * \fn public void Draw(Graphics g, int x, int y, int width, int height)
+     * \brief Metoda simplificata de Draw pentru fog of war, foloseste tileset-ul implicit.
+     * \param g Contextul grafic in care sa se realizeze desenarea
+     * \param x Coordonata x in cadrul ferestrei unde sa fie desenata dala
+     * \param y Coordonata y in cadrul ferestrei unde sa fie desenata dala
+     * \param width Latimea la care sa fie desenata dala (scalata)
+     * \param height Inaltimea la care sa fie desenata dala (scalata)
+     */
+    public void Draw(Graphics g, int x, int y, int width, int height)
+    {
+        // Folosește tileset-ul implicit (jungle) pentru fog of war
+        Draw(g, x, y, width, height, Assets.jungleTilesetImage);
+    }
+
+    /*!
      * \fn public void Draw(Graphics g, int x, int y)
      * \brief Metoda veche de Draw, nu ar trebui sa mai fie folosita direct.
      */
     public void Draw(Graphics g, int x, int y) {
         Draw(g, x, y, TILE_WIDTH, TILE_HEIGHT, Assets.jungleTilesetImage);
     }
-
 
     /*!
      * \fn public boolean IsSolid()

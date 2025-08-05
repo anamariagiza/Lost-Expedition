@@ -114,4 +114,22 @@ public class GameCamera {
             checkBlankSpace();
         }
     }
+
+    public float getXOffset() {  // Changed from getxOffset()
+        return xOffset;
+    }
+
+    public float getYOffset() {  // Changed from getyOffset()
+        return yOffset;
+    }
+
+    public void setXOffset(float xOffset) {  // Changed from setxOffset()
+        this.xOffset = xOffset;
+        checkBlankSpace();
+    }
+
+    public void setYOffset(float yOffset) {  // Changed from setyOffset()
+        this.yOffset = yOffset;
+        checkBlankSpace();
+    }
 }

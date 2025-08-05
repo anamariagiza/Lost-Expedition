@@ -31,6 +31,7 @@ public class FogOfWar {
         this.mapHeightTiles = mapHeightTiles;
         revealedTiles = new boolean[mapWidthTiles][mapHeightTiles];
         // Initial, toate dalele sunt ascunse (false)
+        System.out.println("DEBUG FogOfWar: Initializat cu dimensiunile " + mapWidthTiles + "x" + mapHeightTiles);
     }
 
     /*!
@@ -43,6 +44,10 @@ public class FogOfWar {
 
         int playerTileX = (int) ((refLink.GetPlayer().GetX() + refLink.GetPlayer().GetWidth() / 2) / Tile.TILE_WIDTH);
         int playerTileY = (int) ((refLink.GetPlayer().GetY() + refLink.GetPlayer().GetHeight() / 2) / Tile.TILE_HEIGHT);
+
+        // Ensure player tile coordinates are within bounds
+        playerTileX = Math.max(0, Math.min(mapWidthTiles - 1, playerTileX));
+        playerTileY = Math.max(0, Math.min(mapHeightTiles - 1, playerTileY));
 
         for (int yOffset = -VISION_RADIUS_TILES; yOffset <= VISION_RADIUS_TILES; yOffset++) {
             for (int xOffset = -VISION_RADIUS_TILES; xOffset <= VISION_RADIUS_TILES; xOffset++) {
@@ -68,9 +73,14 @@ public class FogOfWar {
      */
     public boolean isTileVisible(int x, int y) {
         if (refLink.GetPlayer() == null) return false;
+        if (x < 0 || x >= mapWidthTiles || y < 0 || y >= mapHeightTiles) return false;
 
         int playerTileX = (int) ((refLink.GetPlayer().GetX() + refLink.GetPlayer().GetWidth() / 2) / Tile.TILE_WIDTH);
         int playerTileY = (int) ((refLink.GetPlayer().GetY() + refLink.GetPlayer().GetHeight() / 2) / Tile.TILE_HEIGHT);
+
+        // Ensure player tile coordinates are within bounds
+        playerTileX = Math.max(0, Math.min(mapWidthTiles - 1, playerTileX));
+        playerTileY = Math.max(0, Math.min(mapHeightTiles - 1, playerTileY));
 
         double distance = Math.sqrt(Math.pow(playerTileX - x, 2) + Math.pow(playerTileY - y, 2));
 
@@ -89,5 +99,58 @@ public class FogOfWar {
             return false;
         }
         return revealedTiles[x][y];
+    }
+
+    /*!
+     * \fn public void revealAllTiles()
+     * \brief Dezvaluie toate dalele (pentru debug sau cheat codes).
+     */
+    public void revealAllTiles() {
+        for (int x = 0; x < mapWidthTiles; x++) {
+            for (int y = 0; y < mapHeightTiles; y++) {
+                revealedTiles[x][y] = true;
+            }
+        }
+        System.out.println("DEBUG FogOfWar: Toate dalele au fost dezvaluite!");
+    }
+
+    /*!
+     * \fn public void resetFogOfWar()
+     * \brief Reseteaza fog of war-ul (ascunde toate dalele din nou).
+     */
+    public void resetFogOfWar() {
+        for (int x = 0; x < mapWidthTiles; x++) {
+            for (int y = 0; y < mapHeightTiles; y++) {
+                revealedTiles[x][y] = false;
+            }
+        }
+        System.out.println("DEBUG FogOfWar: Fog of War resetat!");
+    }
+
+    /*!
+     * \fn public int getVisionRadius()
+     * \brief Returneaza raza de vizibilitate a jucatorului.
+     */
+    public int getVisionRadius() {
+        return VISION_RADIUS_TILES;
+    }
+
+    /*!
+     * \fn public float getExplorationPercentage()
+     * \brief Calculeaza procentajul hartii explorat.
+     */
+    public float getExplorationPercentage() {
+        int totalTiles = mapWidthTiles * mapHeightTiles;
+        int revealedCount = 0;
+
+        for (int x = 0; x < mapWidthTiles; x++) {
+            for (int y = 0; y < mapHeightTiles; y++) {
+                if (revealedTiles[x][y]) {
+                    revealedCount++;
+                }
+            }
+        }
+
+        return (float) revealedCount / totalTiles * 100.0f;
     }
 }

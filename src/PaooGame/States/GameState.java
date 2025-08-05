@@ -30,6 +30,7 @@ public class GameState extends State {
 
     private Map currentMap;
     private Player player;
+    private FogOfWar fogOfWar; // Added fog of war instance
     private String[] levelPaths = {"/maps/level_1.tmx", "/maps/level_2.tmx", "/maps/level_3.tmx"};
     private int currentLevelIndex;
     private boolean hasLevelKey = false;
@@ -118,7 +119,6 @@ public class GameState extends State {
         }
     }
 
-
     /*!
      * \fn private void InitLevelInternal(int desiredLevelIndex, boolean loadPlayerStateFromDb)
      * \brief Metoda interna de initializare a unui nivel, incarcand harta si pozitionand player-ul si camera.
@@ -178,6 +178,9 @@ public class GameState extends State {
         if (currentMap != null) {
             currentMap.LoadMapFromFile(levelPaths[this.currentLevelIndex]);
             System.out.println("DEBUG GameState: Nivelul " + (this.currentLevelIndex + 1) + " incarcat: " + levelPaths[this.currentLevelIndex]);
+
+            // Initialize fog of war for this level
+            fogOfWar = new FogOfWar(refLink, currentMap.getWidth(), currentMap.getHeight());
         } else {
             System.err.println("Eroare: Obiectul Map nu a fost initializat in RefLinks!");
             return;
@@ -236,7 +239,6 @@ public class GameState extends State {
         }
     }
 
-
     /*!
      * \fn public void Update()
      * \brief Actualizeaza starea elementelor din joc, inclusiv jucatorul si camera.
@@ -254,7 +256,6 @@ public class GameState extends State {
             refLink.SetState(new PauseState(refLink));
             return;
         }
-
 
         if (refLink.GetKeyManager().isKeyJustPressed(KeyEvent.VK_H)) {
             if (player != null) {
@@ -280,6 +281,12 @@ public class GameState extends State {
         if (currentMap != null) {
             currentMap.Update();
         }
+
+        // Update fog of war based on player position
+        if (fogOfWar != null) {
+            fogOfWar.update();
+        }
+
         if (player != null) {
             player.Update();
             if (player.getHealth() <= 0) {
@@ -346,12 +353,22 @@ public class GameState extends State {
      */
     @Override
     public void Draw(Graphics g) {
-        if (currentMap != null) {
-            currentMap.Draw(g);
+        if (collectionMessage != null && System.currentTimeMillis() - collectionMessageTime > MESSAGE_DURATION_MS) {
+            collectionMessage = null;
         }
 
+        if (currentMap != null) {
+            // Draw map with smooth fog of war applied
+            drawMapWithSmoothFogOfWar(g);
+        }
+
+        // Draw entities only if they are visible
         for (Entity e : entities) {
-            e.Draw(g);
+            // Verifica vizibilitatea entității cu o condiție similară cu cea de la player
+            // Entitățile se desenează peste hartă, deci nu au nevoie de logica de "revealed tiles"
+            if (isEntityVisible(e)) {
+                e.Draw(g);
+            }
         }
 
         if (player != null) {
@@ -364,6 +381,84 @@ public class GameState extends State {
         drawUI(g);
     }
 
+    /*!
+     * \fn private void drawMapWithSmoothFogOfWar(Graphics g)
+     * \brief Deseneaza harta cu un efect de "fog of war" fluid, sub forma unui cerc cu gradient.
+     */
+    private void drawMapWithSmoothFogOfWar(Graphics g) {
+        if (currentMap == null || player == null) {
+            return;
+        }
+
+        GameCamera camera = refLink.GetGameCamera();
+        Graphics2D g2d = (Graphics2D) g.create();
+
+        // 1. Deseneaza harta normal
+        int startTileX = Math.max(0, (int)(camera.getXOffset() / Tile.TILE_WIDTH) - 1);
+        int endTileX = Math.min(currentMap.getWidth(), (int)((camera.getXOffset() + refLink.GetWidth() / camera.getZoomLevel()) / Tile.TILE_WIDTH) + 2);
+        int startTileY = Math.max(0, (int)(camera.getYOffset() / Tile.TILE_HEIGHT) - 1);
+        int endTileY = Math.min(currentMap.getHeight(), (int)((camera.getYOffset() + refLink.GetHeight() / camera.getZoomLevel()) / Tile.TILE_HEIGHT) + 2);
+
+        for (int y = startTileY; y < endTileY; y++) {
+            for (int x = startTileX; x < endTileX; x++) {
+                Tile tile = currentMap.GetTile(x, y);
+                if (tile != null) {
+                    int screenX = (int)((x * Tile.TILE_WIDTH - camera.getXOffset()) * camera.getZoomLevel());
+                    int screenY = (int)((y * Tile.TILE_HEIGHT - camera.getYOffset()) * camera.getZoomLevel());
+                    int tileWidth = (int)(Tile.TILE_WIDTH * camera.getZoomLevel());
+                    int tileHeight = (int)(Tile.TILE_HEIGHT * camera.getZoomLevel());
+                    tile.Draw(g2d, screenX, screenY, tileWidth, tileHeight);
+                }
+            }
+        }
+
+        // 2. Creează și desenează overlay-ul de "fog of war" cu gradient folosind RadialGradientPaint
+        int playerScreenX = (int) ((player.GetX() - camera.getXOffset()) * camera.getZoomLevel() + player.GetWidth() / 2 * camera.getZoomLevel());
+        int playerScreenY = (int) ((player.GetY() - camera.getYOffset()) * camera.getZoomLevel() + player.GetHeight() / 2 * camera.getZoomLevel());
+
+        float radius = (float) (fogOfWar.getVisionRadius() * Tile.TILE_WIDTH * camera.getZoomLevel());
+
+        // Definește culorile pentru gradient
+        Color transparentBlack = new Color(0, 0, 0, 0);
+        Color opaqueBlack = new Color(0, 0, 0, 200); // Poți ajusta opacitatea aici
+
+        // Definește punctele de oprire (fractions) ale gradientului
+        float[] dist = {0.0f, 0.7f, 1.0f}; // 0% transparent, 70% transparent, 100% opac
+        Color[] colors = {transparentBlack, transparentBlack, opaqueBlack};
+
+        // Creează un obiect RadialGradientPaint
+        RadialGradientPaint p = new RadialGradientPaint(
+                playerScreenX, playerScreenY, // Centrul gradientului
+                radius,                      // Raza cercului
+                dist,                        // Punctele de oprire
+                colors,                      // Culorile corespunzătoare
+                MultipleGradientPaint.CycleMethod.NO_CYCLE // Nu repeta gradientul
+        );
+
+        g2d.setPaint(p);
+        g2d.fillRect(0, 0, refLink.GetWidth(), refLink.GetHeight());
+
+        g2d.dispose();
+    }
+
+    /*!
+     * \fn private boolean isEntityVisible(Entity entity)
+     * \brief Verifica daca o entitate este vizibila in fog of war.
+     */
+    private boolean isEntityVisible(Entity entity) {
+        if (fogOfWar == null || player == null) return true;
+
+        // Calculam distanța dintre centrul jucătorului și centrul entității
+        float playerCenterX = player.GetX() + player.GetWidth() / 2;
+        float playerCenterY = player.GetY() + player.GetHeight() / 2;
+        float entityCenterX = entity.GetX() + entity.GetWidth() / 2;
+        float entityCenterY = entity.GetY() + entity.GetHeight() / 2;
+
+        double distance = Math.sqrt(Math.pow(playerCenterX - entityCenterX, 2) + Math.pow(playerCenterY - entityCenterY, 2));
+
+        // Comparăm distanța cu raza de vizibilitate a jucătorului
+        return distance <= fogOfWar.getVisionRadius() * Tile.TILE_WIDTH;
+    }
 
     /*!
      * \fn private void drawUI(Graphics g)
@@ -394,7 +489,9 @@ public class GameState extends State {
         g.drawString("DEBUG: Ai cheia usii Nivel 2: " + hasDoorKey, 10, 220 + 30);
         g.drawString("DEBUG: Puzzle-uri Nivel 2: " + puzzlesSolved + "/" + TOTAL_PUZZLES_LEVEL2, 10, 240 + 30);
 
+        // NOU: Apelăm noua metodă de desenare a mini-hărții, fără Fog of War
         drawMiniMap(g);
+
         if (collectionMessage != null) {
             g.setColor(Color.YELLOW);
             g.setFont(new Font("Arial", Font.BOLD, 24));
@@ -402,7 +499,6 @@ public class GameState extends State {
             g.drawString(collectionMessage, (refLink.GetWidth() - msgWidth) / 2, refLink.GetHeight() / 2);
         }
     }
-
 
     /*!
      * \fn private void drawHealthBar(Graphics g)
@@ -432,10 +528,9 @@ public class GameState extends State {
         g.drawString(healthText, x + (barWidth - textWidth) / 2, y + barHeight - 5);
     }
 
-
     /*!
      * \fn private void drawMiniMap(Graphics g)
-     * \brief Deseneaza mini-harta in coltul dreapta sus.
+     * \brief Deseneaza mini-harta fara Fog of War.
      */
     private void drawMiniMap(Graphics g) {
         if (currentMap == null || player == null) return;
@@ -449,6 +544,7 @@ public class GameState extends State {
         g.fillRect(miniMapX, miniMapY, miniMapWidth, miniMapHeight);
         g.setColor(Color.WHITE);
         g.drawRect(miniMapX, miniMapY, miniMapWidth, miniMapHeight);
+
         float mapScaleX = (float)miniMapWidth / (currentMap.getWidth() * Tile.TILE_WIDTH);
         float mapScaleY = (float)miniMapHeight / (currentMap.getHeight() * Tile.TILE_HEIGHT);
 
@@ -469,13 +565,13 @@ public class GameState extends State {
             }
         }
 
-
         int playerMiniMapX = miniMapX + (int)(player.GetX() * mapScaleX);
         int playerMiniMapY = miniMapY + (int)(player.GetY() * mapScaleY);
         int playerMiniMapSize = Math.max(2, (int)(player.GetWidth() * mapScaleX));
 
         g.setColor(Color.CYAN);
         g.fillOval(playerMiniMapX, playerMiniMapY, playerMiniMapSize, playerMiniMapSize);
+
         for(Entity e : entities) {
             if (e instanceof Key) {
                 Key k = (Key)e;
@@ -488,7 +584,6 @@ public class GameState extends State {
             }
         }
     }
-
 
     /*!
      * \fn private void saveCurrentState()
@@ -526,7 +621,6 @@ public class GameState extends State {
         System.out.println("DEBUG GameState: Cheia usii Nivel 2 a fost marcata ca fiind colectata.");
     }
 
-    // Metode adăugate pentru rezolvarea erorilor din PuzzleState.java
     /*!
      * \fn public void puzzleSolved()
      * \brief Marcheaza rezolvarea unui puzzle.
@@ -552,7 +646,6 @@ public class GameState extends State {
     public int getTotalPuzzlesLevel2() {
         return TOTAL_PUZZLES_LEVEL2;
     }
-
 
     public Map GetMap() {
         return currentMap;
