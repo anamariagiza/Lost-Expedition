@@ -70,7 +70,7 @@ public class MenuState extends State
         handleInput();
         long currentTime = System.currentTimeMillis();
         if (currentTime - lastDebugTime > 2000) {
-            System.out.println("MenuState activ - optiunea selectata: " + selectedOption + " (" + menuOptions[selectedOption] + ")");
+            System.out.println("MenuState activ - optiune selectata: " + selectedOption + " (" + menuOptions[selectedOption] + ")");
             lastDebugTime = currentTime;
         }
     }
@@ -152,7 +152,7 @@ public class MenuState extends State
                 break;
             case 2: // SETTINGS
                 System.out.println("Deschidere Settings...");
-                refLink.SetState(new SettingsState(refLink));
+                refLink.SetStateWithPrevious(new SettingsState(refLink)); // NOU: Folosim noua metoda
                 break;
             case 3: // ABOUT
                 System.out.println("Deschidere About...");

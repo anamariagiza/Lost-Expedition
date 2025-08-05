@@ -1,8 +1,8 @@
 package PaooGame.States;
 
 import PaooGame.RefLinks;
-import PaooGame.Graphics.Assets; // Pentru imagini simboluri (daca ai)
-import PaooGame.Utils.DatabaseManager; // Poate fi folosit pentru salvarea progresului puzzle-ului
+import PaooGame.Graphics.Assets;
+import PaooGame.Utils.DatabaseManager;
 
 import java.awt.*;
 import java.awt.event.KeyEvent;
@@ -17,8 +17,8 @@ import java.util.Random;
 public class PuzzleState extends State {
 
     // Detalii vizuale pentru UI
-    private final Color backgroundColor = new Color(0, 0, 0, 200); // Overlay semi-transparent
-    private final Color textColor = new Color(255, 255, 0); // Galben pentru text
+    private final Color backgroundColor = new Color(0, 0, 0, 200);
+    private final Color textColor = new Color(255, 255, 0);
     private final Color instructionColor = new Color(200, 200, 200);
     private final Color buttonColor = new Color(100, 100, 100);
     private final Color selectedColor = new Color(160, 82, 45);
@@ -26,29 +26,29 @@ public class PuzzleState extends State {
     private final Font textFont = new Font("Arial", Font.BOLD, 20);
     private final Font timerFont = new Font("Arial", Font.BOLD, 28);
     private final Font inputFont = new Font("Consolas", Font.BOLD, 24);
-    private final Font instructionFont = new Font("SansSerif", Font.PLAIN, 14); // NOU: Declarare instructionFont
+    private final Font instructionFont = new Font("SansSerif", Font.PLAIN, 14);
 
 
     // Elemente puzzle
-    private String[] symbols = {"1", "2", "3", "4", "5", "6", "7", "8"}; // Simboluri disponibile
-    private ArrayList<String> puzzleSequence; // Secventa de simboluri de memorat
-    private ArrayList<String> playerInput;    // Input-ul jucatorului
+    private String[] symbols = {"1", "2", "3", "4", "5", "6", "7", "8"};
+    private ArrayList<String> puzzleSequence;
+    private ArrayList<String> playerInput;
 
-    private int sequenceLength = 4; // Lungimea secventei puzzle-ului
-    private int currentInputIndex = 0; // Indexul curent in input-ul jucatorului
-    private boolean sequenceShown = false; // Flag daca secventa a fost afisata
-    private long sequenceDisplayTime = 0; // Timpul la care a inceput afisarea secventei
-    private final long DISPLAY_DURATION_MS = 2000; // Cat timp e afisata secventa
+    private int sequenceLength = 4;
+    private int currentInputIndex = 0;
+    private boolean sequenceShown = false;
+    private long sequenceDisplayTime = 0;
+    private final long DISPLAY_DURATION_MS = 2000;
 
     // Cronometru puzzle
     private long puzzleStartTime = 0;
-    private final long TIME_LIMIT_MS = 15000; // 15 secunde pentru a rezolva
-    private boolean puzzleActive = false; // Flag daca puzzle-ul a inceput
+    private final long TIME_LIMIT_MS = 15000;
+    private boolean puzzleActive = false;
     private boolean puzzleSolved = false;
     private boolean puzzleFailed = false;
 
-    private boolean enterPressed = false; // Pentru a gestiona apasarea Enter/Space la sfarsit
-    private long lastKeyPressTime = 0; // Pentru a preveni apasari multiple rapide pe aceeasi tasta in timpul introducerii
+    private boolean enterPressed = false;
+    private long lastKeyPressTime = 0;
     private final long KEY_COOLDOWN_MS = 150;
 
 
@@ -74,7 +74,7 @@ public class PuzzleState extends State {
         for (int i = 0; i < sequenceLength; i++) {
             puzzleSequence.add(symbols[rand.nextInt(symbols.length)]);
         }
-        sequenceShown = true; // Incepe cu afisarea secventei
+        sequenceShown = true;
         sequenceDisplayTime = System.currentTimeMillis();
         System.out.println("DEBUG Puzzle: Secventa generata: " + String.join(" ", puzzleSequence));
     }
@@ -86,7 +86,6 @@ public class PuzzleState extends State {
     @Override
     public void Update() {
         if (puzzleSolved || puzzleFailed) {
-            // Daca puzzle-ul a fost deja rezolvat/esuat, asteptam doar inputul de ENTER/SPACE pentru a iesi
             if ((refLink.GetKeyManager().enter || refLink.GetKeyManager().space) && !enterPressed) {
                 enterPressed = true;
                 if (puzzleSolved) {
@@ -165,21 +164,22 @@ public class PuzzleState extends State {
     }
 
 
+
     /*!
      * \fn private void handlePuzzleSuccess()
      * \brief Gestioneaza actiunile la rezolvarea cu succes a puzzle-ului.
      */
     private void handlePuzzleSuccess() {
-        System.out.println("DEBUG Puzzle: Puzzle rezolvat! Jucatorul primeste o cheie (de usa).");
-        State currentState = State.GetState();
-        if (currentState instanceof GameState) {
-            GameState gameState = (GameState) currentState;
+        System.out.println("DEBUG Puzzle: Puzzle rezolvat cu succes!");
+        State previousState = refLink.GetPreviousState();
+        if (previousState instanceof GameState) {
+            GameState gameState = (GameState) previousState;
             gameState.puzzleSolved();
             if (gameState.getPuzzlesSolved() >= gameState.getTotalPuzzlesLevel2()) {
                 gameState.doorKeyCollected();
             }
         }
-        refLink.SetState(refLink.GetGame().getPreviousState());
+        refLink.SetState(previousState);
     }
 
     /*!
@@ -250,4 +250,6 @@ public class PuzzleState extends State {
             g.drawString("Apasa ENTER/SPACE pentru a continua.", centerX - fm.stringWidth("Apasa ENTER/SPACE pentru a continua.") / 2, centerY + 50);
         }
     }
+
+
 }

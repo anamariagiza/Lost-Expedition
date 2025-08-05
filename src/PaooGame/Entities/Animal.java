@@ -10,7 +10,7 @@ import java.awt.image.BufferedImage;
 /*!
  * \class public class Animal extends Entity
  * \brief Implementeaza un tip de inamic simplu: un animal salbatic.
- * Se misca pe o traiectorie predefinita si provoaca Game Over la contact.
+ * Se misca pe o traiectorie predefinita si provoaca daune periodice jucatorului la contact.
  */
 public class Animal extends Entity {
 
@@ -26,8 +26,7 @@ public class Animal extends Entity {
     private float patrolStartX, patrolEndX;
     private boolean movingRight = true;
     private float moveX;
-
-    private int damage = 20;
+    private int damage; // NOU: Variabila pentru daune
 
     /*!
      * \fn public Animal(RefLinks refLink, float x, float y, float patrolStartX, float patrolEndX, AnimalType type)
@@ -47,7 +46,15 @@ public class Animal extends Entity {
         this.patrolEndX = patrolEndX;
         this.speed = getAnimalSpeed(type);
 
-        this.bounds = new Rectangle(0, 0, width, height);
+        SetPosition(x, y);
+
+        // NOU: Setam valoarea de daune in functie de tipul animalului
+        switch (type) {
+            case JAGUAR: this.damage = 50; break;
+            case MONKEY: this.damage = 30; break;
+            case BAT:    this.damage = 20; break;
+            default:     this.damage = 0; break;
+        }
 
         BufferedImage[] frames = null;
         switch (type) {
@@ -107,12 +114,11 @@ public class Animal extends Entity {
     public void Update() {
         anim.Update();
         moveAnimal();
-        checkPlayerCollision();
     }
 
     /*!
      * \fn private void moveAnimal()
-     * \brief Implementeaza logica de miscare a animalului (patrulare orizontala).
+     * \brief Implementeaza logica de miscare a animalului (patrulare orizontala) si actualizeaza bounding box-ul.
      */
     private void moveAnimal() {
         if (movingRight) {
@@ -127,23 +133,9 @@ public class Animal extends Entity {
             }
         }
         x += moveX;
-        bounds.x = (int) x;
+        // NOU: Actualizam corect bounding box-ul.
+        bounds.setLocation((int)x, (int)y);
     }
-
-    /*!
-     * \fn private void checkPlayerCollision()
-     * \brief Verifica coliziunea cu jucatorul si aplica daune.
-     */
-    private void checkPlayerCollision() {
-        Player player = refLink.GetPlayer();
-        if (player == null) return;
-
-        if (this.bounds.intersects(player.GetBounds())) {
-            System.out.println("DEBUG Animal: Coliziune cu jucatorul!");
-            player.takeDamage(damage);
-        }
-    }
-
 
     /*!
      * \fn public void Draw(Graphics g)
@@ -159,14 +151,22 @@ public class Animal extends Entity {
 
         BufferedImage currentFrame = anim.getCurrentFrame();
         if (currentFrame != null) {
-            if (movingRight) {
-                g.drawImage(currentFrame, drawX, drawY, scaledWidth, scaledHeight, null); // Base sprite is oriented RIGHT
+            if (!movingRight) {
+                g.drawImage(currentFrame, drawX, drawY, scaledWidth, scaledHeight, null);
             } else {
-                g.drawImage(currentFrame, drawX + scaledWidth, drawY, -scaledWidth, scaledHeight, null); // Mirror for LEFT movement
+                g.drawImage(currentFrame, drawX + scaledWidth, drawY, -scaledWidth, scaledHeight, null);
             }
         } else {
             g.setColor(Color.MAGENTA);
             g.fillRect(drawX, drawY, scaledWidth, scaledHeight);
         }
+    }
+
+    /*!
+     * \fn public int getDamage()
+     * \brief Returneaza valoarea de daune a animalului.
+     */
+    public int getDamage() {
+        return damage;
     }
 }

@@ -6,6 +6,9 @@ import PaooGame.Entities.Trap;
 import PaooGame.Entities.Key;
 import PaooGame.Entities.Agent;
 import PaooGame.Entities.Entity;
+import PaooGame.Entities.NPC;
+import PaooGame.Entities.Talisman;
+import PaooGame.Entities.CaveEntrance;
 import PaooGame.Map.Map;
 import PaooGame.Map.FogOfWar;
 import PaooGame.RefLinks;
@@ -19,6 +22,7 @@ import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.awt.geom.Ellipse2D;
 import java.util.ArrayList;
+import java.util.Iterator;
 
 /*!
  * \class public class GameState extends State
@@ -30,15 +34,18 @@ public class GameState extends State {
 
     private Map currentMap;
     private Player player;
-    private FogOfWar fogOfWar; // Added fog of war instance
+    private FogOfWar fogOfWar;
     private String[] levelPaths = {"/maps/level_1.tmx", "/maps/level_2.tmx", "/maps/level_3.tmx"};
     private int currentLevelIndex;
     private boolean hasLevelKey = false;
     private boolean hasDoorKey = false;
 
+    private boolean hasTalisman = false;
+    private boolean caveEntranceUnlocked = false;
+
     private float currentZoomTarget = 1.0f;
     private boolean loadFromSaveOnInit = false;
-    private String currentObjective = "Exploreaza jungla.";
+    private String currentObjective = "Aduna obiectele necesare si ajungi la intrarea pesterii.";
 
     private ArrayList<Entity> entities;
 
@@ -48,6 +55,15 @@ public class GameState extends State {
 
     private int puzzlesSolved = 0;
     private final int TOTAL_PUZZLES_LEVEL2 = 5;
+
+    private long lastAnimalDamageTime = 0;
+    private final long ANIMAL_DAMAGE_COOLDOWN_MS = 4000;
+
+    private long lastTrapDamageTime = 0;
+    private final long TRAP_DAMAGE_COOLDOWN_MS = 2000;
+
+    private final int TRAP_DAMAGE_PERCENTAGE = 50;
+
 
     /*!
      * \fn public GameState(RefLinks refLink)
@@ -61,10 +77,11 @@ public class GameState extends State {
         this.hasLevelKey = false;
         this.hasDoorKey = false;
         this.puzzlesSolved = 0;
+        this.hasTalisman = false;
+        this.caveEntranceUnlocked = false;
         InitLevelInternal(this.currentLevelIndex, false);
         System.out.println("✓ GameState initializat (joc nou)");
         refLink.GetGameCamera().setZoomLevel(currentZoomTarget);
-        updateObjectiveText();
     }
 
     /*!
@@ -80,10 +97,11 @@ public class GameState extends State {
         this.hasLevelKey = false;
         this.hasDoorKey = false;
         this.puzzlesSolved = 0;
+        this.hasTalisman = false;
+        this.caveEntranceUnlocked = false;
         InitLevelInternal(this.currentLevelIndex, loadFromSaveOnInit);
         System.out.println("✓ GameState initializat (loadFromSave: " + loadFromSaveOnInit + ")");
         refLink.GetGameCamera().setZoomLevel(currentZoomTarget);
-        updateObjectiveText();
     }
 
     /*!
@@ -91,42 +109,17 @@ public class GameState extends State {
      * \brief Actualizeaza textul obiectivului curent in functie de nivel.
      */
     private void updateObjectiveText() {
-        switch (currentLevelIndex) {
-            case 0: // Nivelul 1: Jungla
-                if (!hasLevelKey && !hasDoorKey) {
-                    currentObjective = "Obiectiv: Gaseste cheia pentru pestera si cheia usii!";
-                } else if (hasLevelKey && !hasDoorKey) {
-                    currentObjective = "Obiectiv: Ai cheia de nivel! Acum gaseste cheia usii!";
-                } else if (!hasLevelKey && hasDoorKey) {
-                    currentObjective = "Obiectiv: Ai cheia usii! Acum gaseste cheia pentru pestera!";
-                } else {
-                    currentObjective = "Obiectiv: Ai ambele chei! Acum gaseste intrarea in pestera!";
-                }
-                break;
-            case 1: // Nivelul 2: Pestera
-                if (!hasDoorKey) {
-                    currentObjective = "Obiectiv: Rezolva " + puzzlesSolved + "/" + TOTAL_PUZZLES_LEVEL2 + " puzzle-uri si gaseste cheia usii!";
-                } else {
-                    currentObjective = "Obiectiv: Ai cheia usii! Deschide drumul!";
-                }
-                break;
-            case 2: // Nivelul 3: Inca pestera, apoi comoara
-                currentObjective = "Obiectiv: Invinge-l pe Magnus Voss si gaseste comoara!";
-                break;
-            default:
-                currentObjective = "Obiectiv: Descopera secretul!";
-                break;
-        }
+        // Obiectivul va fi acum afișat static în drawUI
     }
 
     /*!
-     * \fn private void InitLevelInternal(int desiredLevelIndex, boolean loadPlayerStateFromDb)
+     * \fn public void InitLevelInternal(int desiredLevelIndex, boolean loadPlayerStateFromDb)
      * \brief Metoda interna de initializare a unui nivel, incarcand harta si pozitionand player-ul si camera.
      * \param desiredLevelIndex Nivelul la care dorim sa trecem (ou de la care sa incarcam).
      * \param loadPlayerStateFromDb Daca este true, se incearca incarcarea pozitiei si vietii jucatorului din DB.
      * Altfel, jucatorul este plasat la pozitia initiala a nivelului.
      */
-    private void InitLevelInternal(int desiredLevelIndex, boolean loadPlayerStateFromDb) {
+    public void InitLevelInternal(int desiredLevelIndex, boolean loadPlayerStateFromDb) {
         DatabaseManager.SaveGameData loadedData = null;
         float playerStartX = 100;
         float playerStartY = 100;
@@ -155,8 +148,8 @@ public class GameState extends State {
             this.puzzlesSolved = 0;
 
             if (currentLevelIndex == 0) { // Nivel 1 (Jungla)
-                playerStartX = 100;
-                playerStartY = 100;
+                playerStartX = 86 * Tile.TILE_WIDTH; //pozitie initialaȘ 100
+                playerStartY = 86 * Tile.TILE_HEIGHT; //pozitie initiala 100
             } else if (currentLevelIndex == 1) { // Nivelul 2 (Pestera)
                 playerStartX = 100 * Tile.TILE_WIDTH;
                 playerStartY = 100 * Tile.TILE_HEIGHT;
@@ -202,7 +195,6 @@ public class GameState extends State {
         if (currentMap != null && player != null) {
             refLink.GetGameCamera().centerOnEntity(player);
         }
-        updateObjectiveText();
 
         entities = new ArrayList<>();
         switch (currentLevelIndex) {
@@ -211,37 +203,39 @@ public class GameState extends State {
                 entities.add(new Animal(refLink, 10 * Tile.TILE_WIDTH, 36 * Tile.TILE_HEIGHT, 8 * Tile.TILE_WIDTH, 11 * Tile.TILE_WIDTH, Animal.AnimalType.MONKEY));
                 entities.add(new Animal(refLink, 89 * Tile.TILE_WIDTH, 29 * Tile.TILE_HEIGHT, 88 * Tile.TILE_WIDTH, 91 * Tile.TILE_WIDTH, Animal.AnimalType.MONKEY));
                 entities.add(new Animal(refLink, 84 * Tile.TILE_WIDTH, 57 * Tile.TILE_HEIGHT, 82 * Tile.TILE_WIDTH, 85 * Tile.TILE_WIDTH, Animal.AnimalType.BAT));
-                entities.add(new Trap(refLink, 20 * Tile.TILE_WIDTH, 20 * Tile.TILE_HEIGHT, Assets.spikeTrapImage));
-                if (Assets.smallTrapAnim != null && Assets.smallTrapAnim.length > 0) {
-                    entities.add(new Trap(refLink, 30 * Tile.TILE_WIDTH, 15 * Tile.TILE_HEIGHT, Assets.smallTrapAnim[0]));
-                }
 
-                if (!hasLevelKey) {
-                    entities.add(new Key(refLink, 45 * Tile.TILE_WIDTH, 52 * Tile.TILE_HEIGHT, Assets.keyImage, Key.KeyType.NEXT_LEVEL_KEY));
-                }
+                entities.add(new Trap(refLink, 66 * Tile.TILE_WIDTH, 31 * Tile.TILE_HEIGHT, Assets.spikeTrapImage));
+                entities.add(new Trap(refLink, 67 * Tile.TILE_WIDTH, 38 * Tile.TILE_HEIGHT, Assets.spikeTrapImage));
+                entities.add(new Trap(refLink, 66 * Tile.TILE_WIDTH, 45 * Tile.TILE_HEIGHT, Assets.spikeTrapImage));
+
+                entities.add(new NPC(refLink, 85 * Tile.TILE_WIDTH, 90 * Tile.TILE_HEIGHT));
+                entities.add(new Talisman(refLink, 45 * Tile.TILE_WIDTH, 52 * Tile.TILE_HEIGHT, Assets.talismanImage));
+
+                // Dimensiunile pentru intrarea in pestera sunt aproximative, ajusta-le
+                entities.add(new CaveEntrance(refLink, 85 * Tile.TILE_WIDTH, 92 * Tile.TILE_HEIGHT, Tile.TILE_WIDTH * 3, Tile.TILE_HEIGHT * 3));
+
                 if (!hasDoorKey) {
                     entities.add(new Key(refLink, 12 * Tile.TILE_WIDTH, 85 * Tile.TILE_HEIGHT, Assets.keyImage, Key.KeyType.DOOR_KEY));
                 }
                 break;
             case 1: // Nivelul 2: Pestera
                 entities.add(new Animal(refLink, 200, 200, 100, 400, Animal.AnimalType.BAT));
-                entities.add(new Trap(refLink, 600, 300, Assets.spikeTrapImage));
-                currentObjective = "Obiectiv: Rezolva " + puzzlesSolved + "/" + TOTAL_PUZZLES_LEVEL2 + " puzzle-uri si gaseste cheia usii!";
-                entities.add(new Trap(refLink, 25 * Tile.TILE_WIDTH, 25 * Tile.TILE_HEIGHT, Assets.smallTrapAnim != null && Assets.smallTrapAnim.length > 0 ? Assets.smallTrapAnim[0] : Assets.spikeTrapImage));
-                entities.add(new Trap(refLink, 35 * Tile.TILE_WIDTH, 30 * Tile.TILE_HEIGHT, Assets.smallTrapAnim != null && Assets.smallTrapAnim.length > 0 ? Assets.smallTrapAnim[0] : Assets.spikeTrapImage));
+
+                entities.add(new Trap(refLink, 50 * Tile.TILE_WIDTH, 50 * Tile.TILE_HEIGHT, Assets.spikeTrapImage));
+                entities.add(new Trap(refLink, 25 * Tile.TILE_WIDTH, 25 * Tile.TILE_HEIGHT, Assets.spikeTrapImage));
+                entities.add(new Trap(refLink, 35 * Tile.TILE_WIDTH, 30 * Tile.TILE_HEIGHT, Assets.spikeTrapImage));
 
                 break;
             case 2: // Nivelul 3: Incaperea finala a pesterii
                 entities.add(new Animal(refLink, 450, 450, 400, 500, Animal.AnimalType.JAGUAR));
                 entities.add(new Agent(refLink, 600, 600, 550, 650, true));
-                currentObjective = "Obiectiv: Invinge-l pe Magnus Voss si gaseste comoara!";
                 break;
         }
     }
 
     /*!
      * \fn public void Update()
-     * \brief Actualizeaza starea elementelor din joc, inclusiv jucatorul si camera.
+     * \brief Actualizeaza starea elementelor din joc, delegand catre starea curenta.
      * \return void
      */
     @Override
@@ -252,8 +246,7 @@ public class GameState extends State {
 
         if (refLink.GetKeyManager().isKeyJustPressed(KeyEvent.VK_P) && player != null) {
             saveCurrentState();
-            refLink.GetGame().setPreviousState(this);
-            refLink.SetState(new PauseState(refLink));
+            refLink.SetStateWithPrevious(new PauseState(refLink));
             return;
         }
 
@@ -293,54 +286,58 @@ public class GameState extends State {
                 refLink.SetState(new GameOverState(refLink));
                 return;
             }
-            // Conditie pentru trecerea la nivelul urmator cu 'E' (la punctul de iesire)
-            if (currentLevelIndex == 0 && hasLevelKey && hasDoorKey) {
-                if (player.GetX() / Tile.TILE_WIDTH > 95 && player.GetY() / Tile.TILE_HEIGHT < 20 &&
-                        refLink.GetKeyManager().isKeyJustPressed(KeyEvent.VK_E)) {
-                    if (currentLevelIndex + 1 < levelPaths.length) {
-                        saveCurrentState();
-                        InitLevelInternal(currentLevelIndex + 1, false);
-                        System.out.println("DEBUG GameState: Trecere la Nivelul " + (currentLevelIndex + 1) + " prin poarta!");
-                    } else {
-                        System.out.println("Ultimul nivel atins!");
-                    }
-                }
-            }
-            // Conditie pentru activarea unui puzzle in Nivelul 2 cu 'E'
-            else if (currentLevelIndex == 1 && puzzlesSolved < TOTAL_PUZZLES_LEVEL2) {
-                if (player.GetX() / Tile.TILE_WIDTH > 24 && player.GetX() / Tile.TILE_WIDTH < 26 &&
-                        player.GetY() / Tile.TILE_HEIGHT > 24 && player.GetY() / Tile.TILE_HEIGHT < 26 &&
-                        refLink.GetKeyManager().isKeyJustPressed(KeyEvent.VK_E)) {
-                    System.out.println("DEBUG GameState: Jucator la masuta puzzle. Activare PuzzleState!");
-                    refLink.GetGame().setPreviousState(this);
-                    refLink.SetState(new PuzzleState(refLink));
-                    return;
-                }
-            }
-            // Conditie pentru deschiderea usii nivelului 2 cu 'E' (dupa rezolvarea tuturor puzzle-urilor si colectarea cheii usii)
-            else if (currentLevelIndex == 1 && hasDoorKey && puzzlesSolved >= TOTAL_PUZZLES_LEVEL2) {
-                if (player.GetX() / Tile.TILE_WIDTH > 50 && player.GetY() / Tile.TILE_HEIGHT > 50 &&
-                        refLink.GetKeyManager().isKeyJustPressed(KeyEvent.VK_E)) {
-                    System.out.println("DEBUG GameState: Usa Nivelului 2 a fost deblocata!");
-                    if (currentLevelIndex + 1 < levelPaths.length) {
-                        saveCurrentState();
-                        InitLevelInternal(currentLevelIndex + 1, false);
-                        System.out.println("DEBUG GameState: Trecere la Nivelul " + (currentLevelIndex + 1) + " dupa deschiderea usii!");
-                    } else {
-                        System.out.println("Ultimul nivel atins!");
-                    }
-                    return;
-                }
-            }
         }
 
-        for (int i = entities.size() - 1; i >= 0; i--) {
-            Entity e = entities.get(i);
+        boolean playerInContactWithAnimal = false;
+        boolean playerInContactWithTrap = false;
+
+        Iterator<Entity> it = entities.iterator();
+        while (it.hasNext()) {
+            Entity e = it.next();
             e.Update();
             if (e instanceof Key) {
                 Key k = (Key) e;
                 if (k.isCollected()) {
-                    entities.remove(i);
+                    it.remove();
+                }
+            } else if (e instanceof Talisman) {
+                Talisman t = (Talisman) e;
+                if (t.isCollected()) {
+                    it.remove();
+                }
+            }
+            if (e instanceof Animal) {
+                if (player.GetBounds().intersects(e.GetBounds())) {
+                    playerInContactWithAnimal = true;
+                }
+            }
+            if (e instanceof Trap) {
+                if (player.GetBounds().intersects(e.GetBounds())) {
+                    playerInContactWithTrap = true;
+                }
+            }
+        }
+
+        if (playerInContactWithAnimal) {
+            if (System.currentTimeMillis() - lastAnimalDamageTime >= ANIMAL_DAMAGE_COOLDOWN_MS) {
+                if(player != null) {
+                    for(Entity e : entities) {
+                        if (e instanceof Animal && player.GetBounds().intersects(e.GetBounds())) {
+                            player.takeDamage(((Animal) e).getDamage());
+                            break;
+                        }
+                    }
+                    lastAnimalDamageTime = System.currentTimeMillis();
+                }
+            }
+        }
+
+        if (playerInContactWithTrap) {
+            if (System.currentTimeMillis() - lastTrapDamageTime >= TRAP_DAMAGE_COOLDOWN_MS) {
+                if (player != null) {
+                    int damage = player.getMaxHealth() * TRAP_DAMAGE_PERCENTAGE / 100;
+                    player.takeDamage(damage);
+                    lastTrapDamageTime = System.currentTimeMillis();
                 }
             }
         }
@@ -358,14 +355,10 @@ public class GameState extends State {
         }
 
         if (currentMap != null) {
-            // Draw map with smooth fog of war applied
             drawMapWithSmoothFogOfWar(g);
         }
 
-        // Draw entities only if they are visible
         for (Entity e : entities) {
-            // Verifica vizibilitatea entității cu o condiție similară cu cea de la player
-            // Entitățile se desenează peste hartă, deci nu au nevoie de logica de "revealed tiles"
             if (isEntityVisible(e)) {
                 e.Draw(g);
             }
@@ -393,7 +386,6 @@ public class GameState extends State {
         GameCamera camera = refLink.GetGameCamera();
         Graphics2D g2d = (Graphics2D) g.create();
 
-        // 1. Deseneaza harta normal
         int startTileX = Math.max(0, (int)(camera.getXOffset() / Tile.TILE_WIDTH) - 1);
         int endTileX = Math.min(currentMap.getWidth(), (int)((camera.getXOffset() + refLink.GetWidth() / camera.getZoomLevel()) / Tile.TILE_WIDTH) + 2);
         int startTileY = Math.max(0, (int)(camera.getYOffset() / Tile.TILE_HEIGHT) - 1);
@@ -412,27 +404,23 @@ public class GameState extends State {
             }
         }
 
-        // 2. Creează și desenează overlay-ul de "fog of war" cu gradient folosind RadialGradientPaint
-        int playerScreenX = (int) ((player.GetX() - camera.getXOffset()) * camera.getZoomLevel() + player.GetWidth() / 2 * camera.getZoomLevel());
-        int playerScreenY = (int) ((player.GetY() - camera.getYOffset()) * camera.getZoomLevel() + player.GetHeight() / 2 * camera.getZoomLevel());
+        int playerScreenX = (int) ((player.GetX() - camera.getxOffset()) * camera.getZoomLevel() + player.GetWidth() / 2 * camera.getZoomLevel());
+        int playerScreenY = (int) ((player.GetY() - camera.getyOffset()) * camera.getZoomLevel() + player.GetHeight() / 2 * camera.getZoomLevel());
 
         float radius = (float) (fogOfWar.getVisionRadius() * Tile.TILE_WIDTH * camera.getZoomLevel());
 
-        // Definește culorile pentru gradient
         Color transparentBlack = new Color(0, 0, 0, 0);
-        Color opaqueBlack = new Color(0, 0, 0, 200); // Poți ajusta opacitatea aici
+        Color opaqueBlack = new Color(0, 0, 0, 200);
 
-        // Definește punctele de oprire (fractions) ale gradientului
-        float[] dist = {0.0f, 0.7f, 1.0f}; // 0% transparent, 70% transparent, 100% opac
+        float[] dist = {0.0f, 0.7f, 1.0f};
         Color[] colors = {transparentBlack, transparentBlack, opaqueBlack};
 
-        // Creează un obiect RadialGradientPaint
         RadialGradientPaint p = new RadialGradientPaint(
-                playerScreenX, playerScreenY, // Centrul gradientului
-                radius,                      // Raza cercului
-                dist,                        // Punctele de oprire
-                colors,                      // Culorile corespunzătoare
-                MultipleGradientPaint.CycleMethod.NO_CYCLE // Nu repeta gradientul
+                playerScreenX, playerScreenY,
+                radius,
+                dist,
+                colors,
+                MultipleGradientPaint.CycleMethod.NO_CYCLE
         );
 
         g2d.setPaint(p);
@@ -448,7 +436,6 @@ public class GameState extends State {
     private boolean isEntityVisible(Entity entity) {
         if (fogOfWar == null || player == null) return true;
 
-        // Calculam distanța dintre centrul jucătorului și centrul entității
         float playerCenterX = player.GetX() + player.GetWidth() / 2;
         float playerCenterY = player.GetY() + player.GetHeight() / 2;
         float entityCenterX = entity.GetX() + entity.GetWidth() / 2;
@@ -456,13 +443,12 @@ public class GameState extends State {
 
         double distance = Math.sqrt(Math.pow(playerCenterX - entityCenterX, 2) + Math.pow(playerCenterY - entityCenterY, 2));
 
-        // Comparăm distanța cu raza de vizibilitate a jucătorului
         return distance <= fogOfWar.getVisionRadius() * Tile.TILE_WIDTH;
     }
 
     /*!
      * \fn private void drawUI(Graphics g)
-     * \brief Deseneaza toate elementele de interfata din joc.
+     * \brief Deseneaza toate elementele de interfata din joc, cu modificarile cerute.
      */
     private void drawUI(Graphics g) {
         drawHealthBar(g);
@@ -472,24 +458,36 @@ public class GameState extends State {
         FontMetrics fm = g.getFontMetrics();
         int objectiveWidth = fm.stringWidth(currentObjective);
         int objectiveX = (refLink.GetWidth() - objectiveWidth) / 2;
-        g.drawString(currentObjective, objectiveX, 30);
+        g.drawString("Obiectiv: Aduna obiectele necesare si ajungi la intrarea pesterii.", objectiveX, 30);
+
 
         g.setColor(Color.WHITE);
-        g.setFont(new Font("Arial", Font.PLAIN, 12));
-        g.drawString("Nivel curent: " + (currentLevelIndex + 1), 10, 20 + 30);
-        g.drawString("Apasa 'E' la poarta de iesire pentru a trece nivelul.", 10, 40 + 30);
-        g.drawString("Apasa 'P' pentru Meniu Pauza.", 10, 60 + 30);
-        g.drawString("Foloseste W,A,S,D pentru miscare.", 10, 80 + 30);
-        g.drawString("Apasa SHIFT pentru alergat.", 10, 100 + 30);
-        g.drawString("Apasa SPACE pentru saritura.", 10, 120 + 30);
-        g.drawString("Zoom: " + String.format("%.1f", refLink.GetGameCamera().getZoomLevel()), 10, 140 + 30);
-        g.drawString("Apasa Z pentru a comuta zoom.", 10, 160 + 30);
-        g.drawString("DEBUG: Apasa H pentru daune, G pentru vindecare.", 10, 180 + 30);
-        g.drawString("DEBUG: Ai cheia Nivelului 1: " + hasLevelKey, 10, 200 + 30);
-        g.drawString("DEBUG: Ai cheia usii Nivel 2: " + hasDoorKey, 10, 220 + 30);
-        g.drawString("DEBUG: Puzzle-uri Nivel 2: " + puzzlesSolved + "/" + TOTAL_PUZZLES_LEVEL2, 10, 240 + 30);
+        g.setFont(new Font("Arial", Font.BOLD, 12));
+        int startY = 60;
+        int lineHeight = 15;
 
-        // NOU: Apelăm noua metodă de desenare a mini-hărții, fără Fog of War
+        g.drawString("Nivel curent: " + (currentLevelIndex + 1), 10, startY);
+
+        g.drawString("Tasks:", 10, startY + lineHeight * 2);
+
+        if (!hasTalisman) {
+            g.setColor(Color.YELLOW);
+            g.drawString("1. Colecteaza talismanul pentru paznicul pesterii.", 10, startY + lineHeight * 3);
+        }
+
+        if (!hasDoorKey) {
+            g.setColor(Color.YELLOW);
+            g.drawString("2. Aduna cheia pentru a deschide usa Nivelului 2.", 10, startY + lineHeight * 4);
+        }
+
+        g.setColor(Color.WHITE);
+        g.drawString("Apasa 'P' pentru Meniu Pauza.", 10, startY + lineHeight * 6);
+        g.drawString("Apasa Z pentru a comuta zoom: " + String.format("%.1f", refLink.GetGameCamera().getZoomLevel()), 10, startY + lineHeight * 7);
+
+        if (currentLevelIndex == 1) {
+            g.drawString("Puzzle-uri Nivel 2: " + puzzlesSolved + "/" + TOTAL_PUZZLES_LEVEL2, 10, startY + lineHeight * 9);
+        }
+
         drawMiniMap(g);
 
         if (collectionMessage != null) {
@@ -530,7 +528,7 @@ public class GameState extends State {
 
     /*!
      * \fn private void drawMiniMap(Graphics g)
-     * \brief Deseneaza mini-harta fara Fog of War.
+     * \brief Deseneaza mini-harta fara Fog of War, afisand cheile si animalele ca puncte galbene.
      */
     private void drawMiniMap(Graphics g) {
         if (currentMap == null || player == null) return;
@@ -565,31 +563,33 @@ public class GameState extends State {
             }
         }
 
+        for(Entity e : entities) {
+            boolean isKey = (e instanceof Key) && !((Key) e).isCollected();
+            boolean isAnimal = e instanceof Animal;
+
+            boolean isTalisman = (e instanceof Talisman) && !((Talisman) e).isCollected();
+
+            if (isKey || isAnimal || isTalisman) {
+                int entityMiniMapX = miniMapX + (int)(e.GetX() * mapScaleX);
+                int entityMiniMapY = miniMapY + (int)(e.GetY() * mapScaleY);
+                g.setColor(Color.YELLOW);
+                g.fillOval(entityMiniMapX, entityMiniMapY, 5, 5);
+            }
+        }
+
         int playerMiniMapX = miniMapX + (int)(player.GetX() * mapScaleX);
         int playerMiniMapY = miniMapY + (int)(player.GetY() * mapScaleY);
         int playerMiniMapSize = Math.max(2, (int)(player.GetWidth() * mapScaleX));
 
         g.setColor(Color.CYAN);
         g.fillOval(playerMiniMapX, playerMiniMapY, playerMiniMapSize, playerMiniMapSize);
-
-        for(Entity e : entities) {
-            if (e instanceof Key) {
-                Key k = (Key)e;
-                if (!k.isCollected()) {
-                    int keyMiniMapX = miniMapX + (int)(k.GetX() * mapScaleX);
-                    int keyMiniMapY = miniMapY + (int)(k.GetY() * mapScaleY);
-                    g.setColor(Color.YELLOW);
-                    g.fillOval(keyMiniMapX, keyMiniMapY, 5, 5);
-                }
-            }
-        }
     }
 
     /*!
-     * \fn private void saveCurrentState()
+     * \fn public void saveCurrentState()
      * \brief Salveaza starea curenta a jocului folosind DatabaseManager.
      */
-    private void saveCurrentState() {
+    public void saveCurrentState() {
         if (player != null) {
             refLink.GetDatabaseManager().saveGameData(currentLevelIndex, player.GetX(), player.GetY(), player.getHealth(), hasLevelKey, hasDoorKey, puzzlesSolved);
         } else {
@@ -605,8 +605,46 @@ public class GameState extends State {
         this.hasLevelKey = true;
         collectionMessage = "Cheia Nivelului 1 colectata!";
         collectionMessageTime = System.currentTimeMillis();
-        updateObjectiveText();
         System.out.println("DEBUG GameState: Cheia Nivelului 1 a fost marcata ca fiind colectata.");
+    }
+
+    /*!
+     * \fn public void talismanCollected()
+     * \brief Metoda apelata de clasa Talisman cand jucatorul colecteaza talismanul.
+     */
+    public void talismanCollected() {
+        this.hasTalisman = true;
+        collectionMessage = "Talismanul Soarelui colectat!";
+        collectionMessageTime = System.currentTimeMillis();
+        System.out.println("DEBUG GameState: Talismanul a fost marcat ca fiind colectat.");
+    }
+
+    public void removeTalismanFromInventory() {
+        Iterator<Entity> it = entities.iterator();
+        while(it.hasNext()){
+            Entity e = it.next();
+            if (e instanceof Talisman) {
+                Talisman t = (Talisman) e;
+                if (t.isCollected()) {
+                    it.remove();
+                    break;
+                }
+            }
+        }
+    }
+
+    public boolean hasTalismanCollected() {
+        return hasTalisman;
+    }
+
+    public void setCaveEntranceUnlocked(boolean unlocked) {
+        this.caveEntranceUnlocked = unlocked;
+        collectionMessage = "Intrarea in pestera a fost deblocata!";
+        collectionMessageTime = System.currentTimeMillis();
+    }
+
+    public boolean isCaveEntranceUnlocked() {
+        return caveEntranceUnlocked;
     }
 
     /*!
@@ -617,18 +655,7 @@ public class GameState extends State {
         this.hasDoorKey = true;
         collectionMessage = "Cheia Usii colectata!";
         collectionMessageTime = System.currentTimeMillis();
-        updateObjectiveText();
         System.out.println("DEBUG GameState: Cheia usii Nivel 2 a fost marcata ca fiind colectata.");
-    }
-
-    /*!
-     * \fn public void puzzleSolved()
-     * \brief Marcheaza rezolvarea unui puzzle.
-     */
-    public void puzzleSolved() {
-        this.puzzlesSolved++;
-        updateObjectiveText();
-        System.out.println("DEBUG GameState: Un puzzle a fost rezolvat. Total: " + this.puzzlesSolved);
     }
 
     /*!
@@ -639,6 +666,14 @@ public class GameState extends State {
         return puzzlesSolved;
     }
 
+    /*!
+     * \fn public void puzzleSolved()
+     * \brief Marcheaza rezolvarea unui puzzle.
+     */
+    public void puzzleSolved() {
+        this.puzzlesSolved++;
+        System.out.println("DEBUG GameState: Un puzzle a fost rezolvat. Total: " + this.puzzlesSolved);
+    }
     /*!
      * \fn public int getTotalPuzzlesLevel2()
      * \brief Returneaza numarul total de puzzle-uri pentru nivelul 2.

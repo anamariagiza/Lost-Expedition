@@ -188,52 +188,56 @@ public class Player extends Entity {
         isCombatIdle = false; isThrusting = false;
         isHalfslashing = false; isSlashing = false;
 
-        // Permitem miscarile WASD doar daca nu e intr-o animatie de actiune
-        if (!isJumping && !isAttacking && !isHurt && !isCombatIdle &&
-                !isThrusting && !isHalfslashing && !isSlashing) {
-            if (game.GetKeyManager().up) {
-                yMove = -currentSpeed;
-                isMoving = true;
-                lastDirection = Direction.UP;
-            }
-            if (game.GetKeyManager().down) {
-                yMove = currentSpeed;
-                isMoving = true;
-                lastDirection = Direction.DOWN;
-            }
-            if (game.GetKeyManager().left) {
-                xMove = -currentSpeed;
-                isMoving = true;
-                lastDirection = Direction.LEFT;
-            }
-            if (game.GetKeyManager().right) {
-                xMove = currentSpeed;
-                isMoving = true;
-                lastDirection = Direction.RIGHT;
-            }
+        // NOU: Am mutat logica de miscare aici, pentru a fi posibila deplasarea
+        // in timpul animatiei de saritura.
+
+        if (game.GetKeyManager().up) {
+            yMove = -currentSpeed;
+            isMoving = true;
+            lastDirection = Direction.UP;
+        }
+        if (game.GetKeyManager().down) {
+            yMove = currentSpeed;
+            isMoving = true;
+            lastDirection = Direction.DOWN;
+        }
+        if (game.GetKeyManager().left) {
+            xMove = -currentSpeed;
+            isMoving = true;
+            lastDirection = Direction.LEFT;
+        }
+        if (game.GetKeyManager().right) {
+            xMove = currentSpeed;
+            isMoving = true;
+            lastDirection = Direction.RIGHT;
         }
 
         // Acțiuni (prioritare față de mișcare simplă)
-        if (game.GetKeyManager().isKeyJustPressed(KeyEvent.VK_SPACE) && !isJumping) {
-            isJumping = true;
-            switch(lastDirection) {
-                case UP:    activeAnimation = animJumpUp;    break;
-                case DOWN:  activeAnimation = animJumpDown;  break;
-                case LEFT:  activeAnimation = animJumpLeft;  break;
-                case RIGHT: activeAnimation = animJumpRight; break;
-                default:    activeAnimation = animJumpDown;  break;
+        // Aici am adaugat o conditie, pentru a nu incepe o animatie noua
+        // in timp ce o alta este deja in desfasurare
+        if (!isJumping && !isAttacking && !isHurt && !isCombatIdle &&
+                !isThrusting && !isHalfslashing && !isSlashing) {
+            if (game.GetKeyManager().isKeyJustPressed(KeyEvent.VK_SPACE)) {
+                isJumping = true;
+                switch(lastDirection) {
+                    case UP:    activeAnimation = animJumpUp;    break;
+                    case DOWN:  activeAnimation = animJumpDown;  break;
+                    case LEFT:  activeAnimation = animJumpLeft;  break;
+                    case RIGHT: activeAnimation = animJumpRight; break;
+                    default:    activeAnimation = animJumpDown;  break;
+                }
+                activeAnimation.reset();
+            } else if (game.GetKeyManager().isKeyJustPressed(KeyEvent.VK_J)) {
+                isAttacking = true; isThrusting = true; activeAnimation = animThrust; activeAnimation.reset();
+            } else if (game.GetKeyManager().isKeyJustPressed(KeyEvent.VK_K)) {
+                isAttacking = true; isHalfslashing = true; activeAnimation = animHalfslash; activeAnimation.reset();
+            } // Linia pentru 'E' (isEmoting) A FOST ELIMINATĂ DEFINITIV.
+            // Acum tasta 'E' este disponibilă exclusiv pentru interacțiuni (Key.java)
+            else if (game.GetKeyManager().isKeyJustPressed(KeyEvent.VK_B)) {
+                isCombatIdle = true; activeAnimation = animCombatIdle; activeAnimation.reset();
+            } else if (game.GetKeyManager().isKeyJustPressed(KeyEvent.VK_SLASH)) {
+                isAttacking = true; isSlashing = true; activeAnimation = animSlash; activeAnimation.reset();
             }
-            activeAnimation.reset();
-        } else if (game.GetKeyManager().isKeyJustPressed(KeyEvent.VK_J)) {
-            isAttacking = true; isThrusting = true; activeAnimation = animThrust; activeAnimation.reset();
-        } else if (game.GetKeyManager().isKeyJustPressed(KeyEvent.VK_K)) {
-            isAttacking = true; isHalfslashing = true; activeAnimation = animHalfslash; activeAnimation.reset();
-        } // Linia pentru 'E' (isEmoting) A FOST ELIMINATĂ DEFINITIV.
-        // Acum tasta 'E' este disponibilă exclusiv pentru interacțiuni (Key.java)
-        else if (game.GetKeyManager().isKeyJustPressed(KeyEvent.VK_B)) {
-            isCombatIdle = true; activeAnimation = animCombatIdle; activeAnimation.reset();
-        } else if (game.GetKeyManager().isKeyJustPressed(KeyEvent.VK_SLASH)) {
-            isAttacking = true; isSlashing = true; activeAnimation = animSlash; activeAnimation.reset();
         }
 
         move(xMove, yMove);

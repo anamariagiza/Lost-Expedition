@@ -23,6 +23,8 @@ public class RefLinks
     private DatabaseManager dbManager;
     private MouseManager mouseManager;
 
+    private State previousState;
+
     /*!
      * \fn public RefLinks(Game game)
      * \brief Constructorul de initializare al clasei.
@@ -34,6 +36,7 @@ public class RefLinks
         this.gameCamera = game.GetGameCamera();
         this.dbManager = new DatabaseManager();
         this.mouseManager = game.GetMouseManager();
+        this.previousState = null;
     }
 
     /*!
@@ -143,23 +146,21 @@ public class RefLinks
     }
 
     /*!
-     * \fn public void SetPreviousStateInGame(State state)
-     * \brief Seteaza referinta catre starea anterioara a jocului prin intermediul obiectului Game.
-     * Aceasta metoda permite starii curente sa informeze obiectul Game despre starea sa anterioara.
-     * \param state Referinta la starea curenta care va deveni starea anterioara dupa schimbare.
+     * \fn public void SetStateWithPrevious(State state)
+     * \brief Seteaza noua stare a jocului, salvand-o pe cea curenta ca stare anterioara.
+     * \param state Noua stare a jocului.
      */
-    public void SetPreviousStateInGame(State state) {
-        game.setPreviousState(state);
+    public void SetStateWithPrevious(State state) {
+        this.previousState = State.GetState();
+        State.SetState(state);
     }
 
     /*!
-     * \fn public State GetPreviousStateFromGame()
-     * \brief Returneaza referinta catre starea anterioara stocata in obiectul Game.
-     * Utila pentru a reveni la starea anterioara (ex: din PauseState la GameState).
-     * \return Obiectul State care reprezinta starea anterioara.
+     * \fn public State GetPreviousState()
+     * \brief Returneaza starea anterioara salvata.
      */
-    public State GetPreviousStateFromGame() {
-        return game.getPreviousState();
+    public State GetPreviousState() {
+        return previousState;
     }
 
     /*!

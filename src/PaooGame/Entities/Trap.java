@@ -16,7 +16,6 @@ public class Trap extends Entity {
 
     private static final int DEFAULT_TRAP_WIDTH = 48;
     private static final int DEFAULT_TRAP_HEIGHT = 48;
-    private static final int DAMAGE_AMOUNT = 20;
 
     private BufferedImage trapImage;
 
@@ -32,30 +31,17 @@ public class Trap extends Entity {
         super(refLink, x, y, DEFAULT_TRAP_WIDTH, DEFAULT_TRAP_HEIGHT);
         this.trapImage = image;
 
-        this.bounds = new Rectangle(0, 0, width, height);
+        // Am folosit metoda SetPosition din clasa de baza pentru a ne asigura ca bounds e initializat corect.
+        SetPosition(x, y);
     }
 
     /*!
      * \fn public void Update()
-     * \brief Actualizeaza starea capcanei (verifica interacțiunea cu jucatorul).
+     * \brief Actualizeaza starea capcanei. Logica de daune este mutata in GameState.
      */
     @Override
     public void Update() {
-        checkPlayerCollision();
-    }
-
-    /*!
-     * \fn private void checkPlayerCollision()
-     * \brief Verifica coliziunea jucatorului cu capcana.
-     */
-    private void checkPlayerCollision() {
-        Player player = refLink.GetPlayer();
-        if (player == null) return;
-
-        if (this.bounds.intersects(player.GetBounds())) {
-            player.takeDamage(DAMAGE_AMOUNT);
-            System.out.println("DEBUG Trap: Coliziune cu jucatorul!");
-        }
+        // Logica de coliziune a fost mutată în GameState.java
     }
 
     /*!

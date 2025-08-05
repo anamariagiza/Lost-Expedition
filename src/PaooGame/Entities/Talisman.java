@@ -2,7 +2,6 @@ package PaooGame.Entities;
 
 import PaooGame.RefLinks;
 import PaooGame.Graphics.Assets;
-import PaooGame.Tiles.Tile;
 import PaooGame.States.State;
 import PaooGame.States.GameState;
 
@@ -11,44 +10,37 @@ import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 
 /*!
- * \class public class Key extends Entity
- * \brief Implementeaza notiunea de cheie, un obiect colectabil care deblocheaza progresul.
+ * \class public class Talisman extends Entity
+ * \brief Implementeaza notiunea de Talisman, un obiect colectabil esential pentru progresul in joc.
  */
-public class Key extends Entity {
+public class Talisman extends Entity {
 
-    public enum KeyType {
-        NEXT_LEVEL_KEY,
-        DOOR_KEY
-    }
-
-    private static final int DEFAULT_KEY_WIDTH = 32;
-    private static final int DEFAULT_KEY_HEIGHT = 32;
-    private BufferedImage keyImage;
+    private static final int DEFAULT_TALISMAN_WIDTH = 32;
+    private static final int DEFAULT_TALISMAN_HEIGHT = 32;
+    private BufferedImage talismanImage;
 
     private boolean collected = false;
-    private KeyType type;
+    // NOU: Am eliminat canCollect, isKeyJustPressed face asta deja
 
     /*!
-     * \fn public Key(RefLinks refLink, float x, float y, BufferedImage image, KeyType type)
-     * \brief Constructorul de initializare al clasei Key cu specificarea tipului.
+     * \fn public Talisman(RefLinks refLink, float x, float y, BufferedImage image)
+     * \brief Constructorul de initializare al clasei Talisman.
      * \param refLink Referinta catre obiectul RefLinks.
      * \param x Coordonata X initiala.
      * \param y Coordonata Y initiala.
-     * \param image Imaginea cheii.
-     * \param type Tipul cheii (NEXT_LEVEL_KEY, DOOR_KEY).
+     * \param image Imaginea talismanului.
      */
-    public Key(RefLinks refLink, float x, float y, BufferedImage image, KeyType type) {
-        super(refLink, x, y, DEFAULT_KEY_WIDTH, DEFAULT_KEY_HEIGHT);
+    public Talisman(RefLinks refLink, float x, float y, BufferedImage image) {
+        super(refLink, x, y, DEFAULT_TALISMAN_WIDTH, DEFAULT_TALISMAN_HEIGHT);
 
         SetPosition(x, y);
 
-        this.keyImage = image;
-        this.type = type;
+        this.talismanImage = image;
     }
 
     /*!
      * \fn public void Update()
-     * \brief Actualizeaza starea cheii (verifica interacțiunea cu jucatorul).
+     * \brief Actualizeaza starea talismanului (verifica interacțiunea cu jucatorul).
      */
     @Override
     public void Update() {
@@ -60,7 +52,7 @@ public class Key extends Entity {
 
     /*!
      * \fn private void checkPlayerInteraction()
-     * \brief Verifica interacțiunea jucatorului cu cheia (coliziune + apasarea tastei E).
+     * \brief Verifica interacțiunea jucatorului cu talismanul (coliziune + apasarea tastei E).
      */
     private void checkPlayerInteraction() {
         Player player = refLink.GetPlayer();
@@ -69,23 +61,15 @@ public class Key extends Entity {
         if (this.bounds.intersects(player.GetBounds())) {
             // NOU: Am revenit la isKeyJustPressed(KeyEvent.VK_E)
             if (refLink.GetKeyManager().isKeyJustPressed(KeyEvent.VK_E)) {
-                System.out.println("DEBUG Key: Cheia de tip " + type + " a fost colectata!");
+                System.out.println("DEBUG Talisman: Talismanul a fost colectat!");
                 collected = true;
 
                 State currentState = State.GetState();
                 if (currentState instanceof GameState) {
                     GameState gameState = (GameState) currentState;
-
-                    switch (type) {
-                        case NEXT_LEVEL_KEY:
-                            gameState.keyCollected();
-                            break;
-                        case DOOR_KEY:
-                            gameState.doorKeyCollected();
-                            break;
-                    }
+                    gameState.talismanCollected();
                 } else {
-                    System.err.println("DEBUG Key: Colectare cheie in afara GameState-ului!");
+                    System.err.println("DEBUG Talisman: Colectare talisman in afara GameState-ului!");
                 }
             }
         }
@@ -93,7 +77,7 @@ public class Key extends Entity {
 
     /*!
      * \fn public void Draw(Graphics g)
-     * \brief Deseneaza cheia pe ecran.
+     * \brief Deseneaza talismanul pe ecran.
      * \param g Contextul grafic.
      */
     @Override
@@ -106,8 +90,8 @@ public class Key extends Entity {
         int scaledWidth = (int)(width * refLink.GetGameCamera().getZoomLevel());
         int scaledHeight = (int)(height * refLink.GetGameCamera().getZoomLevel());
 
-        if (keyImage != null) {
-            g.drawImage(keyImage, drawX, drawY, scaledWidth, scaledHeight, null);
+        if (talismanImage != null) {
+            g.drawImage(talismanImage, drawX, drawY, scaledWidth, scaledHeight, null);
         } else {
             g.setColor(Color.BLUE);
             g.fillRect(drawX, drawY, scaledWidth, scaledHeight);
@@ -116,7 +100,7 @@ public class Key extends Entity {
 
     /*!
      * \fn public boolean isCollected()
-     * \brief Returneaza starea colectarii cheii.
+     * \brief Returneaza starea colectarii talismanului.
      */
     public boolean isCollected() {
         return collected;
@@ -124,17 +108,9 @@ public class Key extends Entity {
 
     /*!
      * \fn public void setCollected(boolean collected)
-     * \brief Seteaza starea colectarii cheii (util la incarcare joc).
+     * \brief Seteaza starea colectarii talismanului (util la incarcare joc).
      */
     public void setCollected(boolean collected) {
         this.collected = collected;
-    }
-
-    /*!
-     * \fn public KeyType getType()
-     * \brief Returneaza tipul cheii.
-     */
-    public KeyType getType() {
-        return type;
     }
 }

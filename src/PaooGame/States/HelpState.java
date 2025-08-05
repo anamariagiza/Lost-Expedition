@@ -38,7 +38,7 @@ public class HelpState extends State {
     public void Update() {
         if(refLink.GetKeyManager().escape && !escapePressed) {
             escapePressed = true;
-            refLink.SetState(new PauseState(refLink));
+            refLink.SetState(refLink.GetPreviousState());
         } else if(!refLink.GetKeyManager().escape) {
             escapePressed = false;
         }
@@ -74,7 +74,8 @@ public class HelpState extends State {
         int rectX = (refLink.GetWidth() - rectWidth) / 2;
 
         g.setFont(textFont);
-        FontMetrics textFm = g.getFontMetrics();
+        g.setColor(textColor);
+        int startY = 150;
 
         String[] helpLines = {
                 "CONTROALE:",
@@ -100,21 +101,7 @@ public class HelpState extends State {
                 "     - Completeaza expeditia!"
         };
 
-        int totalTextHeight = 0;
-        for (String line : helpLines) {
-            totalTextHeight += textFm.getHeight() + 5;
-        }
-        int rectHeight = totalTextHeight + 2 * rectPadding;
-        int rectY = 150 - textFm.getAscent() - rectPadding;
-
-        g.setColor(new Color(0, 0, 0, 180));
-        g.fillRect(rectX, rectY, rectWidth, rectHeight);
-
-
-        g.setFont(textFont);
-        g.setColor(textColor);
-        int startY = 150;
-
+        FontMetrics textFm = g.getFontMetrics();
         for (String line : helpLines) {
             int lineWidth = textFm.stringWidth(line);
             g.drawString(line, rectX + (rectWidth - lineWidth) / 2, startY);

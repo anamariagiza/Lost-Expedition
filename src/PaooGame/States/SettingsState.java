@@ -18,7 +18,9 @@ public class SettingsState extends State
     private final Color textColor = new Color(255, 255, 255);
     private final Color titleColor = new Color(255, 215, 0);
     private final Color selectedColor = new Color(160, 82, 45);
-    private final Color buttonColor = new Color(255, 255, 255);
+    private final Color unselectedButtonColor = new Color(200, 200, 200, 100);
+    private final Color selectedTextColor = Color.WHITE;
+    private final Color unselectedTextColor = Color.BLACK;
     private final Font titleFont = new Font("Papyrus", Font.BOLD, 24);
     private final Font optionFont = new Font("SansSerif", Font.BOLD, 16);
     private final Font instructionFont = new Font("SansSerif", Font.PLAIN, 12);
@@ -135,11 +137,11 @@ public class SettingsState extends State
             enterPressed = false;
         }
 
-        // Intoarcere la meniu cu ESC
+        // Intoarcere la starea anterioara cu ESC
         if(refLink.GetKeyManager().escape && !escapePressed)
         {
             escapePressed = true;
-            refLink.SetState(new MenuState(refLink));
+            refLink.SetState(refLink.GetPreviousState());
         }
         else if(!refLink.GetKeyManager().escape)
         {
@@ -187,7 +189,7 @@ public class SettingsState extends State
                 saveSettings();
                 break;
             case 4: // INAPOI LA MENIU
-                refLink.SetState(refLink.GetGame().getPreviousState()); // NOU: Returneaza la starea anterioara (MenuState sau PauseState)
+                refLink.SetState(refLink.GetPreviousState());
                 break;
         }
     }
@@ -274,26 +276,25 @@ public class SettingsState extends State
             int x = (refLink.GetWidth() - buttonWidth) / 2;
             int y = startY + i * gap;
 
-            if(i == selectedOption)
-            {
-                g.setColor(selectedColor);
-            }
-            else
-            {
-                g.setColor(buttonColor);
-            }
+            Color currentButtonColor = (i == selectedOption) ? selectedColor : unselectedButtonColor;
+            Color currentTextColor = (i == selectedOption) ? selectedTextColor : unselectedTextColor;
+            Color outlineColor = (i == selectedOption) ? Color.WHITE : Color.GRAY;
+
+            g.setColor(currentButtonColor);
             g.fillRect(x, y - buttonHeight / 2, buttonWidth, buttonHeight);
-            g.setColor(i == selectedOption ? Color.WHITE : textColor);
+
+            g.setColor(currentTextColor);
             int textWidth = optionFm.stringWidth(settingOptions[i]);
             int textX = x + (buttonWidth - textWidth) / 2;
             int textY = y + optionFm.getAscent() / 2;
             g.drawString(settingOptions[i], textX, textY);
-            g.setColor(textColor);
+
+            g.setColor(outlineColor);
             g.drawRect(x, y - buttonHeight / 2, buttonWidth, buttonHeight);
 
             if(i < 3)
             {
-                g.setColor(textColor);
+                g.setColor(currentTextColor);
                 g.drawString("<", x - 30, textY);
                 g.drawString(">", x + buttonWidth + 10, textY);
             }

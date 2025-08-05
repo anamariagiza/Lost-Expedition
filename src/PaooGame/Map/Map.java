@@ -47,7 +47,6 @@ public class Map {
         }
 
         loadMap(path);
-        // NOU: Initializam FogOfWar dupa ce harta este incarcata si stim dimensiunile
         fogOfWar = new FogOfWar(refLink, width, height);
     }
 
@@ -190,14 +189,18 @@ public class Map {
             return Tile.GetDefaultTile();
         }
 
-        int[][] baseLayerGids = tilesGidsLayers.get(0);
-
-        if (x < 0 || y < 0 || x >= width || y >= height) {
-            return Tile.GetTile(Tile.GRASS_TILE_GID_SOLID);
+        for (int[][] currentLayerGids : tilesGidsLayers) {
+            if (x < 0 || y < 0 || x >= width || y >= height) {
+                return Tile.GetTile(Tile.GRASS_TILE_GID_SOLID);
+            }
+            int gid = currentLayerGids[x][y];
+            Tile tile = Tile.GetTile(gid);
+            if (tile != null && tile.IsSolid()) {
+                return tile;
+            }
         }
 
-        int gid = baseLayerGids[x][y];
-        return Tile.GetTile(gid);
+        return Tile.GetTile(tilesGidsLayers.get(0)[x][y]);
     }
 
     public int getWidth() {

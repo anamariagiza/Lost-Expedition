@@ -88,7 +88,7 @@ public class PauseState extends State {
         // Iesire din pauza cu ESC
         if (refLink.GetKeyManager().escape && !escapePressed) {
             escapePressed = true;
-            refLink.SetState(refLink.GetGame().getPreviousState());
+            refLink.SetState(refLink.GetPreviousState());
         } else if (!refLink.GetKeyManager().escape) {
             escapePressed = false;
         }
@@ -98,15 +98,15 @@ public class PauseState extends State {
         switch (selectedOption) {
             case 0: // RESUME
                 System.out.println("Reluare joc din meniul de pauza...");
-                refLink.SetState(refLink.GetGame().getPreviousState());
+                refLink.SetState(refLink.GetPreviousState());
                 break;
             case 1: // SETTINGS
                 System.out.println("Deschidere Settings din meniul de pauza...");
-                refLink.SetState(new SettingsState(refLink));
+                refLink.SetStateWithPrevious(new SettingsState(refLink));
                 break;
             case 2: // HELP
                 System.out.println("Deschidere Help din meniul de pauza...");
-                refLink.SetState(new HelpState(refLink));
+                refLink.SetStateWithPrevious(new HelpState(refLink));
                 break;
             case 3: // RETURN TO MAIN MENU
                 System.out.println("Revenire la meniul principal din meniul de pauza...");

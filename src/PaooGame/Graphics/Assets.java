@@ -24,6 +24,10 @@ public class Assets
     public static final int PLAYER_FRAME_WIDTH = 64;
     public static final int PLAYER_FRAME_HEIGHT = 64;
 
+    // NOU: Dimensiunile cadrelor pentru NPC (Paznic)
+    public static final int NPC_FRAME_WIDTH = 61;
+    public static final int NPC_FRAME_HEIGHT = 62;
+
     // Dimensiunile cadrelor pentru animale
     public static final int MONKEY_FRAME_WIDTH = 36;
     public static final int MONKEY_FRAME_HEIGHT = 52;
@@ -77,12 +81,17 @@ public class Assets
     public static BufferedImage[] jaguarRunAnim;
     public static BufferedImage[] batAnim;
 
+    // NOU: Animație pentru NPC
+    public static BufferedImage[] npcIdleAnim;
+
     // Imagini pentru capcane
     public static BufferedImage spikeTrapImage;
     public static BufferedImage[] smallTrapAnim;
 
     // Imaginea cheii
     public static BufferedImage keyImage;
+    // Imaginea talismanului
+    public static BufferedImage talismanImage;
 
 
     /*!
@@ -151,6 +160,10 @@ public class Assets
         BufferedImage spikesSheet = ImageLoader.LoadImage("/textures/traps/spikes.png");
         BufferedImage trapSheet = ImageLoader.LoadImage("/textures/traps/trap.png");
 
+        // NOU: Incarca spritesheet-ul pentru NPC
+        BufferedImage npcIdleSheet = ImageLoader.LoadImage("/textures/old_man.png");
+        BufferedImage talismanLoadedImage = ImageLoader.LoadImage("/textures/talisman.png");
+
         // NOU: Incarca imaginea cheii
         keyImage = ImageLoader.LoadImage("/textures/objects/key.png");
         if (keyImage == null) {
@@ -160,6 +173,20 @@ public class Assets
             gKey.setColor(Color.YELLOW);
             gKey.fillRect(0, 0, Tile.TILE_WIDTH, Tile.TILE_HEIGHT);
             gKey.dispose();
+        }
+
+        // NOU: Incarca imaginea talismanului
+        if (talismanLoadedImage != null) {
+            talismanImage = talismanLoadedImage;
+        } else {
+            System.err.println("Eroare: Nu s-a putut incarca talisman.png! Se va folosi placeholder.");
+            talismanImage = new BufferedImage(Tile.TILE_WIDTH, Tile.TILE_HEIGHT, BufferedImage.TYPE_INT_ARGB);
+            Graphics gTal = talismanImage.getGraphics();
+            gTal.setColor(Color.GREEN);
+            gTal.fillRect(0, 0, Tile.TILE_WIDTH, Tile.TILE_HEIGHT);
+            gTal.setColor(Color.YELLOW);
+            gTal.fillOval(4, 4, Tile.TILE_WIDTH - 8, Tile.TILE_HEIGHT - 8);
+            gTal.dispose();
         }
 
 
@@ -251,6 +278,13 @@ public class Assets
         System.out.println("DEBUG ASSETS: Incerc decupare slashSheet...");
         playerSlash = cropFramesFromSheet(slashSheet, 4, 6);
         if (playerSlash == null) System.err.println("DEBUG ASSETS: playerSlash a esuat la decupare.");
+
+        // NOU: Decupare cadre pentru NPC
+        if (npcIdleSheet != null) {
+            // Spritesheet-ul are 6 cadre pe 1 rand
+            npcIdleAnim = cropFramesFromArbitrarySheet(npcIdleSheet, NPC_FRAME_WIDTH, NPC_FRAME_HEIGHT, 1, 6, 0, 0);
+            if (npcIdleAnim == null) System.err.println("DEBUG ASSETS: Decupare npcIdleAnim a esuat.");
+        } else { System.err.println("DEBUG ASSETS: Nu s-a putut incarca old_man.png."); }
 
         System.out.println("DEBUG ASSETS: Toate incercarile de decupare a playerului au fost executate.");
 

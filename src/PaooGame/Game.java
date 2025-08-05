@@ -30,7 +30,6 @@ public class Game implements Runnable
     private Graphics        g;
 
     private State currentState;
-    private State previousState = null;
 
     private KeyManager keyManager;
     private MouseManager mouseManager;
@@ -156,9 +155,6 @@ public class Game implements Runnable
             wnd.setFullScreen(fullScreenMode);
         }
 
-        // LINIA CRITICA: SCOS this.previousState = State.GetState(); de aici.
-        // `previousState` este setat doar de `setPreviousState()` apelat din `GameState`!
-
         currentState = State.GetState();
         if (currentState != null) {
             currentState.Update();
@@ -252,23 +248,5 @@ public class Game implements Runnable
      */
     public RefLinks GetRefLinks() {
         return refLink;
-    }
-
-    /*!
-     * \fn public State getPreviousState()
-     * \brief Returneaza referinta catre starea anterioara a jocului.
-     */
-    public State getPreviousState() {
-        System.out.println("DEBUG: getPreviousState() returneaza: " + (previousState != null ? previousState.getClass().getSimpleName() : "null"));
-        return previousState;
-    }
-
-    /*!
-     * \fn public void setPreviousState(State previousState)
-     * \brief Seteaza referinta catre starea anterioara a jocului.
-     * \param previousState Starea anterioara a jocului.
-     */
-    public void setPreviousState(State previousState) {
-        this.previousState = previousState;
     }
 }
