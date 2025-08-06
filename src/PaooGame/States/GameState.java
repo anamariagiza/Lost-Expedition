@@ -48,6 +48,10 @@ public class GameState extends State {
 
     private ArrayList<Entity> entities;
 
+    // Adaug o referinta la NPC si CaveEntrance pentru a usura verificarea
+    private NPC caveGuardianNPC;
+    private CaveEntrance caveEntrance;
+
     private String collectionMessage = null;
     private long collectionMessageTime = 0;
     private final long MESSAGE_DURATION_MS = 2000;
@@ -204,11 +208,13 @@ public class GameState extends State {
                 entities.add(new Trap(refLink, 67 * Tile.TILE_WIDTH, 38 * Tile.TILE_HEIGHT, Assets.spikeTrapImage));
                 entities.add(new Trap(refLink, 66 * Tile.TILE_WIDTH, 45 * Tile.TILE_HEIGHT, Assets.spikeTrapImage));
 
-                entities.add(new NPC(refLink, 85 * Tile.TILE_WIDTH, 90 * Tile.TILE_HEIGHT));
+                caveGuardianNPC = new NPC(refLink, 85 * Tile.TILE_WIDTH, 90 * Tile.TILE_HEIGHT);
+                entities.add(caveGuardianNPC);
                 entities.add(new Talisman(refLink, 45 * Tile.TILE_WIDTH, 52 * Tile.TILE_HEIGHT, Assets.talismanImage));
 
                 // Dimensiunile pentru intrarea in pestera sunt aproximative, ajusta-le
-                entities.add(new CaveEntrance(refLink, 85 * Tile.TILE_WIDTH, 92 * Tile.TILE_HEIGHT, Tile.TILE_WIDTH * 3, Tile.TILE_HEIGHT * 3));
+                caveEntrance = new CaveEntrance(refLink, 85 * Tile.TILE_WIDTH, 92 * Tile.TILE_HEIGHT, Tile.TILE_WIDTH * 3, Tile.TILE_HEIGHT * 3);
+                entities.add(caveEntrance);
                 if (!hasDoorKey) {
                     entities.add(new Key(refLink, 12 * Tile.TILE_WIDTH, 85 * Tile.TILE_HEIGHT, Assets.keyImage, Key.KeyType.DOOR_KEY));
                 }
@@ -284,6 +290,31 @@ public class GameState extends State {
 
         boolean playerInContactWithAnimal = false;
         boolean playerInContactWithTrap = false;
+
+        // ------ MODIFICARE LOGICA PENTRU TRECEREA LA NIVELUL 2 ------
+        // 1. Verificam daca player-ul e langa NPC
+        if (caveGuardianNPC != null && player.GetBounds().intersects(caveGuardianNPC.GetBounds())) {
+            // 2. Verificam daca player-ul are talismanul si apasa tasta de actiune
+            if (hasTalisman && refLink.GetKeyManager().isKeyJustPressed(KeyEvent.VK_E)) {
+                // 3. Deblocam intrarea in pestera si ii dam talismanul NPC-ului
+                setCaveEntranceUnlocked(true);
+                removeTalismanFromInventory();
+
+                // Afisam un mesaj pentru confirmare
+                collectionMessage = "Talismanul a fost predat! Intrarea in pestera este deblocata.";
+                collectionMessageTime = System.currentTimeMillis();
+            } else if (!hasTalisman && refLink.GetKeyManager().isKeyJustPressed(KeyEvent.VK_E)) {
+                collectionMessage = "Nu am talismanul! Trebuie sa-l gasesti pentru a intra.";
+                collectionMessageTime = System.currentTimeMillis();
+            }
+        }
+
+        // 4. Verificam daca player-ul se afla la intrarea in pestera si este deblocata
+        if (caveEntrance != null && player.GetBounds().intersects(caveEntrance.GetBounds()) && isCaveEntranceUnlocked()) {
+            passToLevel2();
+            return; // Imediat ce trecem la noul nivel, iesim din update.
+        }
+        // -----------------------------------------------------------
 
         Iterator<Entity> it = entities.iterator();
         while (it.hasNext()) {
@@ -480,11 +511,17 @@ public class GameState extends State {
         if (!hasTalisman) {
             g.setColor(Color.YELLOW);
             g.drawString("1. Colecteaza talismanul pentru paznicul pesterii.", 10, startY + lineHeight * 3);
+        } else {
+            g.setColor(Color.GREEN);
+            g.drawString("1. ✔ Colecteaza talismanul pentru paznicul pesterii.", 10, startY + lineHeight * 3);
         }
 
         if (!hasDoorKey) {
             g.setColor(Color.YELLOW);
             g.drawString("2. Aduna cheia pentru a deschide usa Nivelului 2.", 10, startY + lineHeight * 4);
+        } else {
+            g.setColor(Color.GREEN);
+            g.drawString("2. ✔ Aduna cheia pentru a deschide usa Nivelului 2.", 10, startY + lineHeight * 4);
         }
 
         g.setColor(Color.WHITE);
@@ -600,6 +637,16 @@ public class GameState extends State {
         }
     }
 
+    // Metoda noua pentru a trece la nivelul 2
+    public void passToLevel2() {
+        System.out.println("Trecere la Nivelul 2!");
+        this.currentLevelIndex = 1;
+        this.hasTalisman = false; // Reseteaza talismanul pentru ca a fost predat
+        this.caveEntranceUnlocked = false; // Blocam intrarea pentru noul nivel
+        this.loadFromSaveOnInit = false; // Incepem nivelul de la pozitia de start, nu din salvare
+        InitLevelInternal(this.currentLevelIndex, this.loadFromSaveOnInit);
+    }
+
     /*!
      * \fn public void keyCollected()
      * \brief Metoda apelata de clasa Key cand jucatorul colecteaza cheia de nivel.
@@ -623,15 +670,16 @@ public class GameState extends State {
     }
 
     public void removeTalismanFromInventory() {
+        this.hasTalisman = false;
+        collectionMessage = "Talismanul a fost predat paznicului.";
+        collectionMessageTime = System.currentTimeMillis();
+        // Stergem talismanul din lista de entitati
         Iterator<Entity> it = entities.iterator();
         while(it.hasNext()){
             Entity e = it.next();
             if (e instanceof Talisman) {
-                Talisman t = (Talisman) e;
-                if (t.isCollected()) {
-                    it.remove();
-                    break;
-                }
+                it.remove();
+                break;
             }
         }
     }
@@ -642,8 +690,7 @@ public class GameState extends State {
 
     public void setCaveEntranceUnlocked(boolean unlocked) {
         this.caveEntranceUnlocked = unlocked;
-        collectionMessage = "Intrarea in pestera a fost deblocata!";
-        collectionMessageTime = System.currentTimeMillis();
+        // collectionMessage este setat deja in metoda Update
     }
 
     public boolean isCaveEntranceUnlocked() {
