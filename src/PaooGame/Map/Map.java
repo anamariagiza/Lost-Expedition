@@ -1,3 +1,4 @@
+// Sursa: PaooGame/Map/Map.java
 package PaooGame.Map;
 import PaooGame.Graphics.ImageLoader;
 import PaooGame.Tiles.Tile;
@@ -66,44 +67,8 @@ public class Map {
      * \param g Contextul grafic in care sa se realizeze desenarea.
      */
     public void Draw(Graphics g) {
-        if (tilesGidsLayers == null || tilesGidsLayers.isEmpty() || currentMapTilesetImage == null) {
-            g.setColor(Color.BLACK);
-            g.fillRect(0, 0, refLink.GetWidth(), refLink.GetHeight());
-            System.err.println("Eroare: Tileset-ul hartii curente este null sau straturile lipsesc. Nu se poate desena harta.");
-            return;
-        }
-
-        GameCamera camera = refLink.GetGameCamera();
-        float zoom = camera.getZoomLevel();
-        int xStart = (int) Math.max(0, camera.getxOffset() / Tile.TILE_WIDTH);
-        int xEnd = (int) Math.min(width, (camera.getxOffset() + (refLink.GetWidth() / zoom)) / Tile.TILE_WIDTH + 1);
-        int yStart = (int) Math.max(0, camera.getyOffset() / Tile.TILE_HEIGHT);
-        int yEnd = (int) Math.min(height, (camera.getyOffset() + (refLink.GetHeight() / zoom)) / Tile.TILE_HEIGHT + 1);
-
-        for (int[][] currentLayerGids : tilesGidsLayers) {
-            for (int y = yStart; y < yEnd; y++) {
-                for (int x = xStart; x < xEnd; x++) {
-                    int gid = currentLayerGids[x][y];
-                    if (gid == 0) {
-                        continue;
-                    }
-
-                    Tile tile = Tile.GetTile(gid);
-                    int drawX = (int)((x * Tile.TILE_WIDTH - camera.getxOffset()) * zoom);
-                    int drawY = (int)((y * Tile.TILE_HEIGHT - camera.getyOffset()) * zoom);
-                    int scaledTileWidth = (int)(Tile.TILE_WIDTH * zoom);
-                    int scaledTileHeight = (int)(Tile.TILE_HEIGHT * zoom);
-
-                    if (tile != null) {
-                        tile.Draw(g, drawX, drawY, scaledTileWidth, scaledTileHeight, currentMapTilesetImage);
-                    } else {
-                        g.setColor(Color.RED);
-                        g.fillRect(drawX, drawY, scaledTileWidth, scaledTileHeight);
-                        System.err.println("DEBUG: Dala cu GID " + gid + " nu a putut fi incarcata sau este invalida din tileset-ul: " + currentMapTilesetImage.toString());
-                    }
-                }
-            }
-        }
+        // Logica de desenare a fost mutată în GameState.java pentru a aplica fog of war-ul corect.
+        // Această metodă poate fi lăsată goală sau eliminată complet.
     }
 
     /*!
@@ -213,5 +178,15 @@ public class Map {
 
     public FogOfWar getFogOfWar() {
         return fogOfWar;
+    }
+
+    // Metoda noua pentru a accesa layerele din afara clasei
+    public List<int[][]> getTilesGidsLayers() {
+        return tilesGidsLayers;
+    }
+
+    // Metoda noua pentru a accesa imaginea tileset-ului
+    public BufferedImage getCurrentMapTilesetImage() {
+        return currentMapTilesetImage;
     }
 }

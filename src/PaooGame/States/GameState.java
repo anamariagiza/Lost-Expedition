@@ -42,7 +42,6 @@ public class GameState extends State {
 
     private boolean hasTalisman = false;
     private boolean caveEntranceUnlocked = false;
-
     private float currentZoomTarget = 1.0f;
     private boolean loadFromSaveOnInit = false;
     private String currentObjective = "Aduna obiectele necesare si ajungi la intrarea pesterii.";
@@ -58,7 +57,6 @@ public class GameState extends State {
 
     private long lastAnimalDamageTime = 0;
     private final long ANIMAL_DAMAGE_COOLDOWN_MS = 4000;
-
     private long lastTrapDamageTime = 0;
     private final long TRAP_DAMAGE_COOLDOWN_MS = 2000;
 
@@ -148,8 +146,8 @@ public class GameState extends State {
             this.puzzlesSolved = 0;
 
             if (currentLevelIndex == 0) { // Nivel 1 (Jungla)
-                playerStartX = 86 * Tile.TILE_WIDTH; //pozitie initialaȘ 100
-                playerStartY = 86 * Tile.TILE_HEIGHT; //pozitie initiala 100
+                playerStartX = 86 * Tile.TILE_WIDTH;
+                playerStartY = 86 * Tile.TILE_HEIGHT;
             } else if (currentLevelIndex == 1) { // Nivelul 2 (Pestera)
                 playerStartX = 100 * Tile.TILE_WIDTH;
                 playerStartY = 100 * Tile.TILE_HEIGHT;
@@ -171,7 +169,6 @@ public class GameState extends State {
         if (currentMap != null) {
             currentMap.LoadMapFromFile(levelPaths[this.currentLevelIndex]);
             System.out.println("DEBUG GameState: Nivelul " + (this.currentLevelIndex + 1) + " incarcat: " + levelPaths[this.currentLevelIndex]);
-
             // Initialize fog of war for this level
             fogOfWar = new FogOfWar(refLink, currentMap.getWidth(), currentMap.getHeight());
         } else {
@@ -203,7 +200,6 @@ public class GameState extends State {
                 entities.add(new Animal(refLink, 10 * Tile.TILE_WIDTH, 36 * Tile.TILE_HEIGHT, 8 * Tile.TILE_WIDTH, 11 * Tile.TILE_WIDTH, Animal.AnimalType.MONKEY));
                 entities.add(new Animal(refLink, 89 * Tile.TILE_WIDTH, 29 * Tile.TILE_HEIGHT, 88 * Tile.TILE_WIDTH, 91 * Tile.TILE_WIDTH, Animal.AnimalType.MONKEY));
                 entities.add(new Animal(refLink, 84 * Tile.TILE_WIDTH, 57 * Tile.TILE_HEIGHT, 82 * Tile.TILE_WIDTH, 85 * Tile.TILE_WIDTH, Animal.AnimalType.BAT));
-
                 entities.add(new Trap(refLink, 66 * Tile.TILE_WIDTH, 31 * Tile.TILE_HEIGHT, Assets.spikeTrapImage));
                 entities.add(new Trap(refLink, 67 * Tile.TILE_WIDTH, 38 * Tile.TILE_HEIGHT, Assets.spikeTrapImage));
                 entities.add(new Trap(refLink, 66 * Tile.TILE_WIDTH, 45 * Tile.TILE_HEIGHT, Assets.spikeTrapImage));
@@ -213,14 +209,12 @@ public class GameState extends State {
 
                 // Dimensiunile pentru intrarea in pestera sunt aproximative, ajusta-le
                 entities.add(new CaveEntrance(refLink, 85 * Tile.TILE_WIDTH, 92 * Tile.TILE_HEIGHT, Tile.TILE_WIDTH * 3, Tile.TILE_HEIGHT * 3));
-
                 if (!hasDoorKey) {
                     entities.add(new Key(refLink, 12 * Tile.TILE_WIDTH, 85 * Tile.TILE_HEIGHT, Assets.keyImage, Key.KeyType.DOOR_KEY));
                 }
                 break;
             case 1: // Nivelul 2: Pestera
                 entities.add(new Animal(refLink, 200, 200, 100, 400, Animal.AnimalType.BAT));
-
                 entities.add(new Trap(refLink, 50 * Tile.TILE_WIDTH, 50 * Tile.TILE_HEIGHT, Assets.spikeTrapImage));
                 entities.add(new Trap(refLink, 25 * Tile.TILE_WIDTH, 25 * Tile.TILE_HEIGHT, Assets.spikeTrapImage));
                 entities.add(new Trap(refLink, 35 * Tile.TILE_WIDTH, 30 * Tile.TILE_HEIGHT, Assets.spikeTrapImage));
@@ -354,55 +348,71 @@ public class GameState extends State {
             collectionMessage = null;
         }
 
+        // 1. Desenează toată harta, fără nicio logică de fog of war.
         if (currentMap != null) {
-            drawMapWithSmoothFogOfWar(g);
+            drawFullMap(g);
         }
 
+        // 2. Desenează entitățile (inamici, chei, etc.)
         for (Entity e : entities) {
-            if (isEntityVisible(e)) {
-                e.Draw(g);
-            }
+            e.Draw(g);
         }
 
+        // 3. Desenează jucătorul deasupra tuturor.
         if (player != null) {
             player.Draw(g);
-        } else {
-            g.setColor(Color.RED);
-            g.drawString("PLAYER NULL!", refLink.GetWidth() / 2, refLink.GetHeight() / 2);
         }
 
+        // 4. Aplică un overlay radial pentru a crea efectul de fog of war.
+        drawRadialFogOverlay(g);
+
+        // 5. Desenează elementele de UI (bara de viață, mini-map, mesaje, etc.)
         drawUI(g);
     }
 
-    /*!
-     * \fn private void drawMapWithSmoothFogOfWar(Graphics g)
-     * \brief Deseneaza harta cu un efect de "fog of war" fluid, sub forma unui cerc cu gradient.
-     */
-    private void drawMapWithSmoothFogOfWar(Graphics g) {
-        if (currentMap == null || player == null) {
+    // Metoda noua care desenează întreaga hartă fără fog of war
+    private void drawFullMap(Graphics g) {
+        if (currentMap == null) {
+            // Fallback: fundal negru dacă harta nu există
+            g.setColor(Color.BLACK);
+            g.fillRect(0, 0, refLink.GetWidth(), refLink.GetHeight());
             return;
         }
 
         GameCamera camera = refLink.GetGameCamera();
-        Graphics2D g2d = (Graphics2D) g.create();
+        float zoom = camera.getZoomLevel();
+        int xStart = (int) Math.max(0, camera.getxOffset() / Tile.TILE_WIDTH);
+        int xEnd = (int) Math.min(currentMap.getWidth(), (camera.getxOffset() + (refLink.GetWidth() / zoom)) / Tile.TILE_WIDTH + 1);
+        int yStart = (int) Math.max(0, camera.getyOffset() / Tile.TILE_HEIGHT);
+        int yEnd = (int) Math.min(currentMap.getHeight(), (camera.getyOffset() + (refLink.GetHeight() / zoom)) / Tile.TILE_HEIGHT + 1);
 
-        int startTileX = Math.max(0, (int)(camera.getXOffset() / Tile.TILE_WIDTH) - 1);
-        int endTileX = Math.min(currentMap.getWidth(), (int)((camera.getXOffset() + refLink.GetWidth() / camera.getZoomLevel()) / Tile.TILE_WIDTH) + 2);
-        int startTileY = Math.max(0, (int)(camera.getYOffset() / Tile.TILE_HEIGHT) - 1);
-        int endTileY = Math.min(currentMap.getHeight(), (int)((camera.getYOffset() + refLink.GetHeight() / camera.getZoomLevel()) / Tile.TILE_HEIGHT) + 2);
+        // Iterăm prin fiecare strat al hărții pentru a le desena pe toate.
+        for (int[][] currentLayerGids : currentMap.getTilesGidsLayers()) {
+            for (int y = yStart; y < yEnd; y++) {
+                for (int x = xStart; x < xEnd; x++) {
+                    int gid = currentLayerGids[x][y];
+                    if (gid == 0) continue;
 
-        for (int y = startTileY; y < endTileY; y++) {
-            for (int x = startTileX; x < endTileX; x++) {
-                Tile tile = currentMap.GetTile(x, y);
-                if (tile != null) {
-                    int screenX = (int)((x * Tile.TILE_WIDTH - camera.getXOffset()) * camera.getZoomLevel());
-                    int screenY = (int)((y * Tile.TILE_HEIGHT - camera.getYOffset()) * camera.getZoomLevel());
-                    int tileWidth = (int)(Tile.TILE_WIDTH * camera.getZoomLevel());
-                    int tileHeight = (int)(Tile.TILE_HEIGHT * camera.getZoomLevel());
-                    tile.Draw(g2d, screenX, screenY, tileWidth, tileHeight);
+                    Tile tile = Tile.GetTile(gid);
+                    if (tile != null) {
+                        int drawX = (int)((x * Tile.TILE_WIDTH - camera.getxOffset()) * zoom);
+                        int drawY = (int)((y * Tile.TILE_HEIGHT - camera.getyOffset()) * zoom);
+                        int scaledTileWidth = (int)(Tile.TILE_WIDTH * zoom);
+                        int scaledTileHeight = (int)(Tile.TILE_HEIGHT * zoom);
+
+                        tile.Draw(g, drawX, drawY, scaledTileWidth, scaledTileHeight, currentMap.getCurrentMapTilesetImage());
+                    }
                 }
             }
         }
+    }
+
+    // Metoda noua care aplica un overlay radial pentru fog of war
+    private void drawRadialFogOverlay(Graphics g) {
+        if (player == null) return;
+
+        GameCamera camera = refLink.GetGameCamera();
+        Graphics2D g2d = (Graphics2D) g.create();
 
         int playerScreenX = (int) ((player.GetX() - camera.getxOffset()) * camera.getZoomLevel() + player.GetWidth() / 2 * camera.getZoomLevel());
         int playerScreenY = (int) ((player.GetY() - camera.getyOffset()) * camera.getZoomLevel() + player.GetHeight() / 2 * camera.getZoomLevel());
@@ -410,7 +420,7 @@ public class GameState extends State {
         float radius = (float) (fogOfWar.getVisionRadius() * Tile.TILE_WIDTH * camera.getZoomLevel());
 
         Color transparentBlack = new Color(0, 0, 0, 0);
-        Color opaqueBlack = new Color(0, 0, 0, 200);
+        Color opaqueBlack = new Color(0, 0, 0, 220); // Negru semi-opac pentru efect
 
         float[] dist = {0.0f, 0.7f, 1.0f};
         Color[] colors = {transparentBlack, transparentBlack, opaqueBlack};
@@ -425,9 +435,9 @@ public class GameState extends State {
 
         g2d.setPaint(p);
         g2d.fillRect(0, 0, refLink.GetWidth(), refLink.GetHeight());
-
         g2d.dispose();
     }
+
 
     /*!
      * \fn private boolean isEntityVisible(Entity entity)
@@ -435,12 +445,10 @@ public class GameState extends State {
      */
     private boolean isEntityVisible(Entity entity) {
         if (fogOfWar == null || player == null) return true;
-
         float playerCenterX = player.GetX() + player.GetWidth() / 2;
         float playerCenterY = player.GetY() + player.GetHeight() / 2;
         float entityCenterX = entity.GetX() + entity.GetWidth() / 2;
         float entityCenterY = entity.GetY() + entity.GetHeight() / 2;
-
         double distance = Math.sqrt(Math.pow(playerCenterX - entityCenterX, 2) + Math.pow(playerCenterY - entityCenterY, 2));
 
         return distance <= fogOfWar.getVisionRadius() * Tile.TILE_WIDTH;
@@ -469,7 +477,6 @@ public class GameState extends State {
         g.drawString("Nivel curent: " + (currentLevelIndex + 1), 10, startY);
 
         g.drawString("Tasks:", 10, startY + lineHeight * 2);
-
         if (!hasTalisman) {
             g.setColor(Color.YELLOW);
             g.drawString("1. Colecteaza talismanul pentru paznicul pesterii.", 10, startY + lineHeight * 3);
@@ -483,7 +490,6 @@ public class GameState extends State {
         g.setColor(Color.WHITE);
         g.drawString("Apasa 'P' pentru Meniu Pauza.", 10, startY + lineHeight * 6);
         g.drawString("Apasa Z pentru a comuta zoom: " + String.format("%.1f", refLink.GetGameCamera().getZoomLevel()), 10, startY + lineHeight * 7);
-
         if (currentLevelIndex == 1) {
             g.drawString("Puzzle-uri Nivel 2: " + puzzlesSolved + "/" + TOTAL_PUZZLES_LEVEL2, 10, startY + lineHeight * 9);
         }
@@ -542,10 +548,8 @@ public class GameState extends State {
         g.fillRect(miniMapX, miniMapY, miniMapWidth, miniMapHeight);
         g.setColor(Color.WHITE);
         g.drawRect(miniMapX, miniMapY, miniMapWidth, miniMapHeight);
-
         float mapScaleX = (float)miniMapWidth / (currentMap.getWidth() * Tile.TILE_WIDTH);
         float mapScaleY = (float)miniMapHeight / (currentMap.getHeight() * Tile.TILE_HEIGHT);
-
         for (int yTile = 0; yTile < currentMap.getHeight(); yTile++) {
             for (int xTile = 0; xTile < currentMap.getWidth(); xTile++) {
                 Tile tile = currentMap.GetTile(xTile, yTile);
@@ -568,7 +572,6 @@ public class GameState extends State {
             boolean isAnimal = e instanceof Animal;
 
             boolean isTalisman = (e instanceof Talisman) && !((Talisman) e).isCollected();
-
             if (isKey || isAnimal || isTalisman) {
                 int entityMiniMapX = miniMapX + (int)(e.GetX() * mapScaleX);
                 int entityMiniMapY = miniMapY + (int)(e.GetY() * mapScaleY);
@@ -659,14 +662,6 @@ public class GameState extends State {
     }
 
     /*!
-     * \fn public int getPuzzlesSolved()
-     * \brief Returneaza numarul de puzzle-uri rezolvate.
-     */
-    public int getPuzzlesSolved() {
-        return puzzlesSolved;
-    }
-
-    /*!
      * \fn public void puzzleSolved()
      * \brief Marcheaza rezolvarea unui puzzle.
      */
@@ -674,6 +669,16 @@ public class GameState extends State {
         this.puzzlesSolved++;
         System.out.println("DEBUG GameState: Un puzzle a fost rezolvat. Total: " + this.puzzlesSolved);
     }
+
+
+    /*!
+     * \fn public int getPuzzlesSolved()
+     * \brief Marcheaza rezolvarea unui puzzle.
+     */
+    public int getPuzzlesSolved() {
+        return puzzlesSolved;
+    }
+
     /*!
      * \fn public int getTotalPuzzlesLevel2()
      * \brief Returneaza numarul total de puzzle-uri pentru nivelul 2.
