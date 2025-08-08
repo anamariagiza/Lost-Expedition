@@ -1,4 +1,3 @@
-// Sursa: PaooGame/Map/Map.java
 package PaooGame.Map;
 import PaooGame.Graphics.ImageLoader;
 import PaooGame.Tiles.Tile;
@@ -69,6 +68,22 @@ public class Map {
     public void Draw(Graphics g) {
         // Logica de desenare a fost mutată în GameState.java pentru a aplica fog of war-ul corect.
         // Această metodă poate fi lăsată goală sau eliminată complet.
+    }
+
+    /*!
+     * \fn public void changeTileGid(int x, int y, int newGid, int layerIndex)
+     * \brief Schimba GID-ul unei dale la coordonatele specificate.
+     * \param x Coordonata X (coloana) a dalei.
+     * \param y Coordonata Y (rand) a dalei.
+     * \param newGid Noul GID al dalei.
+     * \param layerIndex Indexul stratului in care se face modificarea.
+     */
+    public void changeTileGid(int x, int y, int newGid, int layerIndex) {
+        if (layerIndex >= 0 && layerIndex < tilesGidsLayers.size()) {
+            if (x >= 0 && x < width && y >= 0 && y < height) {
+                tilesGidsLayers.get(layerIndex)[x][y] = newGid;
+            }
+        }
     }
 
     /*!
@@ -180,12 +195,10 @@ public class Map {
         return fogOfWar;
     }
 
-    // Metoda noua pentru a accesa layerele din afara clasei
     public List<int[][]> getTilesGidsLayers() {
         return tilesGidsLayers;
     }
 
-    // Metoda noua pentru a accesa imaginea tileset-ului
     public BufferedImage getCurrentMapTilesetImage() {
         return currentMapTilesetImage;
     }

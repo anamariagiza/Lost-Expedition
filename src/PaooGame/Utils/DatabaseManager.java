@@ -109,7 +109,6 @@ public class DatabaseManager {
         Statement statement = null;
         try {
             statement = conn.createStatement();
-
             String createSaveTableSQL = "CREATE TABLE IF NOT EXISTS game_save (" +
                     "id INTEGER PRIMARY KEY," +
                     "level_index INTEGER NOT NULL," +
@@ -118,7 +117,7 @@ public class DatabaseManager {
                     "player_health INTEGER NOT NULL," +
                     "has_key BOOLEAN NOT NULL DEFAULT FALSE," +
                     "has_door_key BOOLEAN NOT NULL DEFAULT FALSE," +
-                    "puzzles_solved INTEGER NOT NULL DEFAULT 0" +
+                    "puzzles_solved_str TEXT NOT NULL DEFAULT ''" +
                     ");";
             statement.execute(createSaveTableSQL);
             System.out.println("DEBUG Database: Tabela 'game_save' verificata/creata.");
@@ -150,7 +149,7 @@ public class DatabaseManager {
     }
 
     /*!
-     * \fn public void saveGameData(int levelIndex, float playerX, float playerY, int playerHealth, boolean hasKey, boolean hasDoorKey, int puzzlesSolved)
+     * \fn public void saveGameData(int levelIndex, float playerX, float playerY, int playerHealth, boolean hasKey, boolean hasDoorKey, String puzzlesSolvedString)
      * \brief Salveaza progresul jocului in tabela 'game_save'.
      * Include acum starea ambelor chei si numarul de puzzle-uri rezolvate.
      * \param levelIndex Indexul nivelului curent.
@@ -159,10 +158,10 @@ public class DatabaseManager {
      * \param playerHealth Viata curenta a jucatorului.
      * \param hasKey Starea cheii de nivel.
      * \param hasDoorKey Starea cheii de usa.
-     * \param puzzlesSolved Numarul de puzzle-uri rezolvate.
+     * \param puzzlesSolvedString String cu ID-urile puzzle-urilor rezolvate, separate prin virgula.
      */
-    public void saveGameData(int levelIndex, float playerX, float playerY, int playerHealth, boolean hasKey, boolean hasDoorKey, int puzzlesSolved) {
-        String sql = "INSERT OR REPLACE INTO game_save(id, level_index, player_x, player_y, player_health, has_key, has_door_key, puzzles_solved) VALUES(1, ?, ?, ?, ?, ?, ?, ?);";
+    public void saveGameData(int levelIndex, float playerX, float playerY, int playerHealth, boolean hasKey, boolean hasDoorKey, String puzzlesSolvedString) {
+        String sql = "INSERT OR REPLACE INTO game_save(id, level_index, player_x, player_y, player_health, has_key, has_door_key, puzzles_solved_str) VALUES(1, ?, ?, ?, ?, ?, ?, ?);";
         Connection conn = connect();
         if (conn == null) return;
 
@@ -173,7 +172,7 @@ public class DatabaseManager {
             pstmt.setInt(4, playerHealth);
             pstmt.setBoolean(5, hasKey);
             pstmt.setBoolean(6, hasDoorKey);
-            pstmt.setInt(7, puzzlesSolved);
+            pstmt.setString(7, puzzlesSolvedString);
             pstmt.executeUpdate();
             System.out.println("DEBUG Database: Progresul jocului salvat.");
         } catch (SQLException e) {
@@ -194,16 +193,16 @@ public class DatabaseManager {
         public int playerHealth;
         public boolean hasKey;
         public boolean hasDoorKey;
-        public int puzzlesSolved;
+        public String puzzlesSolvedString;
 
-        public SaveGameData(int levelIndex, float playerX, float playerY, int playerHealth, boolean hasKey, boolean hasDoorKey, int puzzlesSolved) {
+        public SaveGameData(int levelIndex, float playerX, float playerY, int playerHealth, boolean hasKey, boolean hasDoorKey, String puzzlesSolvedString) {
             this.levelIndex = levelIndex;
             this.playerX = playerX;
             this.playerY = playerY;
             this.playerHealth = playerHealth;
             this.hasKey = hasKey;
             this.hasDoorKey = hasDoorKey;
-            this.puzzlesSolved = puzzlesSolved;
+            this.puzzlesSolvedString = puzzlesSolvedString;
         }
     }
 
@@ -214,10 +213,9 @@ public class DatabaseManager {
      * \return Un obiect SaveGameData cu datele incarcate, ou null daca nu exista salvare.
      */
     public SaveGameData loadGameData() {
-        String sql = "SELECT level_index, player_x, player_y, player_health, has_key, has_door_key, puzzles_solved FROM game_save WHERE id = 1;";
+        String sql = "SELECT level_index, player_x, player_y, player_health, has_key, has_door_key, puzzles_solved_str FROM game_save WHERE id = 1;";
         Connection conn = connect();
         if (conn == null) return null;
-
         try (Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
 
@@ -228,9 +226,9 @@ public class DatabaseManager {
                 int playerHealth = rs.getInt("player_health");
                 boolean hasKey = rs.getBoolean("has_key");
                 boolean hasDoorKey = rs.getBoolean("has_door_key");
-                int puzzlesSolved = rs.getInt("puzzles_solved");
+                String puzzlesSolvedString = rs.getString("puzzles_solved_str");
                 System.out.println("DEBUG Database: Progresul jocului incarcat.");
-                return new SaveGameData(levelIndex, playerX, playerY, playerHealth, hasKey, hasDoorKey, puzzlesSolved);
+                return new SaveGameData(levelIndex, playerX, playerY, playerHealth, hasKey, hasDoorKey, puzzlesSolvedString);
             }
         } catch (SQLException e) {
             System.err.println("Eroare SQL la incarcarea progresului jocului: " + e.getMessage());
@@ -292,7 +290,6 @@ public class DatabaseManager {
         String sql = "SELECT sound_enabled, music_enabled, volume FROM game_settings WHERE id = 1;";
         Connection conn = connect();
         if (conn == null) return new SettingsData(true, true, 100);
-
         try (Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
 
@@ -320,7 +317,6 @@ public class DatabaseManager {
         String sql = "SELECT COUNT(id) FROM game_save WHERE id = 1;";
         Connection conn = connect();
         if (conn == null) return false;
-
         try (Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             if (rs.next()) {

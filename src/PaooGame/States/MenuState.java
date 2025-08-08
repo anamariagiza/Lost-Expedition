@@ -140,7 +140,7 @@ public class MenuState extends State
         {
             case 0: // NEW GAME
                 System.out.println("Pornire joc nou...");
-                refLink.SetState(new GameState(refLink, false));
+                refLink.SetState(new GameState(refLink, 1));
                 break;
             case 1: // LOAD GAME
                 if (saveGameExists) {

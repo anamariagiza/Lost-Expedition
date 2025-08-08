@@ -5,6 +5,7 @@ import java.awt.Graphics;
 import java.awt.Color;
 import java.awt.Rectangle;
 import PaooGame.Tiles.Tile;
+import java.util.ArrayList;
 
 /*!
  * \class public class Assets
@@ -17,18 +18,15 @@ public class Assets
     public static BufferedImage level2TilesetImage;
     public static BufferedImage level3TilesetImage;
 
-
     public static BufferedImage gameLogo;
     public static BufferedImage backgroundMenu;
 
     public static final int PLAYER_FRAME_WIDTH = 64;
     public static final int PLAYER_FRAME_HEIGHT = 64;
 
-    // NOU: Dimensiunile cadrelor pentru NPC (Paznic)
     public static final int NPC_FRAME_WIDTH = 61;
     public static final int NPC_FRAME_HEIGHT = 62;
 
-    // Dimensiunile cadrelor pentru animale
     public static final int MONKEY_FRAME_WIDTH = 36;
     public static final int MONKEY_FRAME_HEIGHT = 52;
     public static final int JAGUAR_FRAME_WIDTH = 76;
@@ -36,8 +34,6 @@ public class Assets
     public static final int BAT_FRAME_WIDTH = 19;
     public static final int BAT_FRAME_HEIGHT = 20;
 
-
-    // Tablouri de cadre pentru animațiile jucătorului
     public static BufferedImage[] playerDown;
     public static BufferedImage[] playerUp;
     public static BufferedImage[] playerLeft;
@@ -61,7 +57,6 @@ public class Assets
     public static BufferedImage[] playerJumpLeft;
     public static BufferedImage[] playerJumpRight;
 
-
     public static BufferedImage[] playerClimb;
     public static BufferedImage[] playerHurt;
     public static BufferedImage[] playerShoot;
@@ -74,24 +69,28 @@ public class Assets
     public static BufferedImage[] playerSpellcast;
     public static BufferedImage[] playerSlash;
 
-
-    // Imagini/animatii pentru animale
     public static BufferedImage[] monkeyWalkAnim;
     public static BufferedImage[] jaguarWalkAnim;
     public static BufferedImage[] jaguarRunAnim;
     public static BufferedImage[] batAnim;
 
-    // NOU: Animație pentru NPC
     public static BufferedImage[] npcIdleAnim;
 
-    // Imagini pentru capcane
     public static BufferedImage spikeTrapImage;
     public static BufferedImage[] smallTrapAnim;
 
-    // Imaginea cheii
     public static BufferedImage keyImage;
-    // Imaginea talismanului
     public static BufferedImage talismanImage;
+
+    // --- Asset-uri noi pentru puzzle-uri ---
+    public static BufferedImage puzzle1Sun;
+    public static BufferedImage puzzle1Moon;
+    public static BufferedImage puzzle1Star;
+    public static BufferedImage puzzle1Bolt;
+    public static BufferedImage puzzle2Gems;
+    public static BufferedImage puzzle3Scroll;
+    public static BufferedImage[] puzzle5CardFaces;
+    public static BufferedImage puzzle5CardBack;
 
 
     /*!
@@ -123,7 +122,6 @@ public class Assets
         }
         gameSpriteSheet = new SpriteSheet(jungleTilesetImage);
 
-
         level2TilesetImage = ImageLoader.LoadImage("/textures/tileset_level2.png");
         if (level2TilesetImage == null) {
             System.err.println("Eroare: Nu s-a putut incarca tileset_level2.png! Verificati calea si numele fisierului.");
@@ -134,7 +132,23 @@ public class Assets
             System.err.println("Eroare: Nu s-a putut incarca level_3.png! Verificati calea si numele fisierului.");
         }
 
-        // --- INCARCAREA CADRELOR DE ANIMAȚIE DIN FIȘIERE INDIVIDUALE ---
+        // Incercam sa incarcam assets-urile de puzzle
+        System.out.println("DEBUG ASSETS: Incarc imagini pentru puzzle-uri...");
+        puzzle1Sun = ImageLoader.LoadImage("/textures/puzzles/sun.png");
+        puzzle1Moon = ImageLoader.LoadImage("/textures/puzzles/moon.png");
+        puzzle1Star = ImageLoader.LoadImage("/textures/puzzles/star.png");
+        puzzle1Bolt = ImageLoader.LoadImage("/textures/puzzles/bolt.png");
+
+        puzzle2Gems = ImageLoader.LoadImage("/textures/puzzles/crystals.png");
+
+        puzzle3Scroll = ImageLoader.LoadImage("/textures/puzzles/ancient_scroll.png");
+
+        // Placeholder pentru celelalte puzzle-uri
+        // puzzle4Maths = new BufferedImage[0];
+        // puzzle5CardBack = ImageLoader.LoadImage("/textures/puzzles/card_back.png");
+        // puzzle5CardFaces = cropFramesFromSheet(ImageLoader.LoadImage("/textures/puzzles/card_faces.png"), 1, 8);
+
+
         BufferedImage idleSheet = ImageLoader.LoadImage("/textures/player/idle.png");
         BufferedImage walkSheet = ImageLoader.LoadImage("/textures/player/walk.png");
         BufferedImage runSheet = ImageLoader.LoadImage("/textures/player/run.png");
@@ -151,20 +165,16 @@ public class Assets
         BufferedImage combatIdleSheet = ImageLoader.LoadImage("/textures/player/combat_idle.png");
         BufferedImage slashSheet = ImageLoader.LoadImage("/textures/player/slash.png");
 
-        // NOU: Incarca spritesheet-urile SEPARATE pentru animale
         BufferedImage monkeySheet = ImageLoader.LoadImage("/textures/animals/monkey.png");
         BufferedImage jaguarSheet = ImageLoader.LoadImage("/textures/animals/jaguar.png");
         BufferedImage batSheet = ImageLoader.LoadImage("/textures/animals/bat.png");
 
-        // NOU: Incarca imaginile capcanelor
         BufferedImage spikesSheet = ImageLoader.LoadImage("/textures/traps/spikes.png");
         BufferedImage trapSheet = ImageLoader.LoadImage("/textures/traps/trap.png");
 
-        // NOU: Incarca spritesheet-ul pentru NPC
         BufferedImage npcIdleSheet = ImageLoader.LoadImage("/textures/old_man.png");
         BufferedImage talismanLoadedImage = ImageLoader.LoadImage("/textures/talisman.png");
 
-        // NOU: Incarca imaginea cheii
         keyImage = ImageLoader.LoadImage("/textures/objects/key.png");
         if (keyImage == null) {
             System.err.println("Eroare: Nu s-a putut incarca key.png! Verificati calea. Se va folosi placeholder.");
@@ -175,7 +185,6 @@ public class Assets
             gKey.dispose();
         }
 
-        // NOU: Incarca imaginea talismanului
         if (talismanLoadedImage != null) {
             talismanImage = talismanLoadedImage;
         } else {
@@ -189,8 +198,6 @@ public class Assets
             gTal.dispose();
         }
 
-
-        // --- DE CUPAREA CADRELOR DE ANIMAȚIE DIN FIECARE SHEET INDIVIDUAL ---
 
         System.out.println("DEBUG ASSETS: Incerc decupare player sheets...");
         playerUp    = cropFramesFromSheet(walkSheet, 1, 9, 0, 0);
@@ -278,19 +285,14 @@ public class Assets
         System.out.println("DEBUG ASSETS: Incerc decupare slashSheet...");
         playerSlash = cropFramesFromSheet(slashSheet, 4, 6);
         if (playerSlash == null) System.err.println("DEBUG ASSETS: playerSlash a esuat la decupare.");
-
-        // NOU: Decupare cadre pentru NPC
         if (npcIdleSheet != null) {
-            // Spritesheet-ul are 6 cadre pe 1 rand
             npcIdleAnim = cropFramesFromArbitrarySheet(npcIdleSheet, NPC_FRAME_WIDTH, NPC_FRAME_HEIGHT, 1, 6, 0, 0);
             if (npcIdleAnim == null) System.err.println("DEBUG ASSETS: Decupare npcIdleAnim a esuat.");
-        } else { System.err.println("DEBUG ASSETS: Nu s-a putut incarca old_man.png."); }
+        } else { System.err.println("DEBUG ASSETS: Nu s-a putut incarca old_man.png.");
+        }
 
         System.out.println("DEBUG ASSETS: Toate incercarile de decupare a playerului au fost executate.");
-
-        // NOU: Decupare/Incarcare imagini pentru animale
         System.out.println("DEBUG ASSETS: Incerc incarcare/decupare animale (fisiere separate)...");
-
         if (monkeySheet != null) {
             Rectangle[] monkeyFramesData = {
                     new Rectangle(0, 0, 36, 52),
@@ -309,7 +311,8 @@ public class Assets
             };
             monkeyWalkAnim = cropFramesFromVariableRectangles(monkeySheet, monkeyFramesData);
             if (monkeyWalkAnim == null) System.err.println("DEBUG ASSETS: Decupare monkeyWalkAnim a esuat.");
-        } else { System.err.println("DEBUG ASSETS: Nu s-a putut incarca monkey.png."); }
+        } else { System.err.println("DEBUG ASSETS: Nu s-a putut incarca monkey.png.");
+        }
 
         if (jaguarSheet != null) {
             Rectangle[] jaguarFramesData = {
@@ -324,8 +327,8 @@ public class Assets
             };
             jaguarWalkAnim = cropFramesFromVariableRectangles(jaguarSheet, jaguarFramesData);
             if (jaguarWalkAnim == null) System.err.println("DEBUG ASSETS: Decupare jaguarWalkAnim a esuat.");
-
-        } else { System.err.println("DEBUG ASSETS: Nu s-a putut incarca jaguar.png."); }
+        } else { System.err.println("DEBUG ASSETS: Nu s-a putut incarca jaguar.png.");
+        }
 
         if (batSheet != null) {
             Rectangle[] batFramesData = {
@@ -336,12 +339,11 @@ public class Assets
             };
             batAnim = cropFramesFromVariableRectangles(batSheet, batFramesData);
             if (batAnim == null) System.err.println("DEBUG ASSETS: Decupare batAnim a esuat.");
-        } else { System.err.println("DEBUG ASSETS: Nu s-a putut incarca bat.png."); }
+        } else { System.err.println("DEBUG ASSETS: Nu s-a putut incarca bat.png.");
+        }
 
 
-        // NOU: Incarcare imagini pentru capcane (din fisiere reale)
         System.out.println("DEBUG ASSETS: Incerc incarcare/decupare capcane (fisiere separate)...");
-
         if (spikesSheet != null) {
             spikeTrapImage = spikesSheet.getSubimage(0, 0, 39, 25);
             if (spikeTrapImage == null) System.err.println("DEBUG ASSETS: Decupare spikeTrapImage a esuat.");
@@ -369,65 +371,33 @@ public class Assets
             gSmall.dispose();
         }
 
-
         System.out.println("DEBUG ASSETS: Toate incercarile de decupare au fost executate.");
     }
 
-    /*! \fn private static BufferedImage[] cropFramesFromSheet(BufferedImage sheet, int rows, int cols)
-     \brief Decupeaza toate cadrele dintr-un sprite sheet individual cu o structura de grila, folosind dimensiunile player-ului.
-     * Utila pentru spritesheet-uri in care cadrele sunt de dimensiunea PLAYER_FRAME_WIDTH/HEIGHT.
-     * \param sheet Imaginea sprite sheet-ului.
-     * \param rows Numarul de randuri de cadre din sheet.
-     * \param cols Numarul de coloane de cadre din sheet.
-     * \return Un tablou de BufferedImage-uri cu toate cadrele decupate. Returneaza null daca sheet e null sau daca apare o eroare de decupare.
-     */
     private static BufferedImage[] cropFramesFromSheet(BufferedImage sheet, int rows, int cols) {
         return cropFramesFromArbitrarySheet(sheet, PLAYER_FRAME_WIDTH, PLAYER_FRAME_HEIGHT, rows, cols, 0, 0);
     }
 
-    /*! \fn private static BufferedImage[] cropFramesFromSheet(BufferedImage sheet, int numRowsToCrop, int numColsToCrop, int startRow, int startCol)
-     \brief Decupeaza o sub-sectiune de cadre dintr-un sprite sheet, specificand randul si coloana de start, folosind dimensiunile player-ului.
-     * Utila pentru a extrage o animatie specifica dintr-un sheet mai mare (cum ar fi run.png care contine mai multe animatii de mers).
-     * \param sheet Imaginea sprite sheet-ului.
-     * \param numRowsToCrop Numarul de randuri de cadre de decupat (de obicei 1 pentru o singura animatie).
-     * \param numColsToCrop Numarul de coloane de cadre de decupat (lungimea animatiei).
-     * \param startRow Randul de start al animatiei (incepand de la 0).
-     * \param startCol Coloana de start a animatiei (incepand de la 0).
-     * \return Un tablou de BufferedImage-uri cu cadrele decupate. Returneaza null daca sheet e null sau daca apare o eroare de decupare.
-     */
     private static BufferedImage[] cropFramesFromSheet(BufferedImage sheet, int numRowsToCrop, int numColsToCrop, int startRow, int startCol) {
         return cropFramesFromArbitrarySheet(sheet, PLAYER_FRAME_WIDTH, PLAYER_FRAME_HEIGHT, numRowsToCrop, numColsToCrop, startRow, startCol);
     }
 
-    /*! \fn private static BufferedImage[] cropFramesFromArbitrarySheet(BufferedImage sheet, int frameWidth, int frameHeight, int numRowsToCrop, int numColsToCrop, int startRow, int startCol)
-     \brief Decupeaza cadre dintr-un sprite sheet cu dimensiuni arbitrare ale cadrelor, dar grid fix.
-     * Aceasta este metoda generica pe care o vor folosi celelalte cropFramesFromSheet.
-     * Este destinata spritesheet-urilor cu un grid uniform.
-     * \param sheet Imaginea sprite sheet-ului.
-     * \param frameWidth Latimea unui singur cadru.
-     * \param frameHeight Inaltimea unui singur cadru.
-     * \param numRowsToCrop Numarul de randuri de cadre de decupat.
-     * \param numColsToCrop Numarul de coloane de cadre de decupat.
-     * \param startRow Randul de start al animatiei (incepand de la 0).
-     * \param startCol Coloana de start a animatiei (incepand de la 0).
-     * \return Un tablou de BufferedImage-uri cu cadrele decupate. Returneaza null daca sheet e null sau daca apare o eroare de decupare.
-     */
     private static BufferedImage[] cropFramesFromArbitrarySheet(BufferedImage sheet, int frameWidth, int frameHeight, int numRowsToCrop, int numColsToCrop, int startRow, int startCol) {
         if (sheet == null) {
             return null;
         }
-        BufferedImage[] frames = new BufferedImage[numRowsToCrop * numColsToCrop];
-        int frameIndex = 0;
+        ArrayList<BufferedImage> frames = new ArrayList<>();
         for (int r = 0; r < numRowsToCrop; r++) {
             for (int c = 0; c < numColsToCrop; c++) {
                 int x = (startCol + c) * frameWidth;
                 int y = (startRow + r) * frameHeight;
                 try {
                     if (x < 0 || y < 0 || x + frameWidth > sheet.getWidth() || y + frameHeight > sheet.getHeight()) {
-                        System.err.println("ATENTIE (cropFramesFromArbitrarySheet - fixed grid): Cadrul (" + (startRow+r) + "," + (startCol+c) + ") depaseste limitele sheet-ului " + sheet.toString() + ". (Dim: " + sheet.getWidth() + "x" + sheet.getHeight() + ", Incercat: x=" + x + ", y=" + y + ", w=" + frameWidth + ", h=" + frameHeight + ").");
-                        return null;
+                        System.err.println("ATENTIE (cropFramesFromArbitrarySheet - fixed grid): Cadrul (" + (startRow+r) + "," + (startCol+c) + ") depaseste limitele sheet-ului " + sheet.toString() + ". (Dim: " + sheet.getWidth()
+                                + "x" + sheet.getHeight() + ", Incercat: x=" + x + ", y=" + y + ", w=" + frameWidth + ", h=" + frameHeight + ").");
+                        continue;
                     }
-                    frames[frameIndex++] = sheet.getSubimage(x, y, frameWidth, frameHeight);
+                    frames.add(sheet.getSubimage(x, y, frameWidth, frameHeight));
                 } catch (Exception e) {
                     System.err.println("Eroare (cropFramesFromArbitrarySheet - fixed grid) la decuparea cadrului (" + (startRow+r) + "," + (startCol+c) + ") din sheet " + sheet.toString() + ". Mesaj: " + e.getMessage());
                     e.printStackTrace();
@@ -435,17 +405,9 @@ public class Assets
                 }
             }
         }
-        return frames;
+        return frames.toArray(new BufferedImage[0]);
     }
 
-    /*! \fn private static BufferedImage[] cropFramesFromVariableRectangles(BufferedImage sheet, Rectangle[] framesData)
-     \brief Decupeaza cadre dintr-un sprite sheet folosind o lista de dreptunghiuri de decupare precise.
-     * Aceasta metoda este destinata spritesheet-urilor cu cadre de latimi si/sau inaltimi variabile,
-     * unde fiecare cadru este definit de propriile sale coordonate si dimensiuni.
-     * \param sheet Imaginea sprite sheet-ului.
-     * \param framesData Un array de obiecte Rectangle, fiecare definind (x, y, width, height) pentru un cadru.
-     * \return Un tablou de BufferedImage-uri cu cadrele decupate. Returneaza null daca sheet e null sau daca apare o eroare de decupare.
-     */
     private static BufferedImage[] cropFramesFromVariableRectangles(BufferedImage sheet, Rectangle[] framesData) {
         if (sheet == null || framesData == null || framesData.length == 0) {
             return null;
@@ -469,13 +431,6 @@ public class Assets
     }
 
 
-    /*! \fn public static BufferedImage getTileImageByGID(int gid, BufferedImage tilesetImage)
-     \brief Returneaza imaginea unei dale pe baza GID-ului din Tiled, dintr-o imagine tileset specificata.
-     * Aceasta metoda este apelata de Tile.Draw().
-     * \param gid Global ID-ul dalei.
-     * \param tilesetImage Imaginea tileset-ului din care sa se decupeze.
-     * \return Imaginea dalei corespunzatoare, ou null daca nu poate fi decupata.
-     */
     public static BufferedImage getTileImageByGID(int gid, BufferedImage tilesetImage) {
         if (gid == 0 || tilesetImage == null) {
             return null;
@@ -483,13 +438,11 @@ public class Assets
 
         int tileWidth = SpriteSheet.getTileWidth();
         int tileHeight = SpriteSheet.getTileHeight();
-
         if (tileWidth == 0) {
             System.err.println("Eroare: Latimea dalei (tileWidth) este 0. Verificati SpriteSheet.java.");
             return null;
         }
         int columns = tilesetImage.getWidth() / tileWidth;
-
         int index = gid - 1;
 
         int tileX = (index % columns) * tileWidth;

@@ -1,12 +1,11 @@
 package PaooGame.States;
 
 import PaooGame.RefLinks;
-import PaooGame.Entities.Player;
 import PaooGame.Graphics.Assets;
 
 import java.awt.*;
 import java.awt.event.KeyEvent;
-
+import java.awt.image.BufferedImage;
 /*!
  * \class public class GameOverState extends State
  * \brief Implementeaza notiunea de ecran de Game Over.
@@ -19,13 +18,11 @@ public class GameOverState extends State {
     private final Color selectedColor = new Color(160, 82, 45);
     private final Font titleFont = new Font("Impact", Font.BOLD, 64);
     private final Font buttonFont = new Font("Papyrus", Font.BOLD, 28);
-
     private String[] menuOptions = {"TRY AGAIN", "RETURN TO MAIN MENU", "QUIT"};
     private int selectedOption = 0;
     private boolean enterPressed = false;
     private boolean upPressed = false;
     private boolean downPressed = false;
-
     /*!
      * \fn public GameOverState(RefLinks refLink)
      * \brief Constructorul de initializare al clasei GameOverState.
@@ -87,10 +84,10 @@ public class GameOverState extends State {
 
     private void executeSelectedOption() {
         switch (selectedOption) {
-            case 0: // TRY AGAIN (reincepe nivelul curent)
+            case 0: // TRY AGAIN (reincepe nivelul curent de la pozitia initiala)
                 System.out.println("Incercare din nou...");
-                refLink.GetPlayer().resetHealth();
-                refLink.SetState(new GameState(refLink));
+                // Aici modifici linia. Se va porni direct de la nivelul 2 (index 1), fara a incarca o salvare.
+                refLink.SetState(new GameState(refLink, 1));
                 break;
             case 1: // RETURN TO MAIN MENU
                 System.out.println("Revenire la meniul principal...");
@@ -130,12 +127,10 @@ public class GameOverState extends State {
 
         g.setFont(buttonFont);
         FontMetrics buttonFm = g.getFontMetrics();
-
         int startY = refLink.GetHeight() / 2 - 20;
         int gap = 70;
-        int buttonWidth = 450; // NOU: Mărit la 450px pentru a asigura încadrarea textului
+        int buttonWidth = 450;
         int buttonHeight = 60;
-
         for (int i = 0; i < menuOptions.length; i++) {
             int x = (refLink.GetWidth() - buttonWidth) / 2;
             int y = startY + i * gap;
