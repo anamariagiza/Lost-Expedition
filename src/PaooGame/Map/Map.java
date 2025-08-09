@@ -4,7 +4,6 @@ import PaooGame.Tiles.Tile;
 import PaooGame.RefLinks;
 import PaooGame.Camera.GameCamera;
 import PaooGame.Graphics.Assets;
-import PaooGame.Map.FogOfWar;
 
 import java.awt.*;
 import java.io.IOException;
@@ -46,7 +45,9 @@ public class Map {
             System.err.println("Avertisment: Nume harta necunoscut, folosind tileset-ul implicit: " + path);
         }
 
+        // CORRECTED: Call the loadMap method to populate the tilesGidsLayers list
         loadMap(path);
+        // Corrected: Initialize fogOfWar only after the map dimensions are loaded
         fogOfWar = new FogOfWar(refLink, width, height);
     }
 
@@ -72,7 +73,7 @@ public class Map {
 
     /*!
      * \fn public void changeTileGid(int x, int y, int newGid, int layerIndex)
-     * \brief Schimba GID-ul unei dale la coordonatele specificate.
+     * \brief Schimba GID-ul unei dale la coordonatele specificate in stratul specificat.
      * \param x Coordonata X (coloana) a dalei.
      * \param y Coordonata Y (rand) a dalei.
      * \param newGid Noul GID al dalei.
@@ -158,47 +159,59 @@ public class Map {
 
     /*!
      * \fn public Tile GetTile(int x, int y)
-     * \brief Returneaza dala de la coordonatele specificate din primul strat (stratul de baza).
-     * Este folosita pentru verificarea coliziunilor.
-     * \param x Coordonata X (coloana) a dalei.
-     * \param y Coordonata Y (rand) a dalei.
-     * \return Obiectul Tile de la pozitia specificata, ou o dala solida implicita daca coordonatele sunt invalide.
+     * \brief Intoarce o referinta catre dala cu numarul de ordine (x, y).
+     * \param x Numarul dalei in ordine orizontala.
+     * \param y Numarul dalei in ordine verticala.
      */
     public Tile GetTile(int x, int y) {
         if (tilesGidsLayers == null || tilesGidsLayers.isEmpty()) {
             return Tile.GetDefaultTile();
         }
 
-        for (int[][] currentLayerGids : tilesGidsLayers) {
-            if (x < 0 || y < 0 || x >= width || y >= height) {
-                return Tile.GetTile(Tile.GRASS_TILE_GID_SOLID);
-            }
-            int gid = currentLayerGids[x][y];
-            Tile tile = Tile.GetTile(gid);
-            if (tile != null && tile.IsSolid()) {
-                return tile;
+        for (int i = tilesGidsLayers.size() - 1; i >= 0; i--) {
+            int[][] currentLayerGids = tilesGidsLayers.get(i);
+            if (x >= 0 && y >= 0 && x < width && y < height) {
+                int gid = currentLayerGids[x][y];
+                Tile tile = Tile.GetTile(gid);
+                if (tile != null && tile.IsSolid()) {
+                    return tile;
+                }
+            } else {
+                return Tile.GetDefaultTile();
             }
         }
 
         return Tile.GetTile(tilesGidsLayers.get(0)[x][y]);
     }
 
-    public int getWidth() {
+    /*!
+     * \fn public int GetWidth()
+     * \brief Returneaza latimea hartii.
+     */
+    public int GetWidth() {
         return width;
     }
 
-    public int getHeight() {
+    /*!
+     * \fn public int GetHeight()
+     * \brief Returneaza inaltimea hartii.
+     */
+    public int GetHeight() {
         return height;
     }
 
-    public FogOfWar getFogOfWar() {
-        return fogOfWar;
-    }
-
+    /*!
+     * \fn public List<int[][]> getTilesGidsLayers()
+     * \brief Returneaza toate straturile de GID-uri ale hartii.
+     */
     public List<int[][]> getTilesGidsLayers() {
         return tilesGidsLayers;
     }
 
+    /*!
+     * \fn public BufferedImage getCurrentMapTilesetImage()
+     * \brief Returneaza imaginea tileset-ului principal pentru harta curenta.
+     */
     public BufferedImage getCurrentMapTilesetImage() {
         return currentMapTilesetImage;
     }

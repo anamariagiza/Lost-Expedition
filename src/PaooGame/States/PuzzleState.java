@@ -3,6 +3,8 @@ package PaooGame.States;
 import PaooGame.RefLinks;
 import PaooGame.Graphics.Assets;
 import PaooGame.Utils.DatabaseManager;
+import PaooGame.Entities.Key;
+import PaooGame.Tiles.Tile;
 
 import java.awt.*;
 import java.awt.event.KeyEvent;
@@ -14,7 +16,7 @@ import java.util.List;
 import java.util.Random;
 
 /*!
- * \class public class PuzzleState extends State
+ * \class public class PuzzleState
  * \brief Implementeaza starea de joc dedicata rezolvarii unui puzzle de logica/memorare.
  */
 public class PuzzleState extends State {
@@ -26,7 +28,6 @@ public class PuzzleState extends State {
     private final Font textFont = new Font("Arial", Font.BOLD, 20);
     private final Font timerFont = new Font("Arial", Font.BOLD, 28);
     private final Font instructionFont = new Font("SansSerif", Font.PLAIN, 14);
-
     private int puzzleId;
     private long puzzleStartTime = 0;
     private final long TIME_LIMIT_MS = 60000;
@@ -38,7 +39,6 @@ public class PuzzleState extends State {
     private String currentObjective;
     private long messageDisplayTime = 0;
     private final long MESSAGE_DURATION_MS = 2000;
-
     // Puzzle 1: Potrivirea simbolurilor
     private String[][] grid1;
     private String playerChoice1;
@@ -60,7 +60,6 @@ public class PuzzleState extends State {
     private final int MAX_WRONG_ATTEMPTS = 3;
     private List<Rectangle> gemBounds2;
     private List<Rectangle> dropZoneBounds2;
-
     // Puzzle 3: Ghicitoarea antica
     private String riddle3;
     private List<String> answers3;
@@ -76,7 +75,6 @@ public class PuzzleState extends State {
     };
     private final int[] correctRiddleAnswers = {0, 1};
     private List<Rectangle> answerBounds3;
-
     // Puzzle 4: Joc de matematica
     private List<String> questions4;
     private List<Integer> answers4;
@@ -88,7 +86,6 @@ public class PuzzleState extends State {
     private Rectangle answerBox4;
     private String lastAnswerStatus4 = "";
     private long lastStatusTime4 = 0;
-
     // Puzzle 5: Găsește perechea
     private List<Integer> cardLayout5;
     private boolean[] revealedCards5;
@@ -100,7 +97,6 @@ public class PuzzleState extends State {
     private long cardRevealTime5 = 0;
     private final long CARD_REVEAL_DURATION_MS = 1000;
     private List<Rectangle> cardBounds5;
-
     private boolean enterPressed = false;
     private long lastKeyPressTime = 0;
     private final long KEY_COOLDOWN_MS = 50;
@@ -120,7 +116,8 @@ public class PuzzleState extends State {
                 currentPuzzleTitle = "Potrivirea simbolurilor";
                 currentObjective = "Alege simbolul care lipsește (clic pe imagine).";
                 grid1 = new String[3][3];
-                grid1[0][0] = symbols[0]; grid1[0][1] = symbols[1]; grid1[0][2] = symbols[2];
+                grid1[0][0] = symbols[0]; grid1[0][1] = symbols[1];
+                grid1[0][2] = symbols[2];
                 grid1[2][0] = symbols[0]; grid1[2][1] = symbols[1]; grid1[2][2] = symbols[2];
                 grid1[1][0] = symbols[3]; grid1[1][2] = symbols[3];
                 grid1[1][1] = "?";
@@ -135,7 +132,7 @@ public class PuzzleState extends State {
                 break;
             case 2:
                 currentPuzzleTitle = "Ordinea pietrelor prețioase";
-                currentObjective = "Aseaza pietrele in ordine (clic pe pietre), apoi ENTER.";
+                currentObjective = "Aseaza pietrele in ordine (clic pe pietre).";
                 correctOrder2 = Arrays.asList(gems[0], gems[1], gems[2], gems[3]);
                 playerOrder2 = new ArrayList<>(Arrays.asList("?", "?", "?", "?"));
                 clue2 = "Smaraldul e între rubin și diamant.";
@@ -170,8 +167,8 @@ public class PuzzleState extends State {
                     answers4.add(a + b);
                 }
                 for (int i = 0; i < 3; i++) {
-                    int a = rand.nextInt(50) + 50;
-                    int b = rand.nextInt(49) + 1;
+                    int a = rand.nextInt(50) + 20;
+                    int b = rand.nextInt(a - 10) + 1;
                     questions4.add(a + " - " + b + " = ?");
                     answers4.add(a - b);
                 }
@@ -197,6 +194,7 @@ public class PuzzleState extends State {
     @Override
     public void Update() {
         if (puzzleSolved || puzzleFailed) {
+            // Fix: Permite în continuare apăsarea tastei ENTER pentru a ieși
             if (refLink.GetKeyManager().isKeyJustPressed(KeyEvent.VK_ENTER)) {
                 if (puzzleSolved) {
                     handlePuzzleSuccess();
@@ -214,8 +212,52 @@ public class PuzzleState extends State {
             } else {
                 handleInput();
             }
-            if (puzzleId == 4 && !lastAnswerStatus4.isEmpty() && System.currentTimeMillis() - lastStatusTime4 > 2000) {
+
+            // Validare automată pentru puzzle-ul 2
+            if (puzzleId == 2 && playerOrder2.stream().noneMatch("?"::equals)) {
+                if (checkOrder()) {
+                    puzzleSolved = true;
+                    puzzleActive = false;
+                } else {
+                    wrongAttempts2++;
+                    if (wrongAttempts2 >= MAX_WRONG_ATTEMPTS) {
+                        puzzleFailed = true;
+                        puzzleActive = false;
+                    } else {
+                        playerOrder2.clear();
+                        for (int i = 0; i < 4; i++) {
+                            playerOrder2.add("?");
+                        }
+                    }
+                }
+            }
+
+            // Validare automată pentru puzzle-ul 4
+            if (puzzleId == 4 && currentQuestionIndex4 >= TOTAL_QUESTIONS_4) {
+                puzzleSolved = true;
+                puzzleActive = false;
+            }
+
+            if (puzzleId == 4 && !lastAnswerStatus4.isEmpty() && System.currentTimeMillis() - lastStatusTime4 > MESSAGE_DURATION_MS) {
                 lastAnswerStatus4 = "";
+            }
+
+            // Logica pentru a verifica potrivirea cartilor la puzzle-ul 5
+            if (puzzleId == 5 && cardRevealTime5 > 0 && System.currentTimeMillis() - cardRevealTime5 > CARD_REVEAL_DURATION_MS) {
+                // Logica pentru a ascunde cărțile dacă nu se potrivesc
+                if (cardLayout5.get(firstCardIndex5).equals(cardLayout5.get(secondCardIndex5))) {
+                    pairsFound5++;
+                    if (pairsFound5 >= 8) {
+                        puzzleSolved = true;
+                        puzzleActive = false;
+                    }
+                } else {
+                    revealedCards5[firstCardIndex5] = false;
+                    revealedCards5[secondCardIndex5] = false;
+                }
+                firstCardIndex5 = -1;
+                secondCardIndex5 = -1;
+                cardRevealTime5 = 0;
             }
         }
     }
@@ -235,7 +277,7 @@ public class PuzzleState extends State {
                     for (int i = 0; i < optionBounds1.size(); i++) {
                         if (optionBounds1.get(i).contains(mouseX, mouseY)) {
                             playerChoice1 = symbols[i];
-                            if (playerChoice1.equals(symbols[3])) { // FULGER
+                            if (playerChoice1.equals(symbols[3])) {
                                 puzzleSolved = true;
                             } else {
                                 puzzleFailed = true;
@@ -246,28 +288,10 @@ public class PuzzleState extends State {
                     }
                     break;
                 case 2:
-                    if (refLink.GetKeyManager().isKeyJustPressed(KeyEvent.VK_ENTER) && playerOrder2.stream().noneMatch("?"::equals)) {
-                        if (checkOrder()) {
-                            puzzleSolved = true;
-                            puzzleActive = false;
-                        } else {
-                            wrongAttempts2++;
-                            if (wrongAttempts2 >= MAX_WRONG_ATTEMPTS) {
-                                puzzleFailed = true;
-                                puzzleActive = false;
-                            } else {
-                                playerOrder2.clear();
-                                for (int i = 0; i < 4; i++) {
-                                    playerOrder2.add("?");
-                                }
-                            }
-                        }
-                    } else {
-                        for (int i = 0; i < gemBounds2.size(); i++) {
-                            if (gemBounds2.get(i).contains(mouseX, mouseY)) {
-                                placeGem(i);
-                                break;
-                            }
+                    for (int i = 0; i < gemBounds2.size(); i++) {
+                        if (gemBounds2.get(i).contains(mouseX, mouseY)) {
+                            placeGem(i);
+                            break;
                         }
                     }
                     break;
@@ -309,6 +333,11 @@ public class PuzzleState extends State {
     private void handleMathInput() {
         if (waitingForInput4) {
             if (refLink.GetKeyManager().isKeyJustPressed(KeyEvent.VK_ENTER)) {
+                if (currentQuestionIndex4 >= TOTAL_QUESTIONS_4) {
+                    puzzleSolved = true;
+                    puzzleActive = false;
+                    return;
+                }
                 try {
                     if (Integer.parseInt(playerInput4) == answers4.get(currentQuestionIndex4)) {
                         correctAnswersCount4++;
@@ -332,6 +361,11 @@ public class PuzzleState extends State {
                 for (int i = 0; i <= 9; i++) {
                     if (refLink.GetKeyManager().isKeyJustPressed(i + 48)) {
                         playerInput4 += (char) (i + 48);
+                    }
+                }
+                if (refLink.GetKeyManager().isKeyJustPressed(KeyEvent.VK_BACK_SPACE)) {
+                    if (!playerInput4.isEmpty()) {
+                        playerInput4 = playerInput4.substring(0, playerInput4.length() - 1);
                     }
                 }
             }
@@ -382,7 +416,6 @@ public class PuzzleState extends State {
 
         g.setFont(textFont);
         g.drawString(currentObjective, centerX - fm.stringWidth(currentObjective) / 2, centerY - 100);
-
         if(puzzleActive) {
             long timeLeft = TIME_LIMIT_MS - (System.currentTimeMillis() - puzzleStartTime);
             g.setFont(timerFont);
@@ -425,7 +458,6 @@ public class PuzzleState extends State {
         int tileSize = 60;
         int gridX = centerX - (gridSize * tileSize) / 2;
         int gridY = centerY - (gridSize * tileSize) / 2;
-
         for (int r = 0; r < gridSize; r++) {
             for (int c = 0; c < gridSize; c++) {
                 int tileX = gridX + c * tileSize;
@@ -434,7 +466,6 @@ public class PuzzleState extends State {
                 g.fillRect(tileX, tileY, tileSize, tileSize);
                 g.setColor(Color.BLACK);
                 g.drawRect(tileX, tileY, tileSize, tileSize);
-
                 BufferedImage image = null;
                 switch (grid1[r][c]) {
                     case "SOARE": image = Assets.puzzle1Sun; break;
@@ -454,14 +485,12 @@ public class PuzzleState extends State {
 
         String optionsText = "Alege simbolul care lipsește.";
         g.drawString(optionsText, centerX - g.getFontMetrics().stringWidth(optionsText)/2, gridY + gridSize * tileSize + 50);
-
         int optionsY = gridY + gridSize * tileSize + 100;
         int optionWidth = 60;
         int optionSpacing = 20;
         int optionsTotalWidth = options1.size() * (optionWidth + optionSpacing);
         int startX = centerX - optionsTotalWidth / 2;
         optionBounds1.clear();
-
         for (int i = 0; i < options1.size(); i++) {
             int optionX = startX + i * (optionWidth + optionSpacing);
             g.setColor(Color.GRAY);
@@ -469,7 +498,6 @@ public class PuzzleState extends State {
             g.setColor(Color.BLACK);
             g.drawRect(optionX, optionsY, optionWidth, optionWidth);
             optionBounds1.add(new Rectangle(optionX, optionsY, optionWidth, optionWidth));
-
             g.drawImage(options1.get(i), optionX + (optionWidth - SYMBOL_SIZE) / 2, optionsY + (optionWidth - SYMBOL_SIZE) / 2, SYMBOL_SIZE, SYMBOL_SIZE, null);
         }
     }
@@ -479,7 +507,6 @@ public class PuzzleState extends State {
         g.setFont(textFont);
         FontMetrics fm = g.getFontMetrics();
         g.drawString("Indiciu: " + clue2, centerX - fm.stringWidth("Indiciu: " + clue2) / 2, centerY - 50);
-
         int pedestalSize = 60;
         int spacing = 20;
         int totalWidth = (4 * pedestalSize) + (3 * spacing);
@@ -491,7 +518,6 @@ public class PuzzleState extends State {
             g.fillRect(x, centerY, pedestalSize, pedestalSize);
             g.setColor(Color.WHITE);
             g.drawRect(x, centerY, pedestalSize, pedestalSize);
-
             if (!playerOrder2.get(i).equals("?")) {
                 BufferedImage gemImage = null;
                 switch (playerOrder2.get(i)) {
@@ -522,7 +548,7 @@ public class PuzzleState extends State {
 
         g.setFont(instructionFont);
         g.setColor(instructionColor);
-        String optionsText = "Alege pietrele apasand pe ele si apasa ENTER pentru a verifica.";
+        String optionsText = "Alege pietrele apasand pe ele.";
         g.drawString(optionsText, centerX - fm.stringWidth(optionsText)/2, optionsY + optionWidth + 40);
 
         String attemptsText = "Incercari ramase: " + (MAX_WRONG_ATTEMPTS - wrongAttempts2);
@@ -571,14 +597,16 @@ public class PuzzleState extends State {
     }
 
     private void drawPuzzle4(Graphics g, int centerX, int centerY) {
+        if (currentQuestionIndex4 >= TOTAL_QUESTIONS_4) {
+            return;
+        }
+
         g.setColor(Color.WHITE);
         g.setFont(textFont);
         FontMetrics fm = g.getFontMetrics();
         g.drawString("Problema: " + questions4.get(currentQuestionIndex4), centerX - fm.stringWidth("Problema: " + questions4.get(currentQuestionIndex4)) / 2, centerY - 50);
-
         g.drawString("Răspuns: " + playerInput4, centerX - fm.stringWidth("Răspuns: " + playerInput4) / 2, centerY + 20);
         g.drawString("Apăsați ENTER pentru a confirma.", centerX - fm.stringWidth("Apăsați ENTER pentru a confirma.") / 2, centerY + 80);
-
         if (!lastAnswerStatus4.isEmpty()) {
             String msg = lastAnswerStatus4;
             g.setColor(msg.equals("CORECT!") ? Color.GREEN : Color.RED);
@@ -587,28 +615,26 @@ public class PuzzleState extends State {
     }
 
     private void drawPuzzle5(Graphics g, int centerX, int centerY) {
-        int cardWidth = CARD_SIZE_5;
-        int cardHeight = CARD_SIZE_5;
+        int cardWidth = 100;
+        int cardHeight = 100;
         int cardSpacing = 10;
         int startX = centerX - (GRID_SIZE_5 * (cardWidth + cardSpacing)) / 2;
         int startY = centerY - (GRID_SIZE_5 * (cardHeight + cardSpacing)) / 2;
-        cardBounds5.clear();
 
+        cardBounds5.clear();
         for (int i = 0; i < 16; i++) {
             int row = i / GRID_SIZE_5;
             int col = i % GRID_SIZE_5;
             int cardX = startX + col * (cardWidth + cardSpacing);
             int cardY = startY + row * (cardHeight + cardSpacing);
 
-            g.setColor(Color.DARK_GRAY);
-            g.fillRect(cardX, cardY, cardWidth, cardHeight);
-            g.setColor(Color.BLACK);
-            g.drawRect(cardX, cardY, cardWidth, cardHeight);
             cardBounds5.add(new Rectangle(cardX, cardY, cardWidth, cardHeight));
 
             if (revealedCards5[i]) {
-                BufferedImage faceImage = Assets.puzzle1Sun; // Placeholder
+                BufferedImage faceImage = Assets.puzzle5CardFaces[cardLayout5.get(i)];
                 g.drawImage(faceImage, cardX, cardY, cardWidth, cardHeight, null);
+            } else {
+                g.drawImage(Assets.puzzle5CardBack, cardX, cardY, cardWidth, cardHeight, null);
             }
         }
     }

@@ -5,7 +5,6 @@ import PaooGame.Graphics.Assets;
 import PaooGame.Tiles.Tile;
 import PaooGame.States.State;
 import PaooGame.States.GameState;
-
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
@@ -28,6 +27,9 @@ public class Key extends Entity {
     private boolean collected = false;
     private KeyType type;
 
+    // NOU: ID-ul puzzle-ului asociat acestei chei
+    private int associatedPuzzleId = -1;
+
     /*!
      * \fn public Key(RefLinks refLink, float x, float y, BufferedImage image, KeyType type)
      * \brief Constructorul de initializare al clasei Key cu specificarea tipului.
@@ -39,12 +41,18 @@ public class Key extends Entity {
      */
     public Key(RefLinks refLink, float x, float y, BufferedImage image, KeyType type) {
         super(refLink, x, y, DEFAULT_KEY_WIDTH, DEFAULT_KEY_HEIGHT);
-
         SetPosition(x, y);
 
         this.keyImage = image;
         this.type = type;
     }
+
+    // NOU: Constructor pentru cheile de puzzle
+    public Key(RefLinks refLink, float x, float y, BufferedImage image, int puzzleId) {
+        this(refLink, x, y, image, KeyType.DOOR_KEY);
+        this.associatedPuzzleId = puzzleId;
+    }
+
 
     /*!
      * \fn public void Update()
@@ -67,7 +75,6 @@ public class Key extends Entity {
         if (player == null) return;
 
         if (this.bounds.intersects(player.GetBounds())) {
-            // NOU: Am revenit la isKeyJustPressed(KeyEvent.VK_E)
             if (refLink.GetKeyManager().isKeyJustPressed(KeyEvent.VK_E)) {
                 System.out.println("DEBUG Key: Cheia de tip " + type + " a fost colectata!");
                 collected = true;
@@ -75,12 +82,12 @@ public class Key extends Entity {
                 State currentState = State.GetState();
                 if (currentState instanceof GameState) {
                     GameState gameState = (GameState) currentState;
-
                     switch (type) {
                         case NEXT_LEVEL_KEY:
                             gameState.keyCollected();
                             break;
                         case DOOR_KEY:
+                            // NOU: nu se mai deschide usa la colectarea cheii.
                             gameState.doorKeyCollected();
                             break;
                     }
@@ -105,7 +112,6 @@ public class Key extends Entity {
         int drawY = (int)((y - refLink.GetGameCamera().getyOffset()) * refLink.GetGameCamera().getZoomLevel());
         int scaledWidth = (int)(width * refLink.GetGameCamera().getZoomLevel());
         int scaledHeight = (int)(height * refLink.GetGameCamera().getZoomLevel());
-
         if (keyImage != null) {
             g.drawImage(keyImage, drawX, drawY, scaledWidth, scaledHeight, null);
         } else {

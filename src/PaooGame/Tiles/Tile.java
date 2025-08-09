@@ -17,22 +17,41 @@ public class Tile
     public static final int NO_TILE_GID = 0;
 
     // GID-uri pentru dalele specifice, ALINIATE CU TILED
-    public static final int GRASS_TILE_GID_SOLID = 82; // GID-ul real al ierbii tale (82) care este SOLID
-    // NOU: Acestea sunt acum doar pentru referință, IsSolid() va fi 'false' pentru ele
-    public static final int MOUNTAIN_TILE_GID = 2;
-    public static final int WATER_TILE_GID = 3;
-    public static final int TREE_TILE_GID = 4;
-    public static final int SOIL_TILE_GID = 5;
+    public static final int GRASS_TILE_GID_SOLID = 82;
+
+    // NOU: GID pentru peretele solid de la Nivelul 2
+    public static final int WALL_TILE_GID_SOLID = 33;
+
+    // NOU: GID-uri pentru usile de la puzzle-uri
+    public static final int DOOR_CLOSED_TOP_LEFT_GID = 56;
+    public static final int DOOR_CLOSED_TOP_RIGHT_GID = 57;
+    public static final int DOOR_CLOSED_BOTTOM_LEFT_GID = 88;
+    public static final int DOOR_CLOSED_BOTTOM_RIGHT_GID = 89;
+
+    public static final int DOOR_OPEN_TOP_LEFT_GID = 60;
+    public static final int DOOR_OPEN_TOP_RIGHT_GID = 61;
+    public static final int DOOR_OPEN_BOTTOM_LEFT_GID = 92;
+    public static final int DOOR_OPEN_BOTTOM_RIGHT_GID = 93;
 
     public static final int TILE_WIDTH  = SpriteSheet.getTileWidth();
     public static final int TILE_HEIGHT = SpriteSheet.getTileHeight();
 
     // Referinte la instante de dale
     public static Tile grassTileSolid;
-    public static Tile soilTile;
-    public static Tile mountainTile;
-    public static Tile waterTile;
-    public static Tile treeTile;
+
+    // NOU: Dala pentru peretele solid de la Nivelul 2
+    public static Tile wallTileSolid;
+
+    // NOU: Dalele pentru uși
+    public static Tile doorClosedTopLeftTile;
+    public static Tile doorClosedTopRightTile;
+    public static Tile doorClosedBottomLeftTile;
+    public static Tile doorClosedBottomRightTile;
+
+    public static Tile doorOpenTopLeftTile;
+    public static Tile doorOpenTopRightTile;
+    public static Tile doorOpenBottomLeftTile;
+    public static Tile doorOpenBottomRightTile;
 
     protected final int id;
 
@@ -54,16 +73,31 @@ public class Tile
      */
     public static void InitTiles() {
         grassTileSolid = new GrassTile(GRASS_TILE_GID_SOLID);
-        soilTile = new SoilTile(SOIL_TILE_GID);
-        mountainTile = new MountainTile(MOUNTAIN_TILE_GID);
-        waterTile = new WaterTile(WATER_TILE_GID);
-        treeTile = new TreeTile(TREE_TILE_GID);
+        wallTileSolid = new WallTile(WALL_TILE_GID_SOLID);
+
+        doorClosedTopLeftTile = new DoorTile(DOOR_CLOSED_TOP_LEFT_GID, true);
+        doorClosedTopRightTile = new DoorTile(DOOR_CLOSED_TOP_RIGHT_GID, true);
+        doorClosedBottomLeftTile = new DoorTile(DOOR_CLOSED_BOTTOM_LEFT_GID, true);
+        doorClosedBottomRightTile = new DoorTile(DOOR_CLOSED_BOTTOM_RIGHT_GID, true);
+
+        doorOpenTopLeftTile = new DoorTile(DOOR_OPEN_TOP_LEFT_GID, false);
+        doorOpenTopRightTile = new DoorTile(DOOR_OPEN_TOP_RIGHT_GID, false);
+        doorOpenBottomLeftTile = new DoorTile(DOOR_OPEN_BOTTOM_LEFT_GID, false);
+        doorOpenBottomRightTile = new DoorTile(DOOR_OPEN_BOTTOM_RIGHT_GID, false);
+
 
         if (!tiles.containsKey(GRASS_TILE_GID_SOLID)) tiles.put(GRASS_TILE_GID_SOLID, grassTileSolid);
-        if (!tiles.containsKey(SOIL_TILE_GID)) tiles.put(SOIL_TILE_GID, soilTile);
-        if (!tiles.containsKey(MOUNTAIN_TILE_GID)) tiles.put(MOUNTAIN_TILE_GID, mountainTile);
-        if (!tiles.containsKey(WATER_TILE_GID)) tiles.put(WATER_TILE_GID, waterTile);
-        if (!tiles.containsKey(TREE_TILE_GID)) tiles.put(TREE_TILE_GID, treeTile);
+        if (!tiles.containsKey(WALL_TILE_GID_SOLID)) tiles.put(WALL_TILE_GID_SOLID, wallTileSolid);
+
+        if (!tiles.containsKey(DOOR_CLOSED_TOP_LEFT_GID)) tiles.put(DOOR_CLOSED_TOP_LEFT_GID, doorClosedTopLeftTile);
+        if (!tiles.containsKey(DOOR_CLOSED_TOP_RIGHT_GID)) tiles.put(DOOR_CLOSED_TOP_RIGHT_GID, doorClosedTopRightTile);
+        if (!tiles.containsKey(DOOR_CLOSED_BOTTOM_LEFT_GID)) tiles.put(DOOR_CLOSED_BOTTOM_LEFT_GID, doorClosedBottomLeftTile);
+        if (!tiles.containsKey(DOOR_CLOSED_BOTTOM_RIGHT_GID)) tiles.put(DOOR_CLOSED_BOTTOM_RIGHT_GID, doorClosedBottomRightTile);
+
+        if (!tiles.containsKey(DOOR_OPEN_TOP_LEFT_GID)) tiles.put(DOOR_OPEN_TOP_LEFT_GID, doorOpenTopLeftTile);
+        if (!tiles.containsKey(DOOR_OPEN_TOP_RIGHT_GID)) tiles.put(DOOR_OPEN_TOP_RIGHT_GID, doorOpenTopRightTile);
+        if (!tiles.containsKey(DOOR_OPEN_BOTTOM_LEFT_GID)) tiles.put(DOOR_OPEN_BOTTOM_LEFT_GID, doorOpenBottomLeftTile);
+        if (!tiles.containsKey(DOOR_OPEN_BOTTOM_RIGHT_GID)) tiles.put(DOOR_OPEN_BOTTOM_RIGHT_GID, doorOpenBottomRightTile);
     }
 
     /*!
@@ -106,7 +140,6 @@ public class Tile
      */
     public void Draw(Graphics g, int x, int y, int width, int height)
     {
-        // Folosește tileset-ul implicit (jungle) pentru fog of war
         Draw(g, x, y, width, height, Assets.jungleTilesetImage);
     }
 
@@ -124,8 +157,6 @@ public class Tile
      */
     public boolean IsSolid()
     {
-        // Dalele generice sunt non-solide implicit.
-        // Sub-clasele GrassTile, MountainTile, WaterTile, TreeTile vor suprascrie aceasta metoda.
         return false;
     }
 
@@ -150,12 +181,21 @@ public class Tile
         }
         Tile tile = tiles.get(gid);
         if (tile == null) {
-            // NOU: Daca dala nu este inregistrata explicit, dar e GID-ul de iarba (82), o facem solida.
             if (gid == GRASS_TILE_GID_SOLID) {
-                return new GrassTile(gid); // Este solid
+                return new GrassTile(gid);
             }
-            // Toate celelalte GID-uri care nu au fost definite explicit si nu sunt GID 82
-            // vor fi tratate ca dale generice NON-SOLIDE.
+            if (gid == WALL_TILE_GID_SOLID) {
+                return new WallTile(gid);
+            }
+            if (gid == DOOR_CLOSED_TOP_LEFT_GID || gid == DOOR_CLOSED_TOP_RIGHT_GID ||
+                    gid == DOOR_CLOSED_BOTTOM_LEFT_GID || gid == DOOR_CLOSED_BOTTOM_RIGHT_GID) {
+                return new DoorTile(gid, true);
+            }
+            if (gid == DOOR_OPEN_TOP_LEFT_GID || gid == DOOR_OPEN_TOP_RIGHT_GID ||
+                    gid == DOOR_OPEN_BOTTOM_LEFT_GID || gid == DOOR_OPEN_BOTTOM_RIGHT_GID) {
+                return new DoorTile(gid, false);
+            }
+
             return new Tile(gid) {};
         }
         return tile;

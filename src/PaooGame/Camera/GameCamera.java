@@ -57,8 +57,8 @@ public class GameCamera {
             return;
         }
 
-        int mapWidthPx = currentMap.getWidth() * Tile.TILE_WIDTH;
-        int mapHeightPx = currentMap.getHeight() * Tile.TILE_HEIGHT;
+        int mapWidthPx = currentMap.GetWidth() * Tile.TILE_WIDTH;
+        int mapHeightPx = currentMap.GetHeight() * Tile.TILE_HEIGHT;
         float visibleWidth = game.GetGameWindow().GetWndWidth() / zoomLevel;
         float visibleHeight = game.GetGameWindow().GetWndHeight() / zoomLevel;
         if (xOffset < 0) {

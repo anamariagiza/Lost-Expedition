@@ -343,8 +343,8 @@ public class Player extends Entity {
             }
         }
 
-        int mapWidthPx = currentMap.getWidth() * Tile.TILE_WIDTH;
-        int mapHeightPx = currentMap.getHeight() * Tile.TILE_HEIGHT;
+        int mapWidthPx = currentMap.GetWidth() * Tile.TILE_WIDTH;
+        int mapHeightPx = currentMap.GetHeight() * Tile.TILE_HEIGHT;
 
         if (x < 0) x = 0;
         if (y < 0) y = 0;

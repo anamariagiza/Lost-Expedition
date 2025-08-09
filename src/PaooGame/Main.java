@@ -1,6 +1,6 @@
 package PaooGame;
 
-import PaooGame.States.GameState;
+import PaooGame.States.LoadingScreenState;
 
 public class Main
 {
@@ -9,8 +9,8 @@ public class Main
         Game paooGame = new Game("PaooGame", 1500, 843);
         paooGame.StartGame();
 
-        // Modificare temporara pentru a porni direct la nivelul 2
-        // Aici se inițializează un GameState care începe la nivelul 2 (index 1)
-        paooGame.GetRefLinks().SetState(new GameState(paooGame.GetRefLinks(), 1));
+        // Linia care crea direct GameState a fost eliminata.
+        // Acum, jocul va incepe cu LoadingScreenState, care va initializa
+        // Map, Player si va face tranzitia la MenuState si apoi la GameState.
     }
 }

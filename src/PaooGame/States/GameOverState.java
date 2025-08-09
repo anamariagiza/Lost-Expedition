@@ -87,7 +87,7 @@ public class GameOverState extends State {
             case 0: // TRY AGAIN (reincepe nivelul curent de la pozitia initiala)
                 System.out.println("Incercare din nou...");
                 // Aici modifici linia. Se va porni direct de la nivelul 2 (index 1), fara a incarca o salvare.
-                refLink.SetState(new GameState(refLink, 1));
+                refLink.SetState(new GameState(refLink));
                 break;
             case 1: // RETURN TO MAIN MENU
                 System.out.println("Revenire la meniul principal...");

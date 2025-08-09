@@ -17,7 +17,6 @@ import PaooGame.Camera.GameCamera;
 import PaooGame.Tiles.Tile;
 import PaooGame.Utils.DatabaseManager;
 import PaooGame.Graphics.Assets;
-
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
@@ -48,7 +47,6 @@ public class GameState extends State {
 
     private ArrayList<Entity> entities;
     private boolean[] puzzlesSolved;
-
     private NPC caveGuardianNPC;
     private CaveEntrance caveEntrance;
 
@@ -62,6 +60,25 @@ public class GameState extends State {
     private long lastTrapDamageTime = 0;
     private final long TRAP_DAMAGE_COOLDOWN_MS = 2000;
     private final int TRAP_DAMAGE_PERCENTAGE = 50;
+
+    // NOU: Coordonatele cheilor de puzzle
+    private final int[][] puzzleKeyPositions = {
+            {18, 22}, // camera 1
+            {35, 16}, // camera 2
+            {52, 22}, // camera 3
+            {69, 13}, // camera 4
+            {86, 22}  // camera 5
+    };
+
+    // NOU: Pozitiile usilor care se deschid la puzzle-uri
+    private final int[][] puzzleDoorPositions = {
+            {20, 25, 21, 25, 20, 26, 21, 26}, // Usa 1
+            {37, 19, 38, 19, 37, 20, 38, 20}, // Usa 2
+            {54, 25, 55, 24, 54, 26, 54, 26}, // Usa 3
+            {71, 16, 72, 16, 71, 17, 72, 17}, // Usa 4
+            {88, 25, 89, 25, 88, 26, 89, 26}, // Usa 5
+            {111, 16, 112, 16, 111, 17, 112, 17} // Usa 6
+    };
 
 
     /*!
@@ -83,44 +100,9 @@ public class GameState extends State {
         refLink.GetGameCamera().setZoomLevel(currentZoomTarget);
     }
 
-    /*!
-     * \fn public GameState(RefLinks refLink, int desiredLevelIndex)
-     * \brief Constructor de initializare care incepe jocul de la un nivel specificat.
-     * \param refLink O referinta catre un obiect "shortcut".
-     * \param desiredLevelIndex Indexul nivelului de la care sa inceapa jocul.
-     */
-    public GameState(RefLinks refLink, int desiredLevelIndex) {
-        super(refLink);
-        this.currentLevelIndex = desiredLevelIndex;
-        this.hasLevelKey = false;
-        this.hasDoorKey = false;
-        this.puzzlesSolved = new boolean[TOTAL_PUZZLES_LEVEL2 + 1];
-        this.hasTalisman = false;
-        this.caveEntranceUnlocked = false;
-        InitLevelInternal(this.currentLevelIndex, false);
-        System.out.println("✓ GameState initializat (nivel specificat: " + (desiredLevelIndex + 1) + ")");
-        refLink.GetGameCamera().setZoomLevel(currentZoomTarget);
-    }
+    // NOU: Am eliminat constructorul care pornea un nivel specific.
+    // Acum, toate iniciarile se fac prin constructorul de mai sus.
 
-    /*!
-     * \fn public GameState(RefLinks refLink, boolean loadFromSave)
-     * \brief Constructor de initializare extins, care permite incarcarea dintr-un fisier de salvare.
-     * \param refLink O referinta catre un obiect "shortcut".
-     * \param loadFromSave Daca este true, incearca sa incarca progresul din baza de date.
-     */
-    public GameState(RefLinks refLink, boolean loadFromSave) {
-        super(refLink);
-        this.loadFromSaveOnInit = loadFromSave;
-        this.currentLevelIndex = 0;
-        this.hasLevelKey = false;
-        this.hasDoorKey = false;
-        this.puzzlesSolved = new boolean[TOTAL_PUZZLES_LEVEL2 + 1];
-        this.hasTalisman = false;
-        this.caveEntranceUnlocked = false;
-        InitLevelInternal(this.currentLevelIndex, loadFromSaveOnInit);
-        System.out.println("✓ GameState initializat (loadFromSave: " + loadFromSaveOnInit + ")");
-        refLink.GetGameCamera().setZoomLevel(currentZoomTarget);
-    }
 
     /*!
      * \fn private void updateObjectiveText()
@@ -179,7 +161,6 @@ public class GameState extends State {
             this.hasLevelKey = false;
             this.hasDoorKey = false;
             this.puzzlesSolved = new boolean[TOTAL_PUZZLES_LEVEL2 + 1];
-
             if (currentLevelIndex == 0) { // Nivel 1 (Jungla)
                 playerStartX = 86 * Tile.TILE_WIDTH;
                 playerStartY = 86 * Tile.TILE_HEIGHT;
@@ -204,7 +185,7 @@ public class GameState extends State {
         if (currentMap != null) {
             currentMap.LoadMapFromFile(levelPaths[this.currentLevelIndex]);
             System.out.println("DEBUG GameState: Nivelul " + (this.currentLevelIndex + 1) + " incarcat: " + levelPaths[this.currentLevelIndex]);
-            fogOfWar = new FogOfWar(refLink, currentMap.getWidth(), currentMap.getHeight());
+            fogOfWar = new FogOfWar(refLink, currentMap.GetWidth(), currentMap.GetHeight());
         } else {
             System.err.println("Eroare: Obiectul Map nu a fost initializat in RefLinks!");
             return;
@@ -254,6 +235,17 @@ public class GameState extends State {
                 if (!isPuzzleSolved(3)) entities.add(new PuzzleTrigger(refLink, 53 * Tile.TILE_WIDTH, 20 * Tile.TILE_HEIGHT, Tile.TILE_WIDTH, Tile.TILE_HEIGHT, 3));
                 if (!isPuzzleSolved(4)) entities.add(new PuzzleTrigger(refLink, 70 * Tile.TILE_WIDTH, 11 * Tile.TILE_HEIGHT, Tile.TILE_WIDTH, Tile.TILE_HEIGHT, 4));
                 if (!isPuzzleSolved(5)) entities.add(new PuzzleTrigger(refLink, 87 * Tile.TILE_WIDTH, 20 * Tile.TILE_HEIGHT, Tile.TILE_WIDTH, Tile.TILE_HEIGHT, 5));
+
+                // Adaugam cheile care au fost deja colectate in sesiune salvata
+                for (int i = 1; i <= TOTAL_PUZZLES_LEVEL2; i++) {
+                    if (isPuzzleSolved(i)) {
+                        int keyTileX = puzzleKeyPositions[i - 1][0];
+                        int keyTileY = puzzleKeyPositions[i - 1][1];
+                        Key collectedKey = new Key(refLink, (float)keyTileX * Tile.TILE_WIDTH, (float)keyTileY * Tile.TILE_HEIGHT, Assets.keyImage, i);
+                        collectedKey.setCollected(true);
+                        entities.add(collectedKey);
+                    }
+                }
                 break;
             case 2: // Nivelul 3
                 entities.add(new Animal(refLink, 450, 450, 400, 500, Animal.AnimalType.JAGUAR));
@@ -295,12 +287,6 @@ public class GameState extends State {
             System.out.println("Zoom Level comutat la: " + currentZoomTarget);
         }
 
-        if (currentLevelIndex == 1) {
-            if (getPuzzlesSolvedCount() >= TOTAL_PUZZLES_LEVEL2 && !hasDoorKey) {
-                doorKeyCollected();
-            }
-        }
-
         if (currentMap != null) {
             currentMap.Update();
         }
@@ -337,13 +323,6 @@ public class GameState extends State {
             }
         }
 
-        if (currentLevelIndex == 1) {
-            if (hasDoorKey && refLink.GetKeyManager().isKeyJustPressed(KeyEvent.VK_E) && player.GetBounds().intersects(new Rectangle(200, 200, 100, 100))) {
-                openDoorAtLevel2();
-                hasDoorKey = false;
-            }
-        }
-
         Iterator<Entity> it = entities.iterator();
         while (it.hasNext()) {
             Entity e = it.next();
@@ -376,6 +355,10 @@ public class GameState extends State {
             }
         }
 
+        if (currentLevelIndex == 1 && hasDoorKey && refLink.GetKeyManager().isKeyJustPressed(KeyEvent.VK_E)) {
+            checkAndOpenDoor();
+        }
+
         if (playerInContactWithAnimal) {
             if (System.currentTimeMillis() - lastAnimalDamageTime >= ANIMAL_DAMAGE_COOLDOWN_MS) {
                 if(player != null) {
@@ -401,15 +384,48 @@ public class GameState extends State {
         }
     }
 
-    public void openDoorAtLevel2() {
+    private void checkAndOpenDoor() {
+        if (player == null || currentMap == null) return;
+
+        int playerTileX = (int) (player.GetX() / Tile.TILE_WIDTH);
+        int playerTileY = (int) (player.GetY() / Tile.TILE_HEIGHT);
+
+        int interactionRange = 2; // Raza de interacțiune, în dale
+
+        for (int i = 0; i < puzzleDoorPositions.length; i++) {
+            int[] doorCoords = puzzleDoorPositions[i];
+
+            if (Math.abs(playerTileX - doorCoords[0]) <= interactionRange && Math.abs(playerTileY - doorCoords[1]) <= interactionRange) {
+                if (currentMap.GetTile(doorCoords[0], doorCoords[1]).IsSolid()) {
+                    openPuzzleDoor(i + 1);
+                    break;
+                }
+            }
+        }
+    }
+
+    private void openPuzzleDoor(int doorId) {
         if (currentMap != null && currentLevelIndex == 1) {
-            int layerIndex = 0;
-            currentMap.changeTileGid(56, 57, 60, layerIndex);
-            currentMap.changeTileGid(88, 89, 92, layerIndex);
-            currentMap.changeTileGid(56, 58, 61, layerIndex);
-            currentMap.changeTileGid(88, 90, 93, layerIndex);
-            collectionMessage = "Usa s-a deschis!";
-            collectionMessageTime = System.currentTimeMillis();
+            int layerIndex = 1;
+            int[] openGids = {Tile.DOOR_OPEN_TOP_LEFT_GID, Tile.DOOR_OPEN_TOP_RIGHT_GID, Tile.DOOR_OPEN_BOTTOM_LEFT_GID, Tile.DOOR_OPEN_BOTTOM_RIGHT_GID};
+
+            int[] doorCoords = puzzleDoorPositions[doorId - 1];
+
+            int tileX_TL = doorCoords[0];
+            int tileY_TL = doorCoords[1];
+            int tileX_TR = doorCoords[2];
+            int tileY_TR = doorCoords[3];
+            int tileX_BL = doorCoords[4];
+            int tileY_BL = doorCoords[5];
+            int tileX_BR = doorCoords[6];
+            int tileY_BR = doorCoords[7];
+
+            currentMap.changeTileGid(tileX_TL, tileY_TL, openGids[0], layerIndex);
+            currentMap.changeTileGid(tileX_TR, tileY_TR, openGids[1], layerIndex);
+            currentMap.changeTileGid(tileX_BL, tileY_BL, openGids[2], layerIndex);
+            currentMap.changeTileGid(tileX_BR, tileY_BR, openGids[3], layerIndex);
+
+            System.out.println("Usa " + doorId + " a fost deschisa!");
         }
     }
 
@@ -436,7 +452,6 @@ public class GameState extends State {
         drawUI(g);
     }
 
-    // Metode de desenare repuse aici pentru a rezolva erorile
     private void drawFullMap(Graphics g) {
         if (currentMap == null) {
             g.setColor(Color.BLACK);
@@ -447,9 +462,10 @@ public class GameState extends State {
         GameCamera camera = refLink.GetGameCamera();
         float zoom = camera.getZoomLevel();
         int xStart = (int) Math.max(0, camera.getxOffset() / Tile.TILE_WIDTH);
-        int xEnd = (int) Math.min(currentMap.getWidth(), (camera.getxOffset() + (refLink.GetWidth() / zoom)) / Tile.TILE_WIDTH + 1);
+        int xEnd = (int) Math.min(currentMap.GetWidth(), (camera.getxOffset() + (refLink.GetWidth() / zoom)) / Tile.TILE_WIDTH + 1);
         int yStart = (int) Math.max(0, camera.getyOffset() / Tile.TILE_HEIGHT);
-        int yEnd = (int) Math.min(currentMap.getHeight(), (camera.getyOffset() + (refLink.GetHeight() / zoom)) / Tile.TILE_HEIGHT + 1);
+        int yEnd = (int) Math.min(currentMap.GetHeight(), (camera.getyOffset() + (refLink.GetHeight() / zoom)) / Tile.TILE_HEIGHT + 1);
+
         for (int[][] currentLayerGids : currentMap.getTilesGidsLayers()) {
             for (int y = yStart; y < yEnd; y++) {
                 for (int x = xStart; x < xEnd; x++) {
@@ -596,10 +612,10 @@ public class GameState extends State {
         g.fillRect(miniMapX, miniMapY, miniMapWidth, miniMapHeight);
         g.setColor(Color.WHITE);
         g.drawRect(miniMapX, miniMapY, miniMapWidth, miniMapHeight);
-        float mapScaleX = (float)miniMapWidth / (currentMap.getWidth() * Tile.TILE_WIDTH);
-        float mapScaleY = (float)miniMapHeight / (currentMap.getHeight() * Tile.TILE_HEIGHT);
-        for (int yTile = 0; yTile < currentMap.getHeight(); yTile++) {
-            for (int xTile = 0; xTile < currentMap.getWidth(); xTile++) {
+        float mapScaleX = (float)miniMapWidth / (currentMap.GetWidth() * Tile.TILE_WIDTH);
+        float mapScaleY = (float)miniMapHeight / (currentMap.GetHeight() * Tile.TILE_HEIGHT);
+        for (int yTile = 0; yTile < currentMap.GetHeight(); yTile++) {
+            for (int xTile = 0; xTile < currentMap.GetWidth(); xTile++) {
                 Tile tile = currentMap.GetTile(xTile, yTile);
                 if (tile != null) {
                     if (tile.IsSolid()) {
@@ -706,13 +722,21 @@ public class GameState extends State {
         this.hasDoorKey = true;
         collectionMessage = "Cheia Usii colectata!";
         collectionMessageTime = System.currentTimeMillis();
-        System.out.println("DEBUG GameState: Cheia usii Nivel 2 a fost marcata ca fiind colectata.");
+        System.out.println("DEBUG GameState: Cheia usii a fost marcata ca fiind colectata.");
     }
 
     public void puzzleSolved(int puzzleId) {
         if (puzzleId > 0 && puzzleId <= TOTAL_PUZZLES_LEVEL2) {
             puzzlesSolved[puzzleId] = true;
             System.out.println("DEBUG GameState: Puzzle #" + puzzleId + " a fost rezolvat.");
+
+            if (puzzleId - 1 < puzzleKeyPositions.length) {
+                int keyTileX = puzzleKeyPositions[puzzleId - 1][0];
+                int keyTileY = puzzleKeyPositions[puzzleId - 1][1];
+                entities.add(new Key(refLink, (float)keyTileX * Tile.TILE_WIDTH, (float)keyTileY * Tile.TILE_HEIGHT, Assets.keyImage, puzzleId));
+            }
+
+            doorKeyCollected();
         }
     }
 

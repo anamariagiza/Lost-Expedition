@@ -140,12 +140,12 @@ public class MenuState extends State
         {
             case 0: // NEW GAME
                 System.out.println("Pornire joc nou...");
-                refLink.SetState(new GameState(refLink, 1));
+                refLink.SetState(new GameState(refLink));
                 break;
             case 1: // LOAD GAME
                 if (saveGameExists) {
                     System.out.println("Incarcare joc...");
-                    refLink.SetState(new GameState(refLink, true));
+                    refLink.SetState(new GameState(refLink));
                 } else {
                     System.out.println("Nu exista joc salvat pentru a fi incarcat.");
                 }

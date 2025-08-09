@@ -89,6 +89,8 @@ public class Assets
     public static BufferedImage puzzle1Bolt;
     public static BufferedImage puzzle2Gems;
     public static BufferedImage puzzle3Scroll;
+
+    // NOU: Asset-uri pentru puzzle-ul 5
     public static BufferedImage[] puzzle5CardFaces;
     public static BufferedImage puzzle5CardBack;
 
@@ -132,7 +134,6 @@ public class Assets
             System.err.println("Eroare: Nu s-a putut incarca level_3.png! Verificati calea si numele fisierului.");
         }
 
-        // Incercam sa incarcam assets-urile de puzzle
         System.out.println("DEBUG ASSETS: Incarc imagini pentru puzzle-uri...");
         puzzle1Sun = ImageLoader.LoadImage("/textures/puzzles/sun.png");
         puzzle1Moon = ImageLoader.LoadImage("/textures/puzzles/moon.png");
@@ -143,11 +144,19 @@ public class Assets
 
         puzzle3Scroll = ImageLoader.LoadImage("/textures/puzzles/ancient_scroll.png");
 
-        // Placeholder pentru celelalte puzzle-uri
-        // puzzle4Maths = new BufferedImage[0];
-        // puzzle5CardBack = ImageLoader.LoadImage("/textures/puzzles/card_back.png");
-        // puzzle5CardFaces = cropFramesFromSheet(ImageLoader.LoadImage("/textures/puzzles/card_faces.png"), 1, 8);
+        // NOU: Incarcam si decupam imaginile pentru puzzle-ul 5
+        BufferedImage cardFacesSheet = ImageLoader.LoadImage("/textures/puzzles/card_faces.png");
 
+        if (cardFacesSheet != null) {
+            puzzle5CardFaces = new BufferedImage[8];
+            int CARD_WIDTH = 62;
+            int CARD_HEIGHT = 86;
+            puzzle5CardBack = cardFacesSheet.getSubimage(0, 0, CARD_WIDTH, CARD_HEIGHT);
+            // Decupăm fețele de la a doua imagine (index 1)
+            for (int i = 0; i < 8; i++) {
+                puzzle5CardFaces[i] = cardFacesSheet.getSubimage((i+1) * CARD_WIDTH, 0, CARD_WIDTH, CARD_HEIGHT);
+            }
+        }
 
         BufferedImage idleSheet = ImageLoader.LoadImage("/textures/player/idle.png");
         BufferedImage walkSheet = ImageLoader.LoadImage("/textures/player/walk.png");
@@ -198,7 +207,6 @@ public class Assets
             gTal.dispose();
         }
 
-
         System.out.println("DEBUG ASSETS: Incerc decupare player sheets...");
         playerUp    = cropFramesFromSheet(walkSheet, 1, 9, 0, 0);
         playerLeft  = cropFramesFromSheet(walkSheet, 1, 9, 1, 0);
@@ -208,7 +216,6 @@ public class Assets
         if (playerLeft == null) System.err.println("DEBUG ASSETS: playerLeft a esuat la decupare.");
         if (playerDown == null) System.err.println("DEBUG ASSETS: playerDown a esuat la decupare.");
         if (playerRight == null) System.err.println("DEBUG ASSETS: playerRight a esuat la decupare.");
-
 
         playerIdleAllDirections = cropFramesFromSheet(idleSheet, 4, 2);
         if (playerIdleAllDirections != null && playerIdleAllDirections.length >= 8) {
@@ -224,7 +231,6 @@ public class Assets
             playerIdleRight = playerRight != null && playerRight.length > 0 ? new BufferedImage[]{playerRight[0]} : null;
         }
 
-
         playerRunAllDirections = cropFramesFromSheet(runSheet, 4, 8);
         if (playerRunAllDirections != null) {
             playerRunUp    = cropFramesFromSheet(runSheet, 1, 8, 0, 0);
@@ -235,7 +241,6 @@ public class Assets
             System.err.println("DEBUG ASSETS: playerRunAllDirections a esuat la decupare.");
         }
 
-
         playerJumpAllDirections = cropFramesFromSheet(jumpSheet, 4, 5);
         if (playerJumpAllDirections != null) {
             playerJumpUp    = cropFramesFromSheet(jumpSheet, 1, 5, 0, 0);
@@ -245,7 +250,6 @@ public class Assets
         } else {
             System.err.println("DEBUG ASSETS: playerJumpAllDirections a esuat la decupare.");
         }
-
 
         System.out.println("DEBUG ASSETS: Incerc decupare climbSheet...");
         playerClimb = cropFramesFromSheet(climbSheet, 1, 6);
@@ -429,7 +433,6 @@ public class Assets
         }
         return frames;
     }
-
 
     public static BufferedImage getTileImageByGID(int gid, BufferedImage tilesetImage) {
         if (gid == 0 || tilesetImage == null) {
