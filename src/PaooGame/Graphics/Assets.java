@@ -69,6 +69,9 @@ public class Assets
     public static BufferedImage[] playerSpellcast;
     public static BufferedImage[] playerSlash;
 
+    public static BufferedImage[] agentIdleDown;
+    public static BufferedImage[] agentWalk;
+
     public static BufferedImage[] monkeyWalkAnim;
     public static BufferedImage[] jaguarWalkAnim;
     public static BufferedImage[] jaguarRunAnim;
@@ -82,6 +85,9 @@ public class Assets
     public static BufferedImage keyImage;
     public static BufferedImage talismanImage;
 
+    // ## MODIFICARE ##: Am adaugat referinta pentru imaginea mesei de puzzle
+    public static BufferedImage puzzleTableImage;
+
     // --- Asset-uri noi pentru puzzle-uri ---
     public static BufferedImage puzzle1Sun;
     public static BufferedImage puzzle1Moon;
@@ -90,9 +96,10 @@ public class Assets
     public static BufferedImage puzzle2Gems;
     public static BufferedImage puzzle3Scroll;
 
-    // NOU: Asset-uri pentru puzzle-ul 5
     public static BufferedImage[] puzzle5CardFaces;
     public static BufferedImage puzzle5CardBack;
+
+
 
 
     /*!
@@ -144,7 +151,6 @@ public class Assets
 
         puzzle3Scroll = ImageLoader.LoadImage("/textures/puzzles/ancient_scroll.png");
 
-        // NOU: Incarcam si decupam imaginile pentru puzzle-ul 5
         BufferedImage cardFacesSheet = ImageLoader.LoadImage("/textures/puzzles/card_faces.png");
 
         if (cardFacesSheet != null) {
@@ -152,7 +158,6 @@ public class Assets
             int CARD_WIDTH = 62;
             int CARD_HEIGHT = 86;
             puzzle5CardBack = cardFacesSheet.getSubimage(0, 0, CARD_WIDTH, CARD_HEIGHT);
-            // Decupăm fețele de la a doua imagine (index 1)
             for (int i = 0; i < 8; i++) {
                 puzzle5CardFaces[i] = cardFacesSheet.getSubimage((i+1) * CARD_WIDTH, 0, CARD_WIDTH, CARD_HEIGHT);
             }
@@ -174,6 +179,9 @@ public class Assets
         BufferedImage combatIdleSheet = ImageLoader.LoadImage("/textures/player/combat_idle.png");
         BufferedImage slashSheet = ImageLoader.LoadImage("/textures/player/slash.png");
 
+        BufferedImage agentIdleSheet = ImageLoader.LoadImage("/textures/agent/idle.png");
+        BufferedImage agentWalkSheet = ImageLoader.LoadImage("/textures/agent/walk.png");
+
         BufferedImage monkeySheet = ImageLoader.LoadImage("/textures/animals/monkey.png");
         BufferedImage jaguarSheet = ImageLoader.LoadImage("/textures/animals/jaguar.png");
         BufferedImage batSheet = ImageLoader.LoadImage("/textures/animals/bat.png");
@@ -185,6 +193,14 @@ public class Assets
         BufferedImage talismanLoadedImage = ImageLoader.LoadImage("/textures/talisman.png");
 
         keyImage = ImageLoader.LoadImage("/textures/objects/key.png");
+
+
+        // ## MODIFICARE ##: Am adaugat incarcarea efectiva a imaginii mesei de puzzle
+        puzzleTableImage = ImageLoader.LoadImage("/textures/objects/table.png");
+        if (puzzleTableImage == null) {
+            System.err.println("Eroare: Nu s-a putut incarca imaginea pentru masa de puzzle (table.png)!");
+        }
+
         if (keyImage == null) {
             System.err.println("Eroare: Nu s-a putut incarca key.png! Verificati calea. Se va folosi placeholder.");
             keyImage = new BufferedImage(Tile.TILE_WIDTH, Tile.TILE_HEIGHT, BufferedImage.TYPE_INT_ARGB);
@@ -218,11 +234,18 @@ public class Assets
         if (playerRight == null) System.err.println("DEBUG ASSETS: playerRight a esuat la decupare.");
 
         playerIdleAllDirections = cropFramesFromSheet(idleSheet, 4, 2);
+        // ## MODIFICĂ ACEST BLOC ##
         if (playerIdleAllDirections != null && playerIdleAllDirections.length >= 8) {
-            playerIdleUp    = new BufferedImage[]{playerIdleAllDirections[0]};
-            playerIdleLeft  = new BufferedImage[]{playerIdleAllDirections[2]};
-            playerIdleDown  = new BufferedImage[]{playerIdleAllDirections[4]};
-            playerIdleRight = new BufferedImage[]{playerIdleAllDirections[6]};
+            playerIdleUp    = new BufferedImage[]{playerIdleAllDirections[0], playerIdleAllDirections[1]};
+            playerIdleLeft  = new BufferedImage[]{playerIdleAllDirections[2], playerIdleAllDirections[3]};
+            playerIdleDown = new BufferedImage[]{
+                    playerIdleAllDirections[4], // Cadru 1 (afisat de 4 ori)
+                    playerIdleAllDirections[4],
+                    playerIdleAllDirections[4],
+                    playerIdleAllDirections[4],
+                    playerIdleAllDirections[5]  // Cadru 2 (afisat o data)
+            };
+            playerIdleRight = new BufferedImage[]{playerIdleAllDirections[6], playerIdleAllDirections[7]};
         } else {
             System.err.println("DEBUG ASSETS: playerIdleAllDirections a esuat la decupare sau este incomplet.");
             playerIdleUp = playerUp != null && playerUp.length > 0 ? new BufferedImage[]{playerUp[0]} : null;
@@ -289,6 +312,19 @@ public class Assets
         System.out.println("DEBUG ASSETS: Incerc decupare slashSheet...");
         playerSlash = cropFramesFromSheet(slashSheet, 4, 6);
         if (playerSlash == null) System.err.println("DEBUG ASSETS: playerSlash a esuat la decupare.");
+
+        // ## ADAUGĂ ACEST BLOC ##
+        if (agentIdleSheet != null) {
+            agentIdleDown = cropFramesFromSheet(agentIdleSheet, 1, 2, 2, 0);
+        } else {
+            System.err.println("EROARE: Nu s-a putut incarca /textures/agent/idle.png");
+        }
+        if (agentWalkSheet != null) {
+            agentWalk = cropFramesFromSheet(agentWalkSheet, 1, 9, 2, 0);
+        } else {
+            System.err.println("EROARE: Nu s-a putut incarca /textures/agent/walk.png");
+        }
+
         if (npcIdleSheet != null) {
             npcIdleAnim = cropFramesFromArbitrarySheet(npcIdleSheet, NPC_FRAME_WIDTH, NPC_FRAME_HEIGHT, 1, 6, 0, 0);
             if (npcIdleAnim == null) System.err.println("DEBUG ASSETS: Decupare npcIdleAnim a esuat.");
@@ -299,18 +335,12 @@ public class Assets
         System.out.println("DEBUG ASSETS: Incerc incarcare/decupare animale (fisiere separate)...");
         if (monkeySheet != null) {
             Rectangle[] monkeyFramesData = {
-                    new Rectangle(0, 0, 36, 52),
-                    new Rectangle(36, 0, 36, 52),
-                    new Rectangle(72, 0, 28, 52),
-                    new Rectangle(100, 0, 32, 52),
-                    new Rectangle(132, 0, 28, 52),
-                    new Rectangle(160, 0, 34, 52),
-                    new Rectangle(194, 0, 39, 52),
-                    new Rectangle(233, 0, 41, 52),
-                    new Rectangle(274, 0, 29, 52),
-                    new Rectangle(303, 0, 36, 52),
-                    new Rectangle(339, 0, 38, 52),
-                    new Rectangle(377, 0, 37, 52),
+                    new Rectangle(0, 0, 36, 52), new Rectangle(36, 0, 36, 52),
+                    new Rectangle(72, 0, 28, 52), new Rectangle(100, 0, 32, 52),
+                    new Rectangle(132, 0, 28, 52), new Rectangle(160, 0, 34, 52),
+                    new Rectangle(194, 0, 39, 52), new Rectangle(233, 0, 41, 52),
+                    new Rectangle(274, 0, 29, 52), new Rectangle(303, 0, 36, 52),
+                    new Rectangle(339, 0, 38, 52), new Rectangle(377, 0, 37, 52),
                     new Rectangle(414, 0, 36, 52)
             };
             monkeyWalkAnim = cropFramesFromVariableRectangles(monkeySheet, monkeyFramesData);
@@ -320,14 +350,10 @@ public class Assets
 
         if (jaguarSheet != null) {
             Rectangle[] jaguarFramesData = {
-                    new Rectangle(0, 0, 76, 41),
-                    new Rectangle(76, 0, 73, 41),
-                    new Rectangle(149, 0, 75, 41),
-                    new Rectangle(224, 0, 71, 41),
-                    new Rectangle(295, 0, 70, 41),
-                    new Rectangle(365, 0, 66, 41),
-                    new Rectangle(431, 0, 63, 41),
-                    new Rectangle(494, 0, 75, 41)
+                    new Rectangle(0, 0, 76, 41), new Rectangle(76, 0, 73, 41),
+                    new Rectangle(149, 0, 75, 41), new Rectangle(224, 0, 71, 41),
+                    new Rectangle(295, 0, 70, 41), new Rectangle(365, 0, 66, 41),
+                    new Rectangle(431, 0, 63, 41), new Rectangle(494, 0, 75, 41)
             };
             jaguarWalkAnim = cropFramesFromVariableRectangles(jaguarSheet, jaguarFramesData);
             if (jaguarWalkAnim == null) System.err.println("DEBUG ASSETS: Decupare jaguarWalkAnim a esuat.");
@@ -336,10 +362,8 @@ public class Assets
 
         if (batSheet != null) {
             Rectangle[] batFramesData = {
-                    new Rectangle(0, 0, 18, 20),
-                    new Rectangle(18, 0, 21, 20),
-                    new Rectangle(39, 0, 17, 20),
-                    new Rectangle(56, 0, 22, 20)
+                    new Rectangle(0, 0, 18, 20), new Rectangle(18, 0, 21, 20),
+                    new Rectangle(39, 0, 17, 20), new Rectangle(56, 0, 22, 20)
             };
             batAnim = cropFramesFromVariableRectangles(batSheet, batFramesData);
             if (batAnim == null) System.err.println("DEBUG ASSETS: Decupare batAnim a esuat.");
@@ -361,9 +385,7 @@ public class Assets
 
         if (trapSheet != null) {
             Rectangle[] smallTrapFramesData = {
-                    new Rectangle(0, 0, 39, 25),
-                    new Rectangle(39, 0, 45, 25),
-                    new Rectangle(84, 0, 51, 25)
+                    new Rectangle(0, 0, 39, 25), new Rectangle(39, 0, 45, 25), new Rectangle(84, 0, 51, 25)
             };
             smallTrapAnim = cropFramesFromVariableRectangles(trapSheet, smallTrapFramesData);
             if (smallTrapAnim == null) System.err.println("DEBUG ASSETS: Decupare smallTrapAnim a esuat.");
@@ -397,13 +419,12 @@ public class Assets
                 int y = (startRow + r) * frameHeight;
                 try {
                     if (x < 0 || y < 0 || x + frameWidth > sheet.getWidth() || y + frameHeight > sheet.getHeight()) {
-                        System.err.println("ATENTIE (cropFramesFromArbitrarySheet - fixed grid): Cadrul (" + (startRow+r) + "," + (startCol+c) + ") depaseste limitele sheet-ului " + sheet.toString() + ". (Dim: " + sheet.getWidth()
-                                + "x" + sheet.getHeight() + ", Incercat: x=" + x + ", y=" + y + ", w=" + frameWidth + ", h=" + frameHeight + ").");
+                        System.err.println("ATENTIE (cropFramesFromArbitrarySheet - fixed grid): Cadrul (" + (startRow+r) + "," + (startCol+c) + ") depaseste limitele sheet-ului.");
                         continue;
                     }
                     frames.add(sheet.getSubimage(x, y, frameWidth, frameHeight));
                 } catch (Exception e) {
-                    System.err.println("Eroare (cropFramesFromArbitrarySheet - fixed grid) la decuparea cadrului (" + (startRow+r) + "," + (startCol+c) + ") din sheet " + sheet.toString() + ". Mesaj: " + e.getMessage());
+                    System.err.println("Eroare (cropFramesFromArbitrarySheet - fixed grid) la decuparea cadrului (" + (startRow+r) + "," + (startCol+c) + ")");
                     e.printStackTrace();
                     return null;
                 }
@@ -421,12 +442,12 @@ public class Assets
             Rectangle rect = framesData[i];
             try {
                 if (rect.x < 0 || rect.y < 0 || rect.x + rect.width > sheet.getWidth() || rect.y + rect.height > sheet.getHeight()) {
-                    System.err.println("ATENTIE (cropFramesFromVariableRectangles): Cadrul " + i + " (" + rect.x + "," + rect.y + "," + rect.width + "," + rect.height + ") depaseste limitele sheet-ului " + sheet.toString() + ". (Dim: " + sheet.getWidth() + "x" + sheet.getHeight() + ").");
+                    System.err.println("ATENTIE (cropFramesFromVariableRectangles): Cadrul " + i + " depaseste limitele sheet-ului.");
                     return null;
                 }
                 frames[i] = sheet.getSubimage(rect.x, rect.y, rect.width, rect.height);
             } catch (Exception e) {
-                System.err.println("Eroare (cropFramesFromVariableRectangles) la decuparea cadrului " + i + " din sheet " + sheet.toString() + ". Mesaj: " + e.getMessage());
+                System.err.println("Eroare (cropFramesFromVariableRectangles) la decuparea cadrului " + i);
                 e.printStackTrace();
                 return null;
             }
@@ -454,13 +475,12 @@ public class Assets
         try {
             if (tileX < 0 || tileY < 0 || tileX + tileWidth > tilesetImage.getWidth() ||
                     tileY + tileHeight > tilesetImage.getHeight()) {
-                System.err.println("ATENTIE: Decuparea dalei cu GID " + gid + " depaseste limitele imaginii tileset " + tilesetImage.toString() + ". " +
-                        "Verificati coordonatele (x=" + tileX + ", y=" + tileY + ", w=" + tileWidth + ", h=" + tileHeight + ").");
+                System.err.println("ATENTIE: Decuparea dalei cu GID " + gid + " depaseste limitele imaginii tileset.");
                 return null;
             }
             return tilesetImage.getSubimage(tileX, tileY, tileWidth, tileHeight);
         } catch (Exception e) {
-            System.err.println("Eroare la extragerea dalei cu GID " + gid + " din tileset " + tilesetImage.toString() + " la X: " + tileX + ", Y: " + tileY + ". Mesaj: " + e.getMessage());
+            System.err.println("Eroare la extragerea dalei cu GID " + gid + " din tileset la X: " + tileX + ", Y: " + tileY);
             e.printStackTrace();
             return null;
         }

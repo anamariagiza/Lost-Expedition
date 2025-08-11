@@ -1,7 +1,5 @@
 package PaooGame.Tiles;
 
-import java.awt.image.BufferedImage;
-
 /*!
  * \class public class GrassTile extends Tile
  * \brief Abstractizeaza notiunea de dala de tip iarba.
@@ -9,9 +7,9 @@ import java.awt.image.BufferedImage;
 public class GrassTile extends Tile
 {
     /*!
-     * \fn public GrassTile(int id)
+     * \fn public GrassTile(int gid)
      * \brief Constructorul de initializare al clasei
-     * \param id Id-ul dalei util in desenarea hartii.
+     * \param gid Id-ul dalei util in desenarea hartii.
      */
     public GrassTile(int gid)
     {
@@ -25,6 +23,6 @@ public class GrassTile extends Tile
     @Override
     public boolean IsSolid()
     {
-        return true; // Iarba este SOLIDĂ conform cerințelor actuale
+        return true;
     }
 }

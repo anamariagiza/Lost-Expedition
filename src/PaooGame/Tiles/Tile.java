@@ -17,10 +17,14 @@ public class Tile
     public static final int NO_TILE_GID = 0;
 
     // GID-uri pentru dalele specifice, ALINIATE CU TILED
-    public static final int GRASS_TILE_GID_SOLID = 82;
+    public static final int GRASS_TILE_GID_SOLID = 81;
 
     // NOU: GID pentru peretele solid de la Nivelul 2
     public static final int WALL_TILE_GID_SOLID = 33;
+
+    // NOU: GID-uri pentru roci
+    public static final int[] ROCK_TILE_GIDS = {216, 97, 232, 217, 233, 249, 234, 235, 236, 221};
+    public static final int NON_SOLID_GID = 220; // ID-ul 220, nesolid
 
     // NOU: GID-uri pentru usile de la puzzle-uri
     public static final int DOOR_CLOSED_TOP_LEFT_GID = 56;
@@ -39,8 +43,9 @@ public class Tile
     // Referinte la instante de dale
     public static Tile grassTileSolid;
 
-    // NOU: Dala pentru peretele solid de la Nivelul 2
+    // NOU: Dale pentru perete și roci
     public static Tile wallTileSolid;
+    public static RockTile[] rockTiles;
 
     // NOU: Dalele pentru uși
     public static Tile doorClosedTopLeftTile;
@@ -72,32 +77,9 @@ public class Tile
      * Aceasta ar trebui apelata o singura data, dupa Assets.LoadGameAssets().
      */
     public static void InitTiles() {
-        grassTileSolid = new GrassTile(GRASS_TILE_GID_SOLID);
-        wallTileSolid = new WallTile(WALL_TILE_GID_SOLID);
-
-        doorClosedTopLeftTile = new DoorTile(DOOR_CLOSED_TOP_LEFT_GID, true);
-        doorClosedTopRightTile = new DoorTile(DOOR_CLOSED_TOP_RIGHT_GID, true);
-        doorClosedBottomLeftTile = new DoorTile(DOOR_CLOSED_BOTTOM_LEFT_GID, true);
-        doorClosedBottomRightTile = new DoorTile(DOOR_CLOSED_BOTTOM_RIGHT_GID, true);
-
-        doorOpenTopLeftTile = new DoorTile(DOOR_OPEN_TOP_LEFT_GID, false);
-        doorOpenTopRightTile = new DoorTile(DOOR_OPEN_TOP_RIGHT_GID, false);
-        doorOpenBottomLeftTile = new DoorTile(DOOR_OPEN_BOTTOM_LEFT_GID, false);
-        doorOpenBottomRightTile = new DoorTile(DOOR_OPEN_BOTTOM_RIGHT_GID, false);
-
-
-        if (!tiles.containsKey(GRASS_TILE_GID_SOLID)) tiles.put(GRASS_TILE_GID_SOLID, grassTileSolid);
-        if (!tiles.containsKey(WALL_TILE_GID_SOLID)) tiles.put(WALL_TILE_GID_SOLID, wallTileSolid);
-
-        if (!tiles.containsKey(DOOR_CLOSED_TOP_LEFT_GID)) tiles.put(DOOR_CLOSED_TOP_LEFT_GID, doorClosedTopLeftTile);
-        if (!tiles.containsKey(DOOR_CLOSED_TOP_RIGHT_GID)) tiles.put(DOOR_CLOSED_TOP_RIGHT_GID, doorClosedTopRightTile);
-        if (!tiles.containsKey(DOOR_CLOSED_BOTTOM_LEFT_GID)) tiles.put(DOOR_CLOSED_BOTTOM_LEFT_GID, doorClosedBottomLeftTile);
-        if (!tiles.containsKey(DOOR_CLOSED_BOTTOM_RIGHT_GID)) tiles.put(DOOR_CLOSED_BOTTOM_RIGHT_GID, doorClosedBottomRightTile);
-
-        if (!tiles.containsKey(DOOR_OPEN_TOP_LEFT_GID)) tiles.put(DOOR_OPEN_TOP_LEFT_GID, doorOpenTopLeftTile);
-        if (!tiles.containsKey(DOOR_OPEN_TOP_RIGHT_GID)) tiles.put(DOOR_OPEN_TOP_RIGHT_GID, doorOpenTopRightTile);
-        if (!tiles.containsKey(DOOR_OPEN_BOTTOM_LEFT_GID)) tiles.put(DOOR_OPEN_BOTTOM_LEFT_GID, doorOpenBottomLeftTile);
-        if (!tiles.containsKey(DOOR_OPEN_BOTTOM_RIGHT_GID)) tiles.put(DOOR_OPEN_BOTTOM_RIGHT_GID, doorOpenBottomRightTile);
+        // MODIFICARE: Nu mai inițializăm dalele statice aici, ci le lăsăm pe `GetTile` să le creeze
+        // Acest lucru previne dublarea in `HashMap` și asigură că dalele sunt create la nevoie.
+        // `GetTile` va avea acum logica de a crea dalele de tip `GrassTile` cu soliditate.
     }
 
     /*!
@@ -181,22 +163,33 @@ public class Tile
         }
         Tile tile = tiles.get(gid);
         if (tile == null) {
+            // MODIFICARE: Logica de creare a noilor dale solide
             if (gid == GRASS_TILE_GID_SOLID) {
-                return new GrassTile(gid);
+                tile = new GrassTile(gid);
+            } else if (gid == WALL_TILE_GID_SOLID) {
+                tile = new WallTile(gid);
+            } else {
+                boolean isRock = false;
+                for (int rockGid : ROCK_TILE_GIDS) {
+                    if (gid == rockGid) {
+                        tile = new RockTile(gid);
+                        isRock = true;
+                        break;
+                    }
+                }
+                if (!isRock) {
+                    if (gid == DOOR_CLOSED_TOP_LEFT_GID || gid == DOOR_CLOSED_TOP_RIGHT_GID ||
+                            gid == DOOR_CLOSED_BOTTOM_LEFT_GID || gid == DOOR_CLOSED_BOTTOM_RIGHT_GID) {
+                        tile = new DoorTile(gid, true);
+                    } else if (gid == DOOR_OPEN_TOP_LEFT_GID || gid == DOOR_OPEN_TOP_RIGHT_GID ||
+                            gid == DOOR_OPEN_BOTTOM_LEFT_GID || gid == DOOR_OPEN_BOTTOM_RIGHT_GID) {
+                        tile = new DoorTile(gid, false);
+                    } else {
+                        tile = new Tile(gid) {}; // Dală generică, nesolidă
+                    }
+                }
             }
-            if (gid == WALL_TILE_GID_SOLID) {
-                return new WallTile(gid);
-            }
-            if (gid == DOOR_CLOSED_TOP_LEFT_GID || gid == DOOR_CLOSED_TOP_RIGHT_GID ||
-                    gid == DOOR_CLOSED_BOTTOM_LEFT_GID || gid == DOOR_CLOSED_BOTTOM_RIGHT_GID) {
-                return new DoorTile(gid, true);
-            }
-            if (gid == DOOR_OPEN_TOP_LEFT_GID || gid == DOOR_OPEN_TOP_RIGHT_GID ||
-                    gid == DOOR_OPEN_BOTTOM_LEFT_GID || gid == DOOR_OPEN_BOTTOM_RIGHT_GID) {
-                return new DoorTile(gid, false);
-            }
-
-            return new Tile(gid) {};
+            tiles.put(gid, tile);
         }
         return tile;
     }

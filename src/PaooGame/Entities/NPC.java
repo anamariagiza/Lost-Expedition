@@ -23,7 +23,7 @@ public class NPC extends Entity {
     private boolean showMessage = false;
     private long messageDisplayTime = 0;
     private final long MESSAGE_DURATION_MS = 3000;
-    private final int INTERACTION_DISTANCE = 60; // Distanta in pixeli pentru interactiune
+    private final int INTERACTION_DISTANCE = 60;
     private boolean hasGivenTalisman = false;
 
     /*!
@@ -35,15 +35,12 @@ public class NPC extends Entity {
      */
     public NPC(RefLinks refLink, float x, float y) {
         super(refLink, x, y, Assets.NPC_FRAME_WIDTH, Assets.NPC_FRAME_HEIGHT);
-
-        // Initializam animatia de idle
         if (Assets.npcIdleAnim != null && Assets.npcIdleAnim.length > 0) {
             this.anim = new Animation(200, Assets.npcIdleAnim);
         } else {
             System.err.println("DEBUG NPC: Animatia de idle este nula. Desenam placeholder.");
             this.anim = new Animation(200, new BufferedImage[]{new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB)});
         }
-
         this.bounds = new Rectangle((int)x, (int)y, width, height);
     }
 
@@ -56,7 +53,6 @@ public class NPC extends Entity {
         anim.Update();
         checkPlayerInteraction();
 
-        // Verificam daca a expirat timpul de afisare a mesajului
         if (showMessage && System.currentTimeMillis() - messageDisplayTime > MESSAGE_DURATION_MS) {
             showMessage = false;
         }
@@ -70,14 +66,11 @@ public class NPC extends Entity {
         Player player = refLink.GetPlayer();
         if (player == null) return;
 
-        // Verificam distanta pentru a permite interacțiunea
         double distance = Math.sqrt(Math.pow(player.GetX() - x, 2) + Math.pow(player.GetY() - y, 2));
-
         if (distance <= INTERACTION_DISTANCE && refLink.GetKeyManager().isKeyJustPressed(KeyEvent.VK_E)) {
             State currentState = State.GetState();
             if (currentState instanceof GameState) {
                 GameState gameState = (GameState) currentState;
-
                 if (!hasGivenTalisman) {
                     if (gameState.hasTalismanCollected()) {
                         dialogueMessage = "Ah, ai adus Talismanul Soarelui! Acum poarta spre pestera e deschisa!";
@@ -114,10 +107,8 @@ public class NPC extends Entity {
         int drawY = (int)((y - refLink.GetGameCamera().getyOffset()) * refLink.GetGameCamera().getZoomLevel());
         int scaledWidth = (int)(width * refLink.GetGameCamera().getZoomLevel());
         int scaledHeight = (int)(height * refLink.GetGameCamera().getZoomLevel());
-
         g.drawImage(anim.getCurrentFrame(), drawX, drawY, scaledWidth, scaledHeight, null);
 
-        // Desenam mesajul de dialog
         if (showMessage) {
             g.setColor(new Color(0, 0, 0, 180));
             g.fillRect(drawX - 50, drawY - 40, scaledWidth + 100, 30);

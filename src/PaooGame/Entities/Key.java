@@ -27,7 +27,6 @@ public class Key extends Entity {
     private boolean collected = false;
     private KeyType type;
 
-    // NOU: ID-ul puzzle-ului asociat acestei chei
     private int associatedPuzzleId = -1;
 
     /*!
@@ -47,12 +46,10 @@ public class Key extends Entity {
         this.type = type;
     }
 
-    // NOU: Constructor pentru cheile de puzzle
     public Key(RefLinks refLink, float x, float y, BufferedImage image, int puzzleId) {
         this(refLink, x, y, image, KeyType.DOOR_KEY);
         this.associatedPuzzleId = puzzleId;
     }
-
 
     /*!
      * \fn public void Update()
@@ -76,7 +73,7 @@ public class Key extends Entity {
 
         if (this.bounds.intersects(player.GetBounds())) {
             if (refLink.GetKeyManager().isKeyJustPressed(KeyEvent.VK_E)) {
-                System.out.println("DEBUG Key: Cheia de tip " + type + " a fost colectata!");
+                System.out.println("DEBUG Key: Cheia de la puzzle-ul " + associatedPuzzleId + " a fost colectata!");
                 collected = true;
 
                 State currentState = State.GetState();
@@ -87,8 +84,7 @@ public class Key extends Entity {
                             gameState.keyCollected();
                             break;
                         case DOOR_KEY:
-                            // NOU: nu se mai deschide usa la colectarea cheii.
-                            gameState.doorKeyCollected();
+                            gameState.doorKeyCollected(associatedPuzzleId);
                             break;
                     }
                 } else {
@@ -134,6 +130,10 @@ public class Key extends Entity {
      */
     public void setCollected(boolean collected) {
         this.collected = collected;
+    }
+
+    public int getAssociatedPuzzleId() {
+        return associatedPuzzleId;
     }
 
     /*!

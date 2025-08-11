@@ -116,7 +116,7 @@ public class DatabaseManager {
                     "player_y REAL NOT NULL," +
                     "player_health INTEGER NOT NULL," +
                     "has_key BOOLEAN NOT NULL DEFAULT FALSE," +
-                    "has_door_key BOOLEAN NOT NULL DEFAULT FALSE," +
+                    "has_door_keys TEXT NOT NULL DEFAULT ''," +
                     "puzzles_solved_str TEXT NOT NULL DEFAULT ''" +
                     ");";
             statement.execute(createSaveTableSQL);
@@ -149,7 +149,7 @@ public class DatabaseManager {
     }
 
     /*!
-     * \fn public void saveGameData(int levelIndex, float playerX, float playerY, int playerHealth, boolean hasKey, boolean hasDoorKey, String puzzlesSolvedString)
+     * \fn public void saveGameData(int levelIndex, float playerX, float playerY, int playerHealth, boolean hasKey, boolean[] hasDoorKeys, String puzzlesSolvedString)
      * \brief Salveaza progresul jocului in tabela 'game_save'.
      * Include acum starea ambelor chei si numarul de puzzle-uri rezolvate.
      * \param levelIndex Indexul nivelului curent.
@@ -157,11 +157,19 @@ public class DatabaseManager {
      * \param playerY Coordonata Y a jucatorului.
      * \param playerHealth Viata curenta a jucatorului.
      * \param hasKey Starea cheii de nivel.
-     * \param hasDoorKey Starea cheii de usa.
+     * \param hasDoorKeys Tabloul cu starea cheilor de usa.
      * \param puzzlesSolvedString String cu ID-urile puzzle-urilor rezolvate, separate prin virgula.
      */
-    public void saveGameData(int levelIndex, float playerX, float playerY, int playerHealth, boolean hasKey, boolean hasDoorKey, String puzzlesSolvedString) {
-        String sql = "INSERT OR REPLACE INTO game_save(id, level_index, player_x, player_y, player_health, has_key, has_door_key, puzzles_solved_str) VALUES(1, ?, ?, ?, ?, ?, ?, ?);";
+    public void saveGameData(int levelIndex, float playerX, float playerY, int playerHealth, boolean hasKey, boolean[] hasDoorKeys, String puzzlesSolvedString) {
+        StringBuilder keysStr = new StringBuilder();
+        for (int i = 0; i < hasDoorKeys.length; i++) {
+            keysStr.append(hasDoorKeys[i]);
+            if (i < hasDoorKeys.length - 1) {
+                keysStr.append(",");
+            }
+        }
+
+        String sql = "INSERT OR REPLACE INTO game_save(id, level_index, player_x, player_y, player_health, has_key, has_door_keys, puzzles_solved_str) VALUES(1, ?, ?, ?, ?, ?, ?, ?);";
         Connection conn = connect();
         if (conn == null) return;
 
@@ -171,7 +179,7 @@ public class DatabaseManager {
             pstmt.setFloat(3, playerY);
             pstmt.setInt(4, playerHealth);
             pstmt.setBoolean(5, hasKey);
-            pstmt.setBoolean(6, hasDoorKey);
+            pstmt.setString(6, keysStr.toString());
             pstmt.setString(7, puzzlesSolvedString);
             pstmt.executeUpdate();
             System.out.println("DEBUG Database: Progresul jocului salvat.");
@@ -192,16 +200,16 @@ public class DatabaseManager {
         public float playerY;
         public int playerHealth;
         public boolean hasKey;
-        public boolean hasDoorKey;
+        public boolean[] hasDoorKeys;
         public String puzzlesSolvedString;
 
-        public SaveGameData(int levelIndex, float playerX, float playerY, int playerHealth, boolean hasKey, boolean hasDoorKey, String puzzlesSolvedString) {
+        public SaveGameData(int levelIndex, float playerX, float playerY, int playerHealth, boolean hasKey, boolean[] hasDoorKeys, String puzzlesSolvedString) {
             this.levelIndex = levelIndex;
             this.playerX = playerX;
             this.playerY = playerY;
             this.playerHealth = playerHealth;
             this.hasKey = hasKey;
-            this.hasDoorKey = hasDoorKey;
+            this.hasDoorKeys = hasDoorKeys;
             this.puzzlesSolvedString = puzzlesSolvedString;
         }
     }
@@ -213,9 +221,10 @@ public class DatabaseManager {
      * \return Un obiect SaveGameData cu datele incarcate, ou null daca nu exista salvare.
      */
     public SaveGameData loadGameData() {
-        String sql = "SELECT level_index, player_x, player_y, player_health, has_key, has_door_key, puzzles_solved_str FROM game_save WHERE id = 1;";
+        String sql = "SELECT level_index, player_x, player_y, player_health, has_key, has_door_keys, puzzles_solved_str FROM game_save WHERE id = 1;";
         Connection conn = connect();
         if (conn == null) return null;
+
         try (Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
 
@@ -225,10 +234,17 @@ public class DatabaseManager {
                 float playerY = rs.getFloat("player_y");
                 int playerHealth = rs.getInt("player_health");
                 boolean hasKey = rs.getBoolean("has_key");
-                boolean hasDoorKey = rs.getBoolean("has_door_key");
+                String hasDoorKeysStr = rs.getString("has_door_keys");
+                boolean[] hasDoorKeys = new boolean[6];
+                if (hasDoorKeysStr != null && !hasDoorKeysStr.isEmpty()) {
+                    String[] keys = hasDoorKeysStr.split(",");
+                    for (int i = 0; i < keys.length; i++) {
+                        hasDoorKeys[i] = Boolean.parseBoolean(keys[i]);
+                    }
+                }
                 String puzzlesSolvedString = rs.getString("puzzles_solved_str");
                 System.out.println("DEBUG Database: Progresul jocului incarcat.");
-                return new SaveGameData(levelIndex, playerX, playerY, playerHealth, hasKey, hasDoorKey, puzzlesSolvedString);
+                return new SaveGameData(levelIndex, playerX, playerY, playerHealth, hasKey, hasDoorKeys, puzzlesSolvedString);
             }
         } catch (SQLException e) {
             System.err.println("Eroare SQL la incarcarea progresului jocului: " + e.getMessage());

@@ -1,4 +1,5 @@
 package PaooGame.Map;
+
 import PaooGame.Graphics.ImageLoader;
 import PaooGame.Tiles.Tile;
 import PaooGame.RefLinks;
@@ -45,9 +46,7 @@ public class Map {
             System.err.println("Avertisment: Nume harta necunoscut, folosind tileset-ul implicit: " + path);
         }
 
-        // CORRECTED: Call the loadMap method to populate the tilesGidsLayers list
         loadMap(path);
-        // Corrected: Initialize fogOfWar only after the map dimensions are loaded
         fogOfWar = new FogOfWar(refLink, width, height);
     }
 
@@ -168,6 +167,7 @@ public class Map {
             return Tile.GetDefaultTile();
         }
 
+        // Parcurgem toate straturile de la cel mai de sus in jos
         for (int i = tilesGidsLayers.size() - 1; i >= 0; i--) {
             int[][] currentLayerGids = tilesGidsLayers.get(i);
             if (x >= 0 && y >= 0 && x < width && y < height) {
@@ -177,10 +177,12 @@ public class Map {
                     return tile;
                 }
             } else {
-                return Tile.GetDefaultTile();
+                // Returnam o dala solida implicita daca suntem in afara hartii
+                return Tile.GetTile(Tile.GRASS_TILE_GID_SOLID);
             }
         }
 
+        // Daca nu se gaseste nicio dala solida, se returneaza dala de pe primul strat
         return Tile.GetTile(tilesGidsLayers.get(0)[x][y]);
     }
 
