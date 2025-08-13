@@ -11,7 +11,10 @@ import PaooGame.Entities.Talisman;
 import PaooGame.Entities.CaveEntrance;
 import PaooGame.Entities.PuzzleTrigger;
 import PaooGame.Entities.DecorativeObject;
-import PaooGame.Entities.LevelExit; // ## MODIFICARE ##: Am adaugat importul necesar
+import PaooGame.Entities.LevelExit;
+import PaooGame.Entities.Torch;
+import PaooGame.Entities.Chest;
+import PaooGame.Entities.TrapTrigger;
 import PaooGame.Map.Map;
 import PaooGame.Map.FogOfWar;
 import PaooGame.RefLinks;
@@ -26,6 +29,7 @@ import java.awt.geom.Ellipse2D;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Arrays;
+import java.util.HashMap;
 
 public class GameState extends State {
 
@@ -58,6 +62,16 @@ public class GameState extends State {
     private final long TRAP_DAMAGE_COOLDOWN_MS = 2000;
     private final int TRAP_DAMAGE_PERCENTAGE = 50;
 
+    private Agent finalBoss;
+    private Chest finalChest;
+    private boolean bossDefeated = false;
+    private boolean agentIsChasing = false;
+
+    private boolean trapsTriggered = false;
+    private long trapActivationTime = 0;
+    private final long GLOBAL_ACTIVATION_DELAY_MS = 1000;
+    private ArrayList<Trap> arenaTraps;
+
     private final int[][] puzzleKeyPositions = {
             {18, 22},
             {35, 16},
@@ -65,7 +79,6 @@ public class GameState extends State {
             {69, 13},
             {86, 22}
     };
-
     private final int[][] puzzleDoorPositions = {
             {19, 24, 20, 24, 19, 25, 20, 25},
             {36, 18, 37, 18, 36, 19, 37, 19},
@@ -135,7 +148,6 @@ public class GameState extends State {
         refLink.GetGameCamera().setZoomLevel(currentZoomTarget);
     }
 
-
     public void InitLevelInternal(int desiredLevelIndex, boolean loadPlayerStateFromDb) {
         DatabaseManager.SaveGameData loadedData = null;
         float playerStartX = 100;
@@ -161,6 +173,7 @@ public class GameState extends State {
                             }
                         } catch (NumberFormatException e) {
                             System.err.println("Eroare la parsarea ID-ului de puzzle salvat: " + id);
+                            puzzlesSolved[0] = false; // Fallback
                         }
                     }
                 }
@@ -215,9 +228,9 @@ public class GameState extends State {
                 entities.add(new Animal(refLink, 10 * Tile.TILE_WIDTH, 36 * Tile.TILE_HEIGHT, 8 * Tile.TILE_WIDTH, 11 * Tile.TILE_WIDTH, Animal.AnimalType.MONKEY));
                 entities.add(new Animal(refLink, 89 * Tile.TILE_WIDTH, 29 * Tile.TILE_HEIGHT, 88 * Tile.TILE_WIDTH, 91 * Tile.TILE_WIDTH, Animal.AnimalType.MONKEY));
                 entities.add(new Animal(refLink, 84 * Tile.TILE_WIDTH, 57 * Tile.TILE_HEIGHT, 82 * Tile.TILE_WIDTH, 85 * Tile.TILE_WIDTH, Animal.AnimalType.BAT));
-                entities.add(new Trap(refLink, 66 * Tile.TILE_WIDTH, 31 * Tile.TILE_HEIGHT, Assets.spikeTrapImage));
-                entities.add(new Trap(refLink, 67 * Tile.TILE_WIDTH, 38 * Tile.TILE_HEIGHT, Assets.spikeTrapImage));
-                entities.add(new Trap(refLink, 66 * Tile.TILE_WIDTH, 45 * Tile.TILE_HEIGHT, Assets.spikeTrapImage));
+                entities.add(new Trap(refLink, 66 * Tile.TILE_WIDTH, 31 * Tile.TILE_HEIGHT));
+                entities.add(new Trap(refLink, 67 * Tile.TILE_WIDTH, 38 * Tile.TILE_HEIGHT));
+                entities.add(new Trap(refLink, 66 * Tile.TILE_WIDTH, 45 * Tile.TILE_HEIGHT));
                 caveGuardianNPC = new NPC(refLink, 93 * Tile.TILE_WIDTH, 92 * Tile.TILE_HEIGHT);
                 entities.add(caveGuardianNPC);
                 entities.add(new Talisman(refLink, 45 * Tile.TILE_WIDTH, 52 * Tile.TILE_HEIGHT, Assets.talismanImage));
@@ -234,7 +247,6 @@ public class GameState extends State {
                 for (int[] coords : puzzleTableCoordinates) {
                     float pixelX = coords[0] * Tile.TILE_WIDTH;
                     float pixelY = coords[1] * Tile.TILE_HEIGHT - (48 / 2);
-                    // ## MODIFICARE ##: Am adaugat 'true' pentru a face mesele solide
                     entities.add(new DecorativeObject(refLink, pixelX, pixelY, 96, 48, Assets.puzzleTableImage, true));
                 }
 
@@ -243,10 +255,7 @@ public class GameState extends State {
                 if (!isPuzzleSolved(3)) entities.add(new PuzzleTrigger(refLink, 53 * Tile.TILE_WIDTH, 20 * Tile.TILE_HEIGHT, Tile.TILE_WIDTH, Tile.TILE_HEIGHT, 3));
                 if (!isPuzzleSolved(4)) entities.add(new PuzzleTrigger(refLink, 70 * Tile.TILE_WIDTH, 11 * Tile.TILE_HEIGHT, Tile.TILE_WIDTH, Tile.TILE_HEIGHT, 4));
                 if (!isPuzzleSolved(5)) entities.add(new PuzzleTrigger(refLink, 87 * Tile.TILE_WIDTH, 20 * Tile.TILE_HEIGHT, Tile.TILE_WIDTH, Tile.TILE_HEIGHT, 5));
-
-                // ## MODIFICARE ##: Adaugarea trigger-ului pentru iesirea la Nivelul 3
                 entities.add(new LevelExit(refLink, 110 * Tile.TILE_WIDTH, 14 * Tile.TILE_HEIGHT, Tile.TILE_WIDTH * 2, Tile.TILE_HEIGHT));
-
                 for (int i = 1; i <= TOTAL_PUZZLES_LEVEL2; i++) {
                     if (isPuzzleSolved(i)) {
                         int keyTileX = puzzleKeyPositions[i - 1][0];
@@ -256,8 +265,54 @@ public class GameState extends State {
                 }
                 break;
             case 2:
-                entities.add(new Animal(refLink, 450, 450, 400, 500, Animal.AnimalType.JAGUAR));
-                entities.add(new Agent(refLink, 600, 600, 550, 650, true));
+                arenaTraps = new ArrayList<>();
+
+                int[][] torchPositions = {
+                        {38, 54}, {41, 54}, {24, 27}, {24, 30}, {55, 27}, {55, 30}, {38, 17}, {41, 17}
+                };
+                for (int[] pos : torchPositions) {
+                    entities.add(new Torch(refLink, (float)pos[0] * Tile.TILE_WIDTH, (float)pos[1] * Tile.TILE_HEIGHT));
+                }
+
+                finalChest = new Chest(refLink, 37 * Tile.TILE_WIDTH, 3 * Tile.TILE_HEIGHT, Tile.TILE_WIDTH, Tile.TILE_HEIGHT);
+                finalChest.setCanInteract(false);
+                entities.add(finalChest);
+
+                entities.add(new DecorativeObject(refLink, 75 * Tile.TILE_WIDTH, 26 * Tile.TILE_HEIGHT, Tile.TILE_WIDTH, Tile.TILE_HEIGHT, Assets.puzzleTableImage, true));
+                entities.add(new Key(refLink, 77 * Tile.TILE_WIDTH, 31 * Tile.TILE_HEIGHT, Assets.keyImage, 6));
+
+                int[][] trapTiles = {
+                        {29,22}, {30,22}, {31,22}, {32,22}, {29,23}, {30,23}, {31,23}, {32,23},
+                        {29,36}, {30,36}, {31,36}, {32,36}, {29,37}, {30,37}, {31,37}, {32,37},
+                        {38,29}, {39,29}, {40,29}, {41,29}, {38,30}, {39,30}, {40,30}, {41,30},
+                        {47,22}, {48,22}, {49,22}, {50,22}, {47,23}, {48,23}, {49,23}, {50,23},
+                        {47,36}, {48,36}, {49,36}, {50,36}, {47,37}, {48,37}, {49,37}, {50,37}
+                };
+                for (int[] pos : trapTiles) {
+                    Trap trap = new Trap(refLink, (float)pos[0] * Tile.TILE_WIDTH, (float)pos[1] * Tile.TILE_HEIGHT);
+                    entities.add(trap);
+                    arenaTraps.add(trap);
+                }
+
+                int[][] triggerGroups = {
+                        {46, 21, 51, 24}, {37, 28, 42, 31}, {28, 21, 33, 24},
+                        {46, 35, 51, 38}, {28, 35, 33, 38}
+                };
+                for(int[] group : triggerGroups) {
+                    int startX = group[0];
+                    int startY = group[1];
+                    int endX = group[2];
+                    int endY = group[3];
+                    for(int y = startY; y <= endY; y++) {
+                        for(int x = startX; x <= endX; x++) {
+                            entities.add(new TrapTrigger(refLink, (float)x * Tile.TILE_WIDTH, (float)y * Tile.TILE_HEIGHT, Tile.TILE_WIDTH, Tile.TILE_HEIGHT));
+                        }
+                    }
+                }
+
+                finalBoss = new Agent(refLink, 36 * Tile.TILE_WIDTH, 22 * Tile.TILE_HEIGHT, 36 * Tile.TILE_WIDTH, 43 * Tile.TILE_WIDTH, true);
+                entities.add(finalBoss);
+
                 break;
         }
     }
@@ -305,14 +360,35 @@ public class GameState extends State {
 
         if (player != null) {
             player.Update();
-            if (player.getHealth() <= 0) {
+            if (player.getHealth() <= 0 && !player.isHurt()) {
+                refLink.SetState(new GameOverState(refLink));
+                return;
+            }
+            if (player.isHurt() && player.activeAnimation.isFinished()) {
                 refLink.SetState(new GameOverState(refLink));
                 return;
             }
         }
 
         boolean playerInContactWithAnimal = false;
-        boolean playerInContactWithTrap = false;
+
+        if (currentLevelIndex == 2 && !trapsTriggered) {
+            for (Entity e : entities) {
+                if (e instanceof TrapTrigger && e.GetBounds().intersects(player.GetBounds())) {
+                    trapsTriggered = true;
+                    trapActivationTime = System.currentTimeMillis();
+                    System.out.println("DEBUG GameState: Declanșatoarele de capcane au fost atinse! Timer de 1 secunda pornit.");
+                    break;
+                }
+            }
+        }
+
+        if (currentLevelIndex == 2 && trapsTriggered && System.currentTimeMillis() - trapActivationTime >= GLOBAL_ACTIVATION_DELAY_MS) {
+            for (Trap trap : arenaTraps) {
+                trap.setActive(true);
+            }
+            trapsTriggered = false;
+        }
 
         if (currentLevelIndex == 0) {
             if (caveGuardianNPC != null && player.GetBounds().intersects(caveGuardianNPC.GetBounds())) {
@@ -343,6 +419,28 @@ public class GameState extends State {
             checkAndOpenDoor();
         }
 
+        if (currentLevelIndex == 2) {
+            if (refLink.GetKeyManager().isKeyJustPressed(KeyEvent.VK_E)) {
+                checkAndOpenFinalDoor();
+            }
+            if (finalBoss != null) {
+                int playerTileX = (int) (player.GetX() / Tile.TILE_WIDTH);
+                int playerTileY = (int) (player.GetY() / Tile.TILE_HEIGHT);
+
+                if (!agentIsChasing && ( (playerTileX >= 39 && playerTileX <= 40) && playerTileY == 39) ) {
+                    System.out.println("DEBUG GameState: Player-ul a calcat pe dalele de declansare. Agentul va incepe urmarirea.");
+                    agentIsChasing = true;
+                    finalBoss.setChaseMode(true);
+                }
+
+                if (finalBoss.getHealth() <= 0 && !bossDefeated) {
+                    System.out.println("DEBUG GameState: Agentul a fost invins!");
+                    bossDefeated = true;
+                    finalChest.setCanInteract(true);
+                }
+            }
+        }
+
         Iterator<Entity> it = entities.iterator();
         while (it.hasNext()) {
             Entity e = it.next();
@@ -371,8 +469,11 @@ public class GameState extends State {
                 }
             }
             if (e instanceof Trap) {
-                if (player.GetBounds().intersects(e.GetBounds())) {
-                    playerInContactWithTrap = true;
+                if (player.GetBounds().intersects(e.GetBounds()) && ((Trap) e).isActive()) {
+                    if (System.currentTimeMillis() - lastTrapDamageTime >= TRAP_DAMAGE_COOLDOWN_MS) {
+                        player.takeDamage(((Trap) e).getDamage());
+                        lastTrapDamageTime = System.currentTimeMillis();
+                    }
                 }
             }
             if (e instanceof PuzzleTrigger) {
@@ -384,24 +485,14 @@ public class GameState extends State {
 
         if (playerInContactWithAnimal) {
             if (System.currentTimeMillis() - lastAnimalDamageTime >= ANIMAL_DAMAGE_COOLDOWN_MS) {
-                if(player != null) {
-                    for(Entity e : entities) {
+                if (player != null) {
+                    for (Entity e : entities) {
                         if (e instanceof Animal && player.GetBounds().intersects(e.GetBounds())) {
                             player.takeDamage(((Animal) e).getDamage());
                             break;
                         }
                     }
                     lastAnimalDamageTime = System.currentTimeMillis();
-                }
-            }
-        }
-
-        if (playerInContactWithTrap) {
-            if (System.currentTimeMillis() - lastTrapDamageTime >= TRAP_DAMAGE_COOLDOWN_MS) {
-                if (player != null) {
-                    int damage = player.getMaxHealth() * TRAP_DAMAGE_PERCENTAGE / 100;
-                    player.takeDamage(damage);
-                    lastTrapDamageTime = System.currentTimeMillis();
                 }
             }
         }
@@ -413,7 +504,6 @@ public class GameState extends State {
         int playerTileY = (int) (player.GetY() / Tile.TILE_HEIGHT);
 
         int interactionRange = 2;
-
         for (int i = 0; i < puzzleDoorPositions.length; i++) {
             int[] doorCoords = puzzleDoorPositions[i];
             if (Math.abs(playerTileX - doorCoords[0]) <= interactionRange &&
@@ -431,6 +521,29 @@ public class GameState extends State {
                         collectionMessageTime = System.currentTimeMillis();
                         return;
                     }
+                }
+            }
+        }
+    }
+
+    private void checkAndOpenFinalDoor() {
+        if (player == null || currentMap == null) return;
+        int playerTileX = (int) (player.GetX() / Tile.TILE_WIDTH);
+        int playerTileY = (int) (player.GetY() / Tile.TILE_HEIGHT);
+
+        int doorX_TL = 39;
+        int doorY_TL = 6;
+
+        if (Math.abs(playerTileX - doorX_TL) <= 2 && Math.abs(playerTileY - doorY_TL) <= 2) {
+            if (currentMap.GetTile(doorX_TL, doorY_TL).IsSolid()) {
+                if (hasDoorKeys[5]) {
+                    openFinalDoor();
+                    hasDoorKeys[5] = false;
+                    collectionMessage = "Poarta s-a deschis!";
+                    collectionMessageTime = System.currentTimeMillis();
+                } else {
+                    collectionMessage = "Aceasta poarta este blocata! Ai nevoie de o cheie.";
+                    collectionMessageTime = System.currentTimeMillis();
                 }
             }
         }
@@ -461,6 +574,19 @@ public class GameState extends State {
         }
     }
 
+    private void openFinalDoor() {
+        if (currentMap != null && currentLevelIndex == 2) {
+            int layerIndex = 1;
+            int tileX = 39;
+            int tileY = 6;
+            currentMap.changeTileGid(tileX, tileY, Tile.DOOR_OPEN_TOP_LEFT_GID, layerIndex);
+            currentMap.changeTileGid(tileX+1, tileY, Tile.DOOR_OPEN_TOP_RIGHT_GID, layerIndex);
+            currentMap.changeTileGid(tileX, tileY+1, Tile.DOOR_OPEN_BOTTOM_LEFT_GID, layerIndex);
+            currentMap.changeTileGid(tileX+1, tileY+1, Tile.DOOR_OPEN_BOTTOM_RIGHT_GID, layerIndex);
+            System.out.println("Poarta finala a fost deschisa!");
+        }
+    }
+
     @Override
     public void Draw(Graphics g) {
         GameCamera camera = refLink.GetGameCamera();
@@ -471,7 +597,6 @@ public class GameState extends State {
         int xEnd = (int) Math.min(currentMap.GetWidth(), (camera.getxOffset() + refLink.GetWidth() / zoom) / Tile.TILE_WIDTH + 1);
         int yStart = (int) Math.max(0, camera.getyOffset() / Tile.TILE_HEIGHT);
         int yEnd = (int) Math.min(currentMap.GetHeight(), (camera.getyOffset() + refLink.GetHeight() / zoom) / Tile.TILE_HEIGHT + 1);
-
         for (int[][] layerGids : currentMap.getTilesGidsLayers()) {
             for (int y = yStart; y < yEnd; y++) {
                 for (int x = xStart; x < xEnd; x++) {
@@ -722,14 +847,12 @@ public class GameState extends State {
         System.out.println("DEBUG: Starea cheilor a fost transferata la Nivelul 2. Stare cheie 0: " + this.hasDoorKeys[0]);
     }
 
-    // ## MODIFICARE ##: Metoda noua pentru trecerea la Nivelul 3
     public void passToLevel3() {
         System.out.println("Trecere la Nivelul 3!");
         this.currentLevelIndex = 2;
         InitLevelInternal(this.currentLevelIndex, false);
     }
 
-    // ## MODIFICARE ##: Metoda noua pentru a oferi acces la lista de entitati
     public ArrayList<Entity> getEntities() {
         return entities;
     }
@@ -812,5 +935,10 @@ public class GameState extends State {
 
     public Map GetMap() {
         return currentMap;
+    }
+
+    public void endGame() {
+        System.out.println("Jocul s-a terminat cu succes!");
+        refLink.SetState(new EndGameState(refLink)); // Trecem la starea finala a jocului
     }
 }

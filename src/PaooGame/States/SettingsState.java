@@ -6,12 +6,8 @@ import PaooGame.Graphics.Assets;
 
 import java.awt.*;
 import java.awt.event.KeyEvent;
+import java.awt.Rectangle;
 
-/*!
- * \class public class SettingsState extends State
- * \brief Implementeaza notiunea de settings pentru joc cu functionalitate completa.
- * Aici setarile vor fi salvate/incarcate intr-o baza de date SQLite.
- */
 public class SettingsState extends State
 {
     private final Color backgroundColor = new Color(0, 0, 0);
@@ -26,6 +22,9 @@ public class SettingsState extends State
     private final Font instructionFont = new Font("SansSerif", Font.PLAIN, 12);
 
     private String[] settingOptions = {"SUNET: ON", "MUZICA: ON", "VOLUM: 100%", "SALVARE SETARI", "INAPOI LA MENIU"};
+    private Rectangle[] buttonBounds;
+    private Rectangle leftArrowBounds;
+    private Rectangle rightArrowBounds;
     private int selectedOption = 0;
     private boolean enterPressed = false;
     private boolean upPressed = false;
@@ -42,32 +41,54 @@ public class SettingsState extends State
     private long saveMessageTime = 0;
     private final long MESSAGE_DURATION_MS = 2000;
 
-    /*!
-     * \fn public SettingsState(RefLinks refLink)
-     * \brief Constructorul de initializare al clasei.
-     * La initializare, incearca sa incarca setarile din baza de date.
-     * \param refLink O referinta catre un obiect "shortcut", obiect ce contine o serie de referinte utile in program.
-     */
+    private int lastWidth, lastHeight;
+
+
     public SettingsState(RefLinks refLink)
     {
         super(refLink);
         loadSettings();
         updateSettingDisplays();
+        lastWidth = refLink.GetWidth();
+        lastHeight = refLink.GetHeight();
+        setupButtons();
         System.out.println("✓ SettingsState initializat");
     }
 
-    /*!
-     * \fn public void Update()
-     * \brief Actualizeaza starea setarilor.
-     */
+    private void setupButtons() {
+        buttonBounds = new Rectangle[settingOptions.length];
+        int startY = 150;
+        int gap = 60;
+        int buttonWidth = 350;
+        int buttonHeight = 40;
+        for (int i = 0; i < settingOptions.length; i++) {
+            int x = (refLink.GetWidth() - buttonWidth) / 2;
+            int y = startY + i * gap;
+            buttonBounds[i] = new Rectangle(x, y - buttonHeight / 2, buttonWidth, buttonHeight);
+        }
+
+        // Setează zonele de interacțiune pentru butoanele de volum
+        int volumeY = startY + 2 * gap;
+        int buttonX = (refLink.GetWidth() - buttonWidth) / 2;
+        leftArrowBounds = new Rectangle(buttonX - 40, volumeY - buttonHeight / 2, 30, buttonHeight);
+        rightArrowBounds = new Rectangle(buttonX + buttonWidth + 10, volumeY - buttonHeight / 2, 30, buttonHeight);
+    }
+
     @Override
     public void Update()
     {
+        if (refLink.GetWidth() != lastWidth || refLink.GetHeight() != lastHeight) {
+            setupButtons();
+            lastWidth = refLink.GetWidth();
+            lastHeight = refLink.GetHeight();
+        }
+
         if (saveMessage != null && System.currentTimeMillis() - saveMessageTime > MESSAGE_DURATION_MS) {
             saveMessage = null;
         }
 
         handleInput();
+        handleMouseInput();
         updateSettingDisplays();
     }
 
@@ -78,7 +99,6 @@ public class SettingsState extends State
             return;
         }
 
-        // Navigare sus
         if(refLink.GetKeyManager().up && !upPressed)
         {
             upPressed = true;
@@ -91,7 +111,6 @@ public class SettingsState extends State
             upPressed = false;
         }
 
-        // Navigare jos
         if(refLink.GetKeyManager().down && !downPressed)
         {
             downPressed = true;
@@ -104,7 +123,6 @@ public class SettingsState extends State
             downPressed = false;
         }
 
-        // Navigare stanga (pentru modificarea setarilor)
         if(refLink.GetKeyManager().left && !leftPressed)
         {
             leftPressed = true;
@@ -115,7 +133,6 @@ public class SettingsState extends State
             leftPressed = false;
         }
 
-        // Navigare dreapta (for modifying settings)
         if(refLink.GetKeyManager().right && !rightPressed)
         {
             rightPressed = true;
@@ -126,7 +143,6 @@ public class SettingsState extends State
             rightPressed = false;
         }
 
-        // Selectare optiune (Enter sau Space)
         if((refLink.GetKeyManager().enter || refLink.GetKeyManager().space) && !enterPressed)
         {
             enterPressed = true;
@@ -137,7 +153,6 @@ public class SettingsState extends State
             enterPressed = false;
         }
 
-        // Intoarcere la starea anterioara cu ESC
         if(refLink.GetKeyManager().escape && !escapePressed)
         {
             escapePressed = true;
@@ -149,22 +164,48 @@ public class SettingsState extends State
         }
     }
 
-    /*!
-     * \fn private void modifySetting(int direction)
-     * \brief Modifica valoarea setarii curente in functie de directie.
-     * \param direction -1 pentru decrementare, 1 pentru incrementare sau toggle.
-     */
+    private void handleMouseInput() {
+        if (refLink.GetMouseManager() == null || buttonBounds == null) return;
+
+        // Verifică butoanele principale
+        for (int i = 0; i < buttonBounds.length; i++) {
+            if (buttonBounds[i].contains(refLink.GetMouseManager().getMouseX(), refLink.GetMouseManager().getMouseY())) {
+                selectedOption = i;
+                if (refLink.GetMouseManager().isMouseJustClicked()) {
+                    if (selectedOption == 2) { // Logică separată pentru butoanele de volum
+                        return;
+                    }
+                    executeSelectedOption();
+                }
+                break;
+            }
+        }
+
+        // Verifică butoanele pentru volum dacă opțiunea curentă este "VOLUM"
+        if (selectedOption == 2) {
+            if (leftArrowBounds.contains(refLink.GetMouseManager().getMouseX(), refLink.GetMouseManager().getMouseY())) {
+                if (refLink.GetMouseManager().isMouseJustClicked()) {
+                    modifySetting(-1);
+                }
+            } else if (rightArrowBounds.contains(refLink.GetMouseManager().getMouseX(), refLink.GetMouseManager().getMouseY())) {
+                if (refLink.GetMouseManager().isMouseJustClicked()) {
+                    modifySetting(1);
+                }
+            }
+        }
+    }
+
     private void modifySetting(int direction)
     {
         switch(selectedOption)
         {
-            case 0: // SUNET
+            case 0:
                 soundEnabled = !soundEnabled;
                 break;
-            case 1: // MUZICA
+            case 1:
                 musicEnabled = !musicEnabled;
                 break;
-            case 2: // VOLUM
+            case 2:
                 volume += direction * 10;
                 if(volume < 0) volume = 0;
                 if(volume > 100) volume = 100;
@@ -176,28 +217,23 @@ public class SettingsState extends State
     {
         switch(selectedOption)
         {
-            case 0: // SUNET
+            case 0:
                 soundEnabled = !soundEnabled;
                 break;
-            case 1: // MUZICA
+            case 1:
                 musicEnabled = !musicEnabled;
                 break;
-            case 2: // VOLUM
-                // Volum se modifica cu stanga/dreapta
+            case 2:
                 break;
-            case 3: // SALVARE SETARI
+            case 3:
                 saveSettings();
                 break;
-            case 4: // INAPOI LA MENIU
+            case 4:
                 refLink.SetState(refLink.GetPreviousState());
                 break;
         }
     }
 
-    /*!
-     * \fn private void updateSettingDisplays()
-     * \brief Actualizeaza string-urile afisate pentru optiunile de setari.
-     */
     private void updateSettingDisplays()
     {
         settingOptions[0] = "SUNET: " + (soundEnabled ? "ON" : "OFF");
@@ -205,10 +241,6 @@ public class SettingsState extends State
         settingOptions[2] = "VOLUM: " + volume + "%";
     }
 
-    /*!
-     * \fn private void saveSettings()
-     * \brief Salveaza setarile curente in baza de date folosind DatabaseManager.
-     */
     private void saveSettings()
     {
         refLink.GetDatabaseManager().saveSettingsData(soundEnabled, musicEnabled, volume);
@@ -217,11 +249,6 @@ public class SettingsState extends State
         System.out.println("Setari salvate in baza de date.");
     }
 
-    /*!
-     * \fn private void loadSettings()
-     * \brief Incarca setarile din baza de date la initializarea starii.
-     * Daca nu exista setari salvate, initializeaza cu valori implicite.
-     */
     private void loadSettings()
     {
         DatabaseManager.SettingsData loadedSettings = refLink.GetDatabaseManager().loadSettingsData();
@@ -238,12 +265,6 @@ public class SettingsState extends State
         }
     }
 
-
-    /*!
-     * \fn public void Draw(Graphics g)
-     * \brief Deseneaza (randeaza) pe ecran setarile.
-     * \param g Contextul grafic in care trebuie sa deseneze starea setarilor pe ecran.
-     */
     @Override
     public void Draw(Graphics g)
     {
@@ -252,7 +273,6 @@ public class SettingsState extends State
         } else {
             g.setColor(backgroundColor);
             g.fillRect(0, 0, refLink.GetWidth(), refLink.GetHeight());
-            System.err.println("EROARE DEBUG: Fundal 'Settings' desenat cu culoare solidă (Assets.backgroundMenu este NULL).");
         }
 
         g.setColor(new Color(0, 0, 0, 120));
@@ -279,7 +299,6 @@ public class SettingsState extends State
             Color currentButtonColor = (i == selectedOption) ? selectedColor : unselectedButtonColor;
             Color currentTextColor = (i == selectedOption) ? selectedTextColor : unselectedTextColor;
             Color outlineColor = (i == selectedOption) ? Color.WHITE : Color.GRAY;
-
             g.setColor(currentButtonColor);
             g.fillRect(x, y - buttonHeight / 2, buttonWidth, buttonHeight);
 
@@ -291,10 +310,9 @@ public class SettingsState extends State
 
             g.setColor(outlineColor);
             g.drawRect(x, y - buttonHeight / 2, buttonWidth, buttonHeight);
-
-            if(i < 3)
+            if(i == 2)
             {
-                g.setColor(currentTextColor);
+                g.setColor(Color.WHITE);
                 g.drawString("<", x - 30, textY);
                 g.drawString(">", x + buttonWidth + 10, textY);
             }

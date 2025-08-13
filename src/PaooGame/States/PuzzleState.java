@@ -614,27 +614,42 @@ public class PuzzleState extends State {
         }
     }
 
+    // Inlocuieste complet aceasta metoda in PuzzleState.java
+
     private void drawPuzzle5(Graphics g, int centerX, int centerY) {
-        int cardWidth = 100;
-        int cardHeight = 100;
+        // Folosim noile constante pentru latime si inaltime
+        int cardWidth = 62;
+        int cardHeight = 86;
         int cardSpacing = 10;
-        int startX = centerX - (GRID_SIZE_5 * (cardWidth + cardSpacing)) / 2;
-        int startY = centerY - (GRID_SIZE_5 * (cardHeight + cardSpacing)) / 2;
+
+        // Calculeaza pozitia de start a grilei de carti
+        int totalGridWidth = GRID_SIZE_5 * (cardWidth + cardSpacing) - cardSpacing;
+        int totalGridHeight = GRID_SIZE_5 * (cardHeight + cardSpacing) - cardSpacing;
+        int startX = centerX - totalGridWidth / 2;
+        int startY = centerY - totalGridHeight / 2 - 20; // Un pic mai sus pe ecran
 
         cardBounds5.clear();
-        for (int i = 0; i < 16; i++) {
+        for (int i = 0; i < GRID_SIZE_5 * GRID_SIZE_5; i++) {
             int row = i / GRID_SIZE_5;
             int col = i % GRID_SIZE_5;
             int cardX = startX + col * (cardWidth + cardSpacing);
             int cardY = startY + row * (cardHeight + cardSpacing);
 
+            // Adaugam dreptunghiul de coliziune cu dimensiunile corecte
             cardBounds5.add(new Rectangle(cardX, cardY, cardWidth, cardHeight));
 
+            // Verificam daca trebuie sa desenam fata sau spatele cartii
             if (revealedCards5[i]) {
-                BufferedImage faceImage = Assets.puzzle5CardFaces[cardLayout5.get(i)];
-                g.drawImage(faceImage, cardX, cardY, cardWidth, cardHeight, null);
+                int cardId = cardLayout5.get(i); // Obtinem ID-ul cartii (0-7)
+                if (Assets.puzzle5CardFaces != null && cardId < Assets.puzzle5CardFaces.length) {
+                    // Desenam fata corecta a cartii
+                    g.drawImage(Assets.puzzle5CardFaces[cardId], cardX, cardY, cardWidth, cardHeight, null);
+                }
             } else {
-                g.drawImage(Assets.puzzle5CardBack, cardX, cardY, cardWidth, cardHeight, null);
+                // Desenam spatele cartii
+                if (Assets.puzzle5CardBack != null) {
+                    g.drawImage(Assets.puzzle5CardBack, cardX, cardY, cardWidth, cardHeight, null);
+                }
             }
         }
     }

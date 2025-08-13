@@ -26,7 +26,6 @@ public class Key extends Entity {
 
     private boolean collected = false;
     private KeyType type;
-
     private int associatedPuzzleId = -1;
 
     /*!

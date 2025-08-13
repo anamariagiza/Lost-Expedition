@@ -1,54 +1,61 @@
 package PaooGame.States;
 
-import PaooGame.RefLinks;
 import PaooGame.Graphics.Assets;
+import PaooGame.RefLinks;
 
 import java.awt.*;
 import java.awt.event.KeyEvent;
+import java.awt.Rectangle;
 
-/*!
- * \class public class HelpState extends State
- * \brief Implementeaza starea de joc pentru afisarea instructiunilor si a informatiilor de ajutor.
- */
 public class HelpState extends State {
 
     private final Color backgroundColor = new Color(0, 0, 0);
-    private final Color textColor = new Color(255, 255, 255);
+    private final Color textColor = Color.WHITE;
     private final Color titleColor = new Color(255, 215, 0);
     private final Font titleFont = new Font("Papyrus", Font.BOLD, 36);
     private final Font textFont = new Font("SansSerif", Font.PLAIN, 18);
     private final Font instructionFont = new Font("SansSerif", Font.PLAIN, 14);
-    private boolean escapePressed = false;
 
-    /*!
-     * \fn public HelpState(RefLinks refLink)
-     * \brief Constructorul de initializare al clasei HelpState.
-     * \param refLink O referinta catre un obiect "shortcut".
-     */
+    private Rectangle backButtonBounds = null;
+    private final String backInstruction = "Apasa ESC pentru a reveni.";
+
+    private int lastWidth, lastHeight;
+
+
     public HelpState(RefLinks refLink) {
         super(refLink);
         System.out.println("✓ HelpState initializat");
+
+        lastWidth = refLink.GetWidth();
+        lastHeight = refLink.GetHeight();
     }
 
-    /*!
-     * \fn public void Update()
-     * \brief Actualizeaza starea curenta a meniului de ajutor.
-     */
     @Override
     public void Update() {
-        if(refLink.GetKeyManager().escape && !escapePressed) {
-            escapePressed = true;
+        if (refLink.GetWidth() != lastWidth || refLink.GetHeight() != lastHeight) {
+            backButtonBounds = null;
+            lastWidth = refLink.GetWidth();
+            lastHeight = refLink.GetHeight();
+        }
+
+        if (refLink.GetKeyManager().isKeyJustPressed(KeyEvent.VK_ESCAPE)) {
             refLink.SetState(refLink.GetPreviousState());
-        } else if(!refLink.GetKeyManager().escape) {
-            escapePressed = false;
+        }
+
+        handleMouseInput();
+    }
+
+    private void handleMouseInput() {
+        if (refLink.GetMouseManager() == null || backButtonBounds == null) return;
+
+        if (backButtonBounds.contains(refLink.GetMouseManager().getMouseX(), refLink.GetMouseManager().getMouseY())) {
+            if (refLink.GetMouseManager().isMouseJustClicked()) {
+                refLink.SetState(refLink.GetPreviousState());
+            }
         }
     }
 
-    /*!
-     * \fn public void Draw(Graphics g)
-     * \brief Deseneaza (randeaza) pe ecran starea curenta a meniului de ajutor.
-     * \param g Contextul grafic in care trebuie sa deseneze.
-     */
+
     @Override
     public void Draw(Graphics g) {
         if (Assets.backgroundMenu != null) {
@@ -56,7 +63,6 @@ public class HelpState extends State {
         } else {
             g.setColor(backgroundColor);
             g.fillRect(0, 0, refLink.GetWidth(), refLink.GetHeight());
-            System.err.println("EROARE DEBUG: Fundal 'Help' desenat cu culoare solidă (Assets.backgroundMenu este NULL).");
         }
 
         g.setColor(new Color(0, 0, 0, 120));
@@ -65,54 +71,57 @@ public class HelpState extends State {
         g.setColor(titleColor);
         g.setFont(titleFont);
         FontMetrics titleFm = g.getFontMetrics();
-        String title = "AJUTOR SI INSTRUCTIUNI";
+        String title = "CONTROLUL JOCULUI";
         int titleWidth = titleFm.stringWidth(title);
         g.drawString(title, (refLink.GetWidth() - titleWidth) / 2, 80);
 
+        g.setFont(textFont);
+        g.setColor(textColor);
+        FontMetrics textFm = g.getFontMetrics();
+        String[] infoLines = {
+                "Mişcare: W, A, S, D",
+                "Alergare: Shift",
+                "Săritură: Space",
+                "Interacţiune: E",
+                "Atac: J, K, /",
+                "Meniu Pauză: P",
+                "",
+                "Obiectivele misiunii: Rezolvaţi puzzle-uri străvechi, navigaţi prin ruine",
+                "periculoase şi luptaţi împotriva mercenarilor pentru a găsi El Dorado."
+        };
+
+        int startY = 150;
         int rectPadding = 20;
         int rectWidth = 600;
         int rectX = (refLink.GetWidth() - rectWidth) / 2;
+        int lineHeight = textFm.getHeight();
+        int totalTextHeight = infoLines.length * (lineHeight + 5);
+        int rectHeight = totalTextHeight + 2 * rectPadding;
+        int rectY = 150 - textFm.getAscent() - rectPadding;
 
-        g.setFont(textFont);
-        g.setColor(textColor);
-        int startY = 150;
+        g.setColor(new Color(0, 0, 0, 180));
+        g.fillRect(rectX, rectY, rectWidth, rectHeight);
 
-        String[] helpLines = {
-                "CONTROALE:",
-                "   W / A / S / D  - Deplasare James Carter",
-                "   SPACE          - Saritura",
-                "   SHIFT          - Alunecare (Alergat)",
-                "   E              - Interactiune cu obiecte (ex: colecteaza chei)",
-                "   P              - Meniu Pauza",
-                "   Z              - Comuta Zoom Camera",
-                " ",
-                "OBIECTIVE MISIUNE:",
-                "   Nivel 1: Jungla",
-                "     - Gaseste cele doua chei (cheia pesterii si cheia usii).",
-                "     - Evita animalele salbatice si capcanele mortale.",
-                "     - Foloseste tasta 'E' la poarta de iesire pentru a intra in pestera.",
-                "   Nivel 2: Pestera",
-                "     - Rezolva puzzle-urile stravechi pentru a avansa.",
-                "     - Cronometrul scade! Rezolva rapid pentru a evita capcanele.",
-                "     - Foloseste cheia usii pentru a debloca pasaje.",
-                "   Nivel 3: Infruntarea Finala",
-                "     - Invinge-l pe Agentul lui Magnus Voss.",
-                "     - Gaseste comoara ascunsa.",
-                "     - Completeaza expeditia!"
-        };
-
-        FontMetrics textFm = g.getFontMetrics();
-        for (String line : helpLines) {
+        g.setColor(Color.WHITE); // Culoare font pentru textul principal
+        for (String line : infoLines) {
             int lineWidth = textFm.stringWidth(line);
             g.drawString(line, rectX + (rectWidth - lineWidth) / 2, startY);
-            startY += textFm.getHeight() + 5;
+            startY += lineHeight + 5;
         }
 
         g.setFont(instructionFont);
-        g.setColor(new Color(255, 215, 0));
-        String instruction = "Apasa ESC pentru a reveni la meniul de pauza.";
-        int instrWidth = g.getFontMetrics().stringWidth(instruction);
-        g.drawString(instruction, (refLink.GetWidth() - instrWidth) / 2, refLink.GetHeight() - 50);
+        g.setColor(titleColor);
+
+        FontMetrics instrFm = g.getFontMetrics();
+        int instrWidth = instrFm.stringWidth(backInstruction);
+        int instrX = (refLink.GetWidth() - instrWidth) / 2;
+        int instrY = refLink.GetHeight() - 50;
+
+        g.drawString(backInstruction, instrX, instrY);
+
+        if (backButtonBounds == null) {
+            backButtonBounds = new Rectangle(instrX, instrY - instrFm.getAscent(), instrWidth, instrFm.getHeight());
+        }
 
         g.setColor(titleColor);
         g.drawRect(20, 20, refLink.GetWidth() - 40, refLink.GetHeight() - 40);

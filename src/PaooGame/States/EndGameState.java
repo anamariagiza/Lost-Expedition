@@ -1,79 +1,39 @@
 package PaooGame.States;
 
-import PaooGame.RefLinks;
 import PaooGame.Graphics.Assets;
-
+import PaooGame.RefLinks;
 import java.awt.*;
 import java.awt.event.KeyEvent;
-import java.awt.Rectangle;
 
-/*!
- * \class public class GameOverState extends State
- * \brief Implementeaza notiunea de ecran de Game Over.
- */
-public class GameOverState extends State {
+public class EndGameState extends State {
 
     private final Color backgroundColor = new Color(0, 0, 0, 200);
-    private final Color textColor = new Color(200, 0, 0);
+    private final Color textColor = new Color(255, 215, 0);
     private final Color buttonColor = new Color(255, 255, 255);
     private final Color selectedColor = new Color(160, 82, 45);
     private final Font titleFont = new Font("Impact", Font.BOLD, 64);
-    private final Font buttonFont = new Font("Papyrus", Font.BOLD, 28);
-    private String[] menuOptions = {"TRY AGAIN", "RETURN TO MAIN MENU", "QUIT"};
-    private Rectangle[] buttonBounds;
+    private final Font textFont = new Font("Papyrus", Font.BOLD, 28);
+    private String[] menuOptions = {"RETURN TO MAIN MENU", "QUIT"};
     private int selectedOption = 0;
     private boolean enterPressed = false;
     private boolean upPressed = false;
     private boolean downPressed = false;
 
-    private int lastWidth, lastHeight;
-
-    public GameOverState(RefLinks refLink) {
+    public EndGameState(RefLinks refLink) {
         super(refLink);
-        System.out.println("✓ GameOverState initializat");
-
-        lastWidth = refLink.GetWidth();
-        lastHeight = refLink.GetHeight();
-        setupButtons();
+        System.out.println("✓ EndGameState initializat");
     }
 
-    private void setupButtons() {
-        buttonBounds = new Rectangle[menuOptions.length];
-        int startY = refLink.GetHeight() / 2 - 20;
-        int gap = 70;
-        int buttonWidth = 450;
-        int buttonHeight = 60;
-        for (int i = 0; i < menuOptions.length; i++) {
-            int x = (refLink.GetWidth() - buttonWidth) / 2;
-            int y = startY + i * gap;
-            buttonBounds[i] = new Rectangle(x, y - buttonHeight / 2, buttonWidth, buttonHeight);
-        }
-    }
-
-
-    /*!
-     * \fn public void Update()
-     * \brief Actualizeaza starea curenta a ecranului de Game Over.
-     */
     @Override
     public void Update() {
-        if (refLink.GetWidth() != lastWidth || refLink.GetHeight() != lastHeight) {
-            setupButtons();
-            lastWidth = refLink.GetWidth();
-            lastHeight = refLink.GetHeight();
-        }
-
         handleInput();
-        handleMouseInput();
     }
 
     private void handleInput() {
         if (refLink.GetKeyManager() == null) {
-            System.err.println("KeyManager este null in GameOverState!");
             return;
         }
 
-        // Navigare sus
         if (refLink.GetKeyManager().up && !upPressed) {
             upPressed = true;
             selectedOption--;
@@ -84,7 +44,6 @@ public class GameOverState extends State {
             upPressed = false;
         }
 
-        // Navigare jos
         if (refLink.GetKeyManager().down && !downPressed) {
             downPressed = true;
             selectedOption++;
@@ -95,7 +54,6 @@ public class GameOverState extends State {
             downPressed = false;
         }
 
-        // Selectare optiune (Enter sau Space)
         boolean enterKey = refLink.GetKeyManager().enter;
         boolean spaceKey = refLink.GetKeyManager().space;
 
@@ -107,43 +65,19 @@ public class GameOverState extends State {
         }
     }
 
-    private void handleMouseInput() {
-        if (refLink.GetMouseManager() == null || buttonBounds == null) return;
-
-        for (int i = 0; i < buttonBounds.length; i++) {
-            if (buttonBounds[i].contains(refLink.GetMouseManager().getMouseX(), refLink.GetMouseManager().getMouseY())) {
-                selectedOption = i;
-                if (refLink.GetMouseManager().isMouseJustClicked()) {
-                    executeSelectedOption();
-                }
-                break;
-            }
-        }
-    }
-
-
     private void executeSelectedOption() {
         switch (selectedOption) {
-            case 0: // TRY AGAIN (reincepe nivelul curent de la pozitia initiala)
-                System.out.println("Incercare din nou...");
-                refLink.SetState(new GameState(refLink));
-                break;
-            case 1: // RETURN TO MAIN MENU
+            case 0:
                 System.out.println("Revenire la meniul principal...");
                 refLink.SetState(new MenuState(refLink));
                 break;
-            case 2: // QUIT
-                System.out.println("Inchidere joc din ecranul Game Over...");
+            case 1:
+                System.out.println("Inchidere joc...");
                 System.exit(0);
                 break;
         }
     }
 
-    /*!
-     * \fn public void Draw(Graphics g)
-     * \brief Deseneaza (randeaza) pe ecran ecranul de Game Over.
-     * \param g Contextul grafic in care trebuie sa deseneze starea jocului pe ecran.
-     */
     @Override
     public void Draw(Graphics g) {
         if (Assets.backgroundMenu != null) {
@@ -159,16 +93,17 @@ public class GameOverState extends State {
         g.setColor(textColor);
         g.setFont(titleFont);
         FontMetrics titleFm = g.getFontMetrics();
-        String title = "GAME OVER";
+        String title = "FELICITARI, AVENTURIERULE!";
         int titleWidth = titleFm.stringWidth(title);
         g.drawString(title, (refLink.GetWidth() - titleWidth) / 2, refLink.GetHeight() / 2 - 120);
 
-        g.setFont(buttonFont);
+        g.setFont(textFont);
         FontMetrics buttonFm = g.getFontMetrics();
         int startY = refLink.GetHeight() / 2 - 20;
         int gap = 70;
         int buttonWidth = 450;
         int buttonHeight = 60;
+
         for (int i = 0; i < menuOptions.length; i++) {
             int x = (refLink.GetWidth() - buttonWidth) / 2;
             int y = startY + i * gap;

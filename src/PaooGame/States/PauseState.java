@@ -5,6 +5,7 @@ import PaooGame.Graphics.Assets;
 
 import java.awt.*;
 import java.awt.event.KeyEvent;
+import java.awt.Rectangle;
 
 /*!
  * \class public class PauseState extends State
@@ -20,11 +21,15 @@ public class PauseState extends State {
     private final Font buttonFont = new Font("Papyrus", Font.BOLD, 24);
 
     private String[] menuOptions = {"RESUME", "SETTINGS", "HELP", "RETURN TO MAIN MENU", "QUIT"};
+    private Rectangle[] buttonBounds;
     private int selectedOption = 0;
     private boolean enterPressed = false;
     private boolean upPressed = false;
     private boolean downPressed = false;
     private boolean escapePressed = false;
+
+    private int lastWidth, lastHeight;
+
 
     /*!
      * \fn public PauseState(RefLinks refLink)
@@ -35,6 +40,23 @@ public class PauseState extends State {
         super(refLink);
         System.out.println("✓ PauseState initializat");
         refLink.GetKeyManager().clearKeys();
+
+        lastWidth = refLink.GetWidth();
+        lastHeight = refLink.GetHeight();
+        setupButtons();
+    }
+
+    private void setupButtons() {
+        buttonBounds = new Rectangle[menuOptions.length];
+        int startY = refLink.GetHeight() / 2 - 50;
+        int gap = 60;
+        int buttonWidth = 350;
+        int buttonHeight = 50;
+        for (int i = 0; i < menuOptions.length; i++) {
+            int x = (refLink.GetWidth() - buttonWidth) / 2;
+            int y = startY + i * gap;
+            buttonBounds[i] = new Rectangle(x, y - buttonHeight / 2, buttonWidth, buttonHeight);
+        }
     }
 
     /*!
@@ -43,7 +65,14 @@ public class PauseState extends State {
      */
     @Override
     public void Update() {
+        if (refLink.GetWidth() != lastWidth || refLink.GetHeight() != lastHeight) {
+            setupButtons();
+            lastWidth = refLink.GetWidth();
+            lastHeight = refLink.GetHeight();
+        }
+
         handleInput();
+        handleMouseInput();
     }
 
     private void handleInput() {
@@ -94,26 +123,36 @@ public class PauseState extends State {
         }
     }
 
+    private void handleMouseInput() {
+        if (refLink.GetMouseManager() == null || buttonBounds == null) return;
+
+        for (int i = 0; i < buttonBounds.length; i++) {
+            if (buttonBounds[i].contains(refLink.GetMouseManager().getMouseX(), refLink.GetMouseManager().getMouseY())) {
+                selectedOption = i;
+                if (refLink.GetMouseManager().isMouseJustClicked()) {
+                    executeSelectedOption();
+                }
+                break;
+            }
+        }
+    }
+
+
     private void executeSelectedOption() {
         switch (selectedOption) {
             case 0: // RESUME
-                System.out.println("Reluare joc din meniul de pauza...");
                 refLink.SetState(refLink.GetPreviousState());
                 break;
             case 1: // SETTINGS
-                System.out.println("Deschidere Settings din meniul de pauza...");
                 refLink.SetStateWithPrevious(new SettingsState(refLink));
                 break;
             case 2: // HELP
-                System.out.println("Deschidere Help din meniul de pauza...");
                 refLink.SetStateWithPrevious(new HelpState(refLink));
                 break;
             case 3: // RETURN TO MAIN MENU
-                System.out.println("Revenire la meniul principal din meniul de pauza...");
                 refLink.SetState(new MenuState(refLink));
                 break;
             case 4: // QUIT
-                System.out.println("Inchidere joc din meniul de pauza...");
                 System.exit(0);
                 break;
         }
@@ -131,13 +170,10 @@ public class PauseState extends State {
         } else {
             g.setColor(backgroundColor);
             g.fillRect(0, 0, refLink.GetWidth(), refLink.GetHeight());
-            System.err.println("EROARE DEBUG: Fundal 'Pause' desenat cu culoare solidă (Assets.backgroundMenu este NULL).");
         }
 
         g.setColor(new Color(0, 0, 0, 100));
         g.fillRect(0, 0, refLink.GetWidth(), refLink.GetHeight());
-
-
         // Desenarea titlului
         g.setColor(textColor);
         g.setFont(titleFont);
@@ -145,16 +181,13 @@ public class PauseState extends State {
         String title = "PAUSED";
         int titleWidth = titleFm.stringWidth(title);
         g.drawString(title, (refLink.GetWidth() - titleWidth) / 2, refLink.GetHeight() / 2 - 150);
-
         // Desenarea optiunilor de meniu
         g.setFont(buttonFont);
         FontMetrics buttonFm = g.getFontMetrics();
-
         int startY = refLink.GetHeight() / 2 - 50;
         int gap = 60;
         int buttonWidth = 350;
         int buttonHeight = 50;
-
         for (int i = 0; i < menuOptions.length; i++) {
             int x = (refLink.GetWidth() - buttonWidth) / 2;
             int y = startY + i * gap;

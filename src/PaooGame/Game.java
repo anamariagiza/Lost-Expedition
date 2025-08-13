@@ -149,7 +149,6 @@ public class Game implements Runnable
     {
         keyManager.Update();
         mouseManager.Update();
-
         if (keyManager.isKeyJustPressed(KeyEvent.VK_F11)) {
             fullScreenMode = !fullScreenMode;
             wnd.setFullScreen(fullScreenMode);

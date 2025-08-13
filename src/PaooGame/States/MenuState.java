@@ -4,6 +4,7 @@ import PaooGame.Graphics.Assets;
 import PaooGame.RefLinks;
 import java.awt.*;
 import java.awt.event.KeyEvent;
+import java.awt.Rectangle;
 
 /*!
  * \class public class MenuState extends State
@@ -18,12 +19,14 @@ public class MenuState extends State
     private final Color disabledColor = new Color(100, 100, 100);
     private final Font titleFont = new Font("Papyrus", Font.BOLD, 36);
     private final Font buttonFont = new Font("Papyrus", Font.BOLD, 18);
-
-    private String[] menuOptions = {"NEW GAME", "LOAD GAME", "SETTINGS", "ABOUT", "QUIT"};
+    private String[] menuOptions = {"NEW GAME", "LOAD GAME", "SETTINGS", "HELP", "ABOUT", "QUIT"};
+    private Rectangle[] buttonBounds;
     private int selectedOption = 0;
     private boolean enterPressed = false;
     private boolean upPressed = false;
     private boolean downPressed = false;
+
+    private int lastWidth, lastHeight;
 
     private long stateEnterTime;
     private final long INPUT_COOLDOWN_MS = 200;
@@ -31,11 +34,6 @@ public class MenuState extends State
 
     private boolean saveGameExists;
 
-    /*!
-     * \fn public MenuState(RefLinks refLink)
-     * \brief Constructorul de initializare al clasei.
-     * \param refLink O referinta catre un obiect "shortcut", obiect ce contine o serie de referinte utile in program.
-     */
     public MenuState(RefLinks refLink)
     {
         super(refLink);
@@ -48,26 +46,39 @@ public class MenuState extends State
             selectedOption = 0;
         }
 
-        System.out.println("DEBUG: Se încearcă încărcarea Assets.backgroundMenu.");
-        if (Assets.backgroundMenu != null) {
-            System.out.println("DEBUG: Assets.backgroundMenu a fost încărcat cu succes (dimensiuni: " + Assets.backgroundMenu.getWidth() + "x" + Assets.backgroundMenu.getHeight() + ").");
-        } else {
-            System.err.println("EROARE DEBUG: Fundal meniu desenat cu culoare solidă (Assets.backgroundMenu este NULL).");
+        lastWidth = refLink.GetWidth();
+        lastHeight = refLink.GetHeight();
+        setupButtons();
+    }
+
+    private void setupButtons() {
+        buttonBounds = new Rectangle[menuOptions.length];
+        int startY = 200;
+        int gap = 60;
+        int buttonWidth = 200;
+        int buttonHeight = 40;
+        for (int i = 0; i < menuOptions.length; i++) {
+            int x = (refLink.GetWidth() - buttonWidth) / 2;
+            int y = startY + i * gap;
+            buttonBounds[i] = new Rectangle(x, y - buttonHeight / 2, buttonWidth, buttonHeight);
         }
     }
 
-    /*!
-     * \fn public void Update()
-     * \brief Actualizeaza starea curenta a meniului.
-     */
     @Override
     public void Update()
     {
+        if (refLink.GetWidth() != lastWidth || refLink.GetHeight() != lastHeight) {
+            setupButtons();
+            lastWidth = refLink.GetWidth();
+            lastHeight = refLink.GetHeight();
+        }
+
         if (System.currentTimeMillis() - stateEnterTime < INPUT_COOLDOWN_MS) {
             return;
         }
 
         handleInput();
+        handleMouseInput();
         long currentTime = System.currentTimeMillis();
         if (currentTime - lastDebugTime > 2000) {
             System.out.println("MenuState activ - optiune selectata: " + selectedOption + " (" + menuOptions[selectedOption] + ")");
@@ -93,7 +104,6 @@ public class MenuState extends State
                 selectedOption--;
                 if (selectedOption < 0) selectedOption = menuOptions.length - 1;
             }
-            System.out.println("Navigare sus - optiune selectata: " + menuOptions[selectedOption]);
         }
         else if(!refLink.GetKeyManager().up)
         {
@@ -111,7 +121,6 @@ public class MenuState extends State
                 selectedOption++;
                 if (selectedOption >= menuOptions.length) selectedOption = 0;
             }
-            System.out.println("Navigare jos - optiune selectata: " + menuOptions[selectedOption]);
         }
         else if(!refLink.GetKeyManager().down)
         {
@@ -125,7 +134,6 @@ public class MenuState extends State
         if((enterKey || spaceKey) && !enterPressed)
         {
             enterPressed = true;
-            System.out.println("Optiune selectata: " + menuOptions[selectedOption]);
             executeSelectedOption();
         }
         else if(!enterKey && !spaceKey)
@@ -134,42 +142,48 @@ public class MenuState extends State
         }
     }
 
+    private void handleMouseInput() {
+        if (refLink.GetMouseManager() == null || buttonBounds == null) return;
+
+        for (int i = 0; i < buttonBounds.length; i++) {
+            if (buttonBounds[i].contains(refLink.GetMouseManager().getMouseX(), refLink.GetMouseManager().getMouseY())) {
+                selectedOption = i;
+                if (refLink.GetMouseManager().isMouseJustClicked()) {
+                    executeSelectedOption();
+                }
+                break;
+            }
+        }
+    }
+
+
     private void executeSelectedOption()
     {
         switch(selectedOption)
         {
             case 0: // NEW GAME
-                System.out.println("Pornire joc nou...");
                 refLink.SetState(new GameState(refLink));
                 break;
             case 1: // LOAD GAME
                 if (saveGameExists) {
-                    System.out.println("Incarcare joc...");
-                    refLink.SetState(new GameState(refLink));
-                } else {
-                    System.out.println("Nu exista joc salvat pentru a fi incarcat.");
+                    refLink.SetState(new GameState(refLink, true));
                 }
                 break;
             case 2: // SETTINGS
-                System.out.println("Deschidere Settings...");
-                refLink.SetStateWithPrevious(new SettingsState(refLink)); // NOU: Folosim noua metoda
+                refLink.SetStateWithPrevious(new SettingsState(refLink));
                 break;
-            case 3: // ABOUT
-                System.out.println("Deschidere About...");
+            case 3: // HELP (opțiunea nouă)
+                refLink.SetStateWithPrevious(new HelpState(refLink));
+                break;
+            case 4: // ABOUT
                 refLink.SetState(new AboutState(refLink));
                 break;
-            case 4: // QUIT
-                System.out.println("Inchidere joc...");
+            case 5: // QUIT
                 System.exit(0);
                 break;
         }
     }
 
-    /*!
-     * \fn public void Draw(Graphics g)
-     * \brief Deseneaza (randeaza) pe ecran starea curenta a meniului.
-     * \param g Contextul grafic in care trebuie sa deseneze starea jocului pe ecran.
-     */
     @Override
     public void Draw(Graphics g)
     {
@@ -178,12 +192,10 @@ public class MenuState extends State
         } else {
             g.setColor(backgroundColor);
             g.fillRect(0, 0, refLink.GetWidth(), refLink.GetHeight());
-            System.err.println("EROARE DEBUG: Fundal meniu desenat cu culoare solidă (Assets.backgroundMenu este NULL).");
         }
 
         g.setColor(new Color(0, 0, 0, 120));
         g.fillRect(0, 0, refLink.GetWidth(), refLink.GetHeight());
-
         g.setColor(new Color(220, 200, 120));
         g.setFont(titleFont);
         FontMetrics titleFm = g.getFontMetrics();
@@ -210,7 +222,6 @@ public class MenuState extends State
             int y = startY + i * gap;
 
             boolean isDisabled = (i == 1 && !saveGameExists);
-
             if(i == selectedOption)
             {
                 g.setColor(isDisabled ? disabledColor.darker() : selectedColor);
@@ -230,7 +241,6 @@ public class MenuState extends State
             g.drawString(menuOptions[i], textX, textY);
             g.setColor(textColor);
             g.drawRect(x, y - buttonHeight / 2, buttonWidth, buttonHeight);
-
             if(i == selectedOption && !isDisabled)
             {
                 g.setColor(Color.YELLOW);
@@ -246,8 +256,8 @@ public class MenuState extends State
         FontMetrics instrFm = g.getFontMetrics();
 
         String[] instructions = {
-                "Foloseste W/S pentru navigare",
-                "Apasa ENTER/SPACE pentru selectare"
+                "Foloseste W/S pentru navigare sau mouse-ul",
+                "Apasa ENTER/SPACE sau clic pentru selectare"
         };
         int instrY = refLink.GetHeight() - 40;
         for(String instruction : instructions)
@@ -256,11 +266,5 @@ public class MenuState extends State
             g.drawString(instruction, (refLink.GetWidth() - instrWidth) / 2, instrY);
             instrY += 15;
         }
-
-        g.setColor(Color.WHITE);
-        g.setFont(new Font("SansSerif", Font.PLAIN, 10));
-        g.drawString("Optiune: " + selectedOption + "/" + (menuOptions.length-1), 10, 20);
-        g.drawString("W: " + refLink.GetKeyManager().up + " S: " + refLink.GetKeyManager().down, 10, 35);
-        g.drawString("Save Exists: " + saveGameExists, 10, 50);
     }
 }

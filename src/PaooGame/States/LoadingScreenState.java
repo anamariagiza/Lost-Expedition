@@ -36,7 +36,8 @@ public class LoadingScreenState extends State {
                 Assets.LoadGameAssets();
                 progress = 0.5f;
 
-                if (Assets.playerIdleAllDirections == null || Assets.playerIdleAllDirections.length == 0 || Assets.playerIdleAllDirections[0] == null) {
+                // Verifică o animație specifică în loc de "AllDirections"
+                if (Assets.playerIdleDown == null || Assets.playerIdleDown.length == 0 || Assets.playerIdleDown[0] == null) {
                     System.err.println("Eroare critica: Cadrele de animatie pentru 'Idle' ale playerului nu au fost incarcate corect. Animațiile nu vor functiona.");
                     assetsLoaded = false;
                 } else {

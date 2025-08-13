@@ -8,7 +8,6 @@ import PaooGame.States.State;
 import PaooGame.Tiles.Tile;
 import PaooGame.Camera.GameCamera;
 import PaooGame.Map.Map;
-
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
@@ -27,7 +26,6 @@ public class Player extends Entity {
 
     private int health;
     private int maxHealth = 100;
-
     private Animation animDown, animUp, animLeft, animRight;
     private Animation animIdleDown, animIdleUp, animIdleLeft, animIdleRight;
     private Animation animRunDown, animRunUp, animRunLeft, animRunRight;
@@ -37,7 +35,7 @@ public class Player extends Entity {
     private Animation animThrust;
     private Animation animHalfslash;
     private Animation animSlash;
-    private Animation activeAnimation;
+    public Animation activeAnimation;
 
     private boolean isMoving;
     private boolean isRunning;
@@ -48,9 +46,10 @@ public class Player extends Entity {
     private boolean isThrusting;
     private boolean isHalfslashing;
     private boolean isSlashing;
-
     private enum Direction { UP, DOWN, LEFT, RIGHT }
     private Direction lastDirection = Direction.DOWN;
+
+    private int attackDamage = 25;
 
     public Player(Game game, float x, float y) {
         super(game.GetRefLinks(), x, y, Assets.PLAYER_FRAME_WIDTH, Assets.PLAYER_FRAME_HEIGHT);
@@ -90,9 +89,9 @@ public class Player extends Entity {
 
         activeAnimation = animIdleDown;
         lastDirection = Direction.DOWN;
-
         isMoving = false; isRunning = false; isJumping = false; isAttacking = false;
-        isHurt = false; isCombatIdle = false; isThrusting = false;
+        isHurt = false; isCombatIdle = false;
+        isThrusting = false;
         isHalfslashing = false; isSlashing = false;
 
         this.bounds = new Rectangle((int)x, (int)y, width, height);
@@ -101,6 +100,12 @@ public class Player extends Entity {
     @Override
     public void Update() {
         if (game == null || game.GetKeyManager() == null) return;
+
+        if (isHurt) {
+            activeAnimation.Update();
+            return;
+        }
+
         GetInput();
 
         game.GetRefLinks().GetGameCamera().centerOnEntity(this);
@@ -110,7 +115,8 @@ public class Player extends Entity {
         } else {
             activeAnimation.Update();
             if (activeAnimation.isFinished()) {
-                isAttacking = false; isHurt = false; isJumping = false;
+                isAttacking = false;
+                isHurt = false; isJumping = false;
                 isCombatIdle = false; isThrusting = false;
                 isHalfslashing = false; isSlashing = false;
                 updateIdleAnimationBasedOnLastDirection();
@@ -139,18 +145,21 @@ public class Player extends Entity {
 
         isRunning = game.GetKeyManager().shift;
         currentSpeed = isRunning ? runSpeed : walkSpeed;
-
         if (game.GetKeyManager().up) {
-            yMove = -currentSpeed; isMoving = true; lastDirection = Direction.UP;
+            yMove = -currentSpeed; isMoving = true;
+            lastDirection = Direction.UP;
         }
         if (game.GetKeyManager().down) {
-            yMove = currentSpeed; isMoving = true; lastDirection = Direction.DOWN;
+            yMove = currentSpeed;
+            isMoving = true; lastDirection = Direction.DOWN;
         }
         if (game.GetKeyManager().left) {
-            xMove = -currentSpeed; isMoving = true; lastDirection = Direction.LEFT;
+            xMove = -currentSpeed;
+            isMoving = true; lastDirection = Direction.LEFT;
         }
         if (game.GetKeyManager().right) {
-            xMove = currentSpeed; isMoving = true; lastDirection = Direction.RIGHT;
+            xMove = currentSpeed;
+            isMoving = true; lastDirection = Direction.RIGHT;
         }
 
         if (!isJumping && !isAttacking && !isHurt && !isCombatIdle &&
@@ -158,20 +167,22 @@ public class Player extends Entity {
             if (game.GetKeyManager().isKeyJustPressed(KeyEvent.VK_SPACE)) {
                 isJumping = true;
                 switch(lastDirection) {
-                    case UP: activeAnimation = animJumpUp; break;
+                    case UP: activeAnimation = animJumpUp;
+                        break;
                     case DOWN: activeAnimation = animJumpDown; break;
                     case LEFT: activeAnimation = animJumpLeft; break;
                     case RIGHT: activeAnimation = animJumpRight; break;
                 }
                 activeAnimation.reset();
-            } else if (game.GetKeyManager().isKeyJustPressed(KeyEvent.VK_J)) {
-                isAttacking = true; isThrusting = true; activeAnimation = animThrust; activeAnimation.reset();
+            } else if (game.GetKeyManager().isKeyJustPressed(KeyEvent.VK_E)) {
+                isAttacking = true;
+                isThrusting = true; activeAnimation = animThrust; activeAnimation.reset();
             } else if (game.GetKeyManager().isKeyJustPressed(KeyEvent.VK_K)) {
-                isAttacking = true; isHalfslashing = true; activeAnimation = animHalfslash; activeAnimation.reset();
-            } else if (game.GetKeyManager().isKeyJustPressed(KeyEvent.VK_B)) {
-                isCombatIdle = true; activeAnimation = animCombatIdle; activeAnimation.reset();
+                isAttacking = true;
+                isHalfslashing = true; activeAnimation = animHalfslash; activeAnimation.reset();
             } else if (game.GetKeyManager().isKeyJustPressed(KeyEvent.VK_SLASH)) {
-                isAttacking = true; isSlashing = true; activeAnimation = animSlash; activeAnimation.reset();
+                isAttacking = true;
+                isSlashing = true; activeAnimation = animSlash; activeAnimation.reset();
             }
         }
         move(xMove, yMove);
@@ -181,14 +192,16 @@ public class Player extends Entity {
         if (isMoving) {
             if (isRunning) {
                 switch(lastDirection) {
-                    case UP: activeAnimation = animRunUp; break;
+                    case UP: activeAnimation = animRunUp;
+                        break;
                     case DOWN: activeAnimation = animRunDown; break;
                     case LEFT: activeAnimation = animRunLeft; break;
                     case RIGHT: activeAnimation = animRunRight; break;
                 }
             } else {
                 switch(lastDirection) {
-                    case UP: activeAnimation = animUp; break;
+                    case UP: activeAnimation = animUp;
+                        break;
                     case DOWN: activeAnimation = animDown; break;
                     case LEFT: activeAnimation = animLeft; break;
                     case RIGHT: activeAnimation = animRight; break;
@@ -200,19 +213,19 @@ public class Player extends Entity {
         activeAnimation.Update();
     }
 
-    // In clasa Player.java
     private void updateIdleAnimationBasedOnLastDirection() {
         switch(lastDirection) {
-            case UP:    activeAnimation = animIdleUp;    break;
+            case UP:    activeAnimation = animIdleUp;
+                break;
             case DOWN:  activeAnimation = animIdleDown;  break;
             case LEFT:  activeAnimation = animIdleLeft;  break;
-            case RIGHT: activeAnimation = animIdleRight; break;
+            case RIGHT: activeAnimation = animIdleRight;
+                break;
             default:    activeAnimation = animIdleDown;  break;
         }
         activeAnimation.reset();
     }
 
-    // ## MODIFICARE ##: Metoda move a fost inlocuita cu versiunea care verifica si coliziunea cu entitatile solide
     private void move(float xAmt, float yAmt) {
         Map currentMap = game.GetRefLinks().GetMap();
         if (currentMap == null) return;
@@ -227,9 +240,15 @@ public class Player extends Entity {
             int tx = (int) ((xAmt > 0 ? newX + width - 1 : newX) / Tile.TILE_WIDTH);
             int ty_top = (int) (y / Tile.TILE_HEIGHT);
             int ty_bottom = (int) ((y + height - 1) / Tile.TILE_HEIGHT);
+
+            // Verificare coliziune cu dala ID 64
+            if (currentMap.GetTile(tx, ty_top).GetId() == 64 || currentMap.GetTile(tx, ty_bottom).GetId() == 64) {
+                collision = true;
+            }
             if (currentMap.GetTile(tx, ty_top).IsSolid() || currentMap.GetTile(tx, ty_bottom).IsSolid()) {
                 collision = true;
             }
+
 
             // 2. Verificare coliziune cu entitati solide (ex: mese)
             if (!collision) {
@@ -238,7 +257,7 @@ public class Player extends Entity {
                     ArrayList<Entity> entities = ((GameState)currentState).getEntities();
                     if (entities != null) {
                         for (Entity e : entities) {
-                            if (e.equals(this)) continue; // Nu verifica coliziunea cu sine insusi
+                            if (e.equals(this)) continue;
                             if (e instanceof DecorativeObject && ((DecorativeObject)e).isSolid()) {
                                 if (proposedBoundsX.intersects(e.GetBounds())) {
                                     collision = true;
@@ -265,9 +284,15 @@ public class Player extends Entity {
             int ty = (int) ((yAmt > 0 ? newY + height - 1 : newY) / Tile.TILE_HEIGHT);
             int tx_left = (int) (x / Tile.TILE_WIDTH);
             int tx_right = (int) ((x + width - 1) / Tile.TILE_WIDTH);
+
+            // Verificare coliziune cu dala ID 64
+            if (currentMap.GetTile(tx_left, ty).GetId() == 64 || currentMap.GetTile(tx_right, ty).GetId() == 64) {
+                collision = true;
+            }
             if (currentMap.GetTile(tx_left, ty).IsSolid() || currentMap.GetTile(tx_right, ty).IsSolid()) {
                 collision = true;
             }
+
 
             // 2. Verificare coliziune cu entitati solide (ex: mese)
             if (!collision) {
@@ -308,27 +333,48 @@ public class Player extends Entity {
         return activeAnimation.getCurrentFrame();
     }
 
-    @Override public float GetX() { return x; }
-    @Override public float GetY() { return y; }
-    @Override public int GetWidth() { return width; }
-    @Override public int GetHeight() { return height; }
-    @Override public Rectangle GetBounds() { return bounds; }
+    public Animation getActiveAnimation() {
+        return activeAnimation;
+    }
+
+    public boolean isHurt() {
+        return isHurt;
+    }
+
+    @Override public float GetX() { return x;
+    }
+    @Override public float GetY() { return y;
+    }
+    @Override public int GetWidth() { return width;
+    }
+    @Override public int GetHeight() { return height;
+    }
+    @Override public Rectangle GetBounds() { return bounds;
+    }
 
     @Override
     public void SetPosition(float x, float y) {
         super.SetPosition(x,y);
         isMoving = false; isRunning = false; isJumping = false; isAttacking = false;
-        isHurt = false; isCombatIdle = false; isThrusting = false;
+        isHurt = false; isCombatIdle = false;
+        isThrusting = false;
         isHalfslashing = false; isSlashing = false;
         updateIdleAnimationBasedOnLastDirection();
     }
 
-    public int getHealth() { return health; }
-    public int getMaxHealth() { return maxHealth; }
+    public int getHealth() { return health;
+    }
+    public int getMaxHealth() { return maxHealth;
+    }
     public void takeDamage(int amount) {
         health -= amount;
         if (health < 0) { health = 0; }
         System.out.println("DEBUG: James a luat " + amount + " daune. Viata ramasa: " + health);
+        if (health <= 0) {
+            isHurt = true;
+            activeAnimation = animHurt;
+            activeAnimation.reset();
+        }
     }
     public void setHealth(int health) {
         this.health = health;
@@ -343,5 +389,27 @@ public class Player extends Entity {
     private Animation safeAnimation(BufferedImage[] frames, int speed) {
         BufferedImage defaultFrame = new BufferedImage(Assets.PLAYER_FRAME_WIDTH, Assets.PLAYER_FRAME_HEIGHT, BufferedImage.TYPE_INT_ARGB);
         return (frames != null && frames.length > 0) ? new Animation(speed, frames) : new Animation(100, new BufferedImage[]{defaultFrame});
+    }
+
+    public int getAttackDamage() {
+        return attackDamage;
+    }
+
+    public Rectangle getAttackBounds() {
+        if (isAttacking) {
+            int attackWidth = 40;
+            int attackHeight = 40;
+            int attackX = (int) x + width / 2;
+            int attackY = (int) y + height / 2;
+
+            switch (lastDirection) {
+                case UP:    attackY -= (height / 2 + attackHeight); break;
+                case DOWN:  attackY += height / 2; break;
+                case LEFT:  attackX -= (width / 2 + attackWidth); break;
+                case RIGHT: attackX += width / 2; break;
+            }
+            return new Rectangle(attackX, attackY, attackWidth, attackHeight);
+        }
+        return null;
     }
 }

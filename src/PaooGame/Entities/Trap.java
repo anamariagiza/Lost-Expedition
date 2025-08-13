@@ -1,66 +1,86 @@
 package PaooGame.Entities;
 
-import PaooGame.RefLinks;
 import PaooGame.Graphics.Assets;
+import PaooGame.Graphics.Animation;
+import PaooGame.RefLinks;
 import PaooGame.Tiles.Tile;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.util.Arrays;
 
-/*!
- * \class public class Trap extends Entity
- * \brief Implementeaza notiunea de capcana.
- * Capcanele sunt obstacole statice care provoaca daune jucatorului la contact.
- */
 public class Trap extends Entity {
 
     private static final int DEFAULT_TRAP_WIDTH = 48;
     private static final int DEFAULT_TRAP_HEIGHT = 48;
+    private static final int DAMAGE_AMOUNT = 40;
 
-    private BufferedImage trapImage;
+    private boolean active = false;
+    private boolean isAnimating = false;
+    private Animation activeAnimation;
+    private long activationTime = 0;
+    private final long ACTIVE_DURATION_MS = 2000;
 
-    /*!
-     * \fn public Trap(RefLinks refLink, float x, float y, BufferedImage image)
-     * \brief Constructorul de initializare al clasei Trap.
-     * \param refLink Referinta catre obiectul RefLinks.
-     * \param x Coordonata X initiala.
-     * \param y Coordonata Y initiala.
-     * \param image Imaginea capcanei.
-     */
-    public Trap(RefLinks refLink, float x, float y, BufferedImage image) {
+    public Trap(RefLinks refLink, float x, float y) {
         super(refLink, x, y, DEFAULT_TRAP_WIDTH, DEFAULT_TRAP_HEIGHT);
-        this.trapImage = image;
-
-        // Am folosit metoda SetPosition din clasa de baza pentru a ne asigura ca bounds e initializat corect.
         SetPosition(x, y);
+        this.activeAnimation = new Animation(150, Arrays.asList(Assets.trapActiveAnim[0], Assets.trapActiveAnim[1], Assets.trapActiveAnim[2]).toArray(new BufferedImage[0]));
     }
 
-    /*!
-     * \fn public void Update()
-     * \brief Actualizeaza starea capcanei. Logica de daune este mutata in GameState.
-     */
+    public void setActive(boolean active) {
+        if (this.active == active) return;
+        this.active = active;
+        if (active) {
+            isAnimating = true;
+            this.activeAnimation.reset();
+            activationTime = System.currentTimeMillis();
+        } else {
+            isAnimating = false;
+        }
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public int getDamage() {
+        return DAMAGE_AMOUNT;
+    }
+
     @Override
     public void Update() {
-        // Logica de coliziune a fost mutată în GameState.java
+        if (isAnimating) {
+            this.activeAnimation.Update();
+            if (this.activeAnimation.isFinished()) {
+                isAnimating = false;
+            }
+        }
+
+        // Timer pentru închiderea capcanei după 2 secunde
+        if (active && System.currentTimeMillis() - activationTime >= ACTIVE_DURATION_MS) {
+            setActive(false);
+            System.out.println("DEBUG Trap: Capcana s-a dezactivat.");
+        }
     }
 
-    /*!
-     * \fn public void Draw(Graphics g)
-     * \brief Deseneaza capcana pe ecran.
-     * \param g Contextul grafic.
-     */
     @Override
     public void Draw(Graphics g) {
-        int drawX = (int)((x - refLink.GetGameCamera().getxOffset()) * refLink.GetGameCamera().getZoomLevel());
-        int drawY = (int)((y - refLink.GetGameCamera().getyOffset()) * refLink.GetGameCamera().getZoomLevel());
-        int scaledWidth = (int)(width * refLink.GetGameCamera().getZoomLevel());
-        int scaledHeight = (int)(height * refLink.GetGameCamera().getZoomLevel());
+        BufferedImage imageToDraw;
+        if (active || isAnimating) {
+            imageToDraw = activeAnimation.getCurrentFrame();
+        } else {
+            imageToDraw = Assets.trapDisabled;
+        }
 
-        if (trapImage != null) {
-            g.drawImage(trapImage, drawX, drawY, scaledWidth, scaledHeight, null);
+        if (imageToDraw != null) {
+            int drawX = (int) ((x - refLink.GetGameCamera().getxOffset()) * refLink.GetGameCamera().getZoomLevel());
+            int drawY = (int) ((y - refLink.GetGameCamera().getyOffset()) * refLink.GetGameCamera().getZoomLevel());
+            int scaledWidth = (int) (width * refLink.GetGameCamera().getZoomLevel());
+            int scaledHeight = (int) (height * refLink.GetGameCamera().getZoomLevel());
+            g.drawImage(imageToDraw, drawX, drawY, scaledWidth, scaledHeight, null);
         } else {
             g.setColor(Color.RED);
-            g.fillRect(drawX, drawY, scaledWidth, scaledHeight);
+            g.fillRect((int) x, (int) y, width, height);
         }
     }
 }
