@@ -1,7 +1,9 @@
 package PaooGame.Entities;
 
 import PaooGame.RefLinks;
+import PaooGame.Graphics.Assets;
 import java.awt.*;
+import java.awt.image.BufferedImage;
 
 /*!
  * \class public abstract class Entity
@@ -46,7 +48,37 @@ public abstract class Entity {
      */
     public abstract void Draw(Graphics g);
 
-    // Getters
+    /*!
+     * \fn public void drawInteractionPopup(Graphics g)
+     * \brief Deseneaza pop-up-ul cu tasta E deasupra entitatii.
+     */
+    public void drawInteractionPopup(Graphics g) {
+        if(refLink.GetPlayer() == null) return;
+
+        double distance = Math.sqrt(Math.pow(refLink.GetPlayer().GetX() - x, 2) + Math.pow(refLink.GetPlayer().GetY() - y, 2));
+
+        if (distance <= 100) {
+            int popupWidth = 32;
+            int popupHeight = 32;
+
+            // Coordonatele pe ecran
+            int drawX = (int)((x - refLink.GetGameCamera().getxOffset()) + width/2 - popupWidth/2);
+            int drawY = (int)((y - refLink.GetGameCamera().getyOffset()) - popupHeight - 10);
+
+            // Desenăm fundalul semi-transparent
+            g.setColor(new Color(0, 0, 0, 150));
+            g.fillRect(drawX, drawY, popupWidth, popupHeight);
+
+            if (Assets.popupImage != null) {
+                g.drawImage(Assets.popupImage, drawX, drawY, popupWidth, popupHeight, null);
+            } else {
+                g.setColor(Color.BLUE);
+                g.fillRect(drawX, drawY, popupWidth, popupHeight);
+            }
+        }
+    }
+
+    // Getters și Setters
     public float GetX() {
         return x;
     }

@@ -29,7 +29,6 @@ public class Chest extends Entity {
     @Override
     public void Update() {
         if (refLink.GetPlayer() == null) return;
-
         if (this.bounds.intersects(refLink.GetPlayer().GetBounds()) && canInteract) {
             if (refLink.GetKeyManager().isKeyJustPressed(KeyEvent.VK_E) && !opened) {
                 opened = true;
@@ -47,11 +46,12 @@ public class Chest extends Entity {
     public void Draw(Graphics g) {
         BufferedImage image = opened ? Assets.chestOpened : Assets.chestClosed;
         if (image != null) {
-            int drawX = (int)((x - refLink.GetGameCamera().getxOffset()) * refLink.GetGameCamera().getZoomLevel());
-            int drawY = (int)((y - refLink.GetGameCamera().getyOffset()) * refLink.GetGameCamera().getZoomLevel());
-            int scaledWidth = (int)(width * refLink.GetGameCamera().getZoomLevel());
-            int scaledHeight = (int)(height * refLink.GetGameCamera().getZoomLevel());
+            int drawX = (int)((x - refLink.GetGameCamera().getxOffset()));
+            int drawY = (int)((y - refLink.GetGameCamera().getyOffset()));
+            int scaledWidth = (int)(width);
+            int scaledHeight = (int)(height);
             g.drawImage(image, drawX, drawY, scaledWidth, scaledHeight, null);
         }
+        drawInteractionPopup(g);
     }
 }

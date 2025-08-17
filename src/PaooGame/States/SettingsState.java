@@ -21,7 +21,7 @@ public class SettingsState extends State
     private final Font optionFont = new Font("SansSerif", Font.BOLD, 16);
     private final Font instructionFont = new Font("SansSerif", Font.PLAIN, 12);
 
-    private String[] settingOptions = {"SUNET: ON", "MUZICA: ON", "VOLUM: 100%", "SALVARE SETARI", "INAPOI LA MENIU"};
+    private String[] settingOptions = {"VOLUM: 100%", "SALVARE SETARI", "INAPOI LA MENIU"};
     private Rectangle[] buttonBounds;
     private Rectangle leftArrowBounds;
     private Rectangle rightArrowBounds;
@@ -33,8 +33,6 @@ public class SettingsState extends State
     private boolean rightPressed = false;
     private boolean escapePressed = false;
 
-    private boolean soundEnabled;
-    private boolean musicEnabled;
     private int volume;
 
     private String saveMessage = null;
@@ -42,7 +40,6 @@ public class SettingsState extends State
     private final long MESSAGE_DURATION_MS = 2000;
 
     private int lastWidth, lastHeight;
-
 
     public SettingsState(RefLinks refLink)
     {
@@ -67,8 +64,7 @@ public class SettingsState extends State
             buttonBounds[i] = new Rectangle(x, y - buttonHeight / 2, buttonWidth, buttonHeight);
         }
 
-        // Setează zonele de interacțiune pentru butoanele de volum
-        int volumeY = startY + 2 * gap;
+        int volumeY = startY + 0 * gap; // Am ajustat indexul pentru volum
         int buttonX = (refLink.GetWidth() - buttonWidth) / 2;
         leftArrowBounds = new Rectangle(buttonX - 40, volumeY - buttonHeight / 2, 30, buttonHeight);
         rightArrowBounds = new Rectangle(buttonX + buttonWidth + 10, volumeY - buttonHeight / 2, 30, buttonHeight);
@@ -166,13 +162,11 @@ public class SettingsState extends State
 
     private void handleMouseInput() {
         if (refLink.GetMouseManager() == null || buttonBounds == null) return;
-
-        // Verifică butoanele principale
         for (int i = 0; i < buttonBounds.length; i++) {
             if (buttonBounds[i].contains(refLink.GetMouseManager().getMouseX(), refLink.GetMouseManager().getMouseY())) {
                 selectedOption = i;
                 if (refLink.GetMouseManager().isMouseJustClicked()) {
-                    if (selectedOption == 2) { // Logică separată pentru butoanele de volum
+                    if (selectedOption == 0) {
                         return;
                     }
                     executeSelectedOption();
@@ -181,8 +175,7 @@ public class SettingsState extends State
             }
         }
 
-        // Verifică butoanele pentru volum dacă opțiunea curentă este "VOLUM"
-        if (selectedOption == 2) {
+        if (selectedOption == 0) { // Am ajustat indexul pentru volum
             if (leftArrowBounds.contains(refLink.GetMouseManager().getMouseX(), refLink.GetMouseManager().getMouseY())) {
                 if (refLink.GetMouseManager().isMouseJustClicked()) {
                     modifySetting(-1);
@@ -200,12 +193,6 @@ public class SettingsState extends State
         switch(selectedOption)
         {
             case 0:
-                soundEnabled = !soundEnabled;
-                break;
-            case 1:
-                musicEnabled = !musicEnabled;
-                break;
-            case 2:
                 volume += direction * 10;
                 if(volume < 0) volume = 0;
                 if(volume > 100) volume = 100;
@@ -218,17 +205,11 @@ public class SettingsState extends State
         switch(selectedOption)
         {
             case 0:
-                soundEnabled = !soundEnabled;
                 break;
             case 1:
-                musicEnabled = !musicEnabled;
-                break;
-            case 2:
-                break;
-            case 3:
                 saveSettings();
                 break;
-            case 4:
+            case 2:
                 refLink.SetState(refLink.GetPreviousState());
                 break;
         }
@@ -236,14 +217,12 @@ public class SettingsState extends State
 
     private void updateSettingDisplays()
     {
-        settingOptions[0] = "SUNET: " + (soundEnabled ? "ON" : "OFF");
-        settingOptions[1] = "MUZICA: " + (musicEnabled ? "ON" : "OFF");
-        settingOptions[2] = "VOLUM: " + volume + "%";
+        settingOptions[0] = "VOLUM: " + volume + "%";
     }
 
     private void saveSettings()
     {
-        refLink.GetDatabaseManager().saveSettingsData(soundEnabled, musicEnabled, volume);
+        refLink.GetDatabaseManager().saveSettingsData(true, true, volume);
         saveMessage = "Setari salvate!";
         saveMessageTime = System.currentTimeMillis();
         System.out.println("Setari salvate in baza de date.");
@@ -253,13 +232,9 @@ public class SettingsState extends State
     {
         DatabaseManager.SettingsData loadedSettings = refLink.GetDatabaseManager().loadSettingsData();
         if (loadedSettings != null) {
-            soundEnabled = loadedSettings.soundEnabled;
-            musicEnabled = loadedSettings.musicEnabled;
             volume = loadedSettings.volume;
-            System.out.println("Setari incarcate din baza de date: Sunet=" + soundEnabled + ", Muzica=" + musicEnabled + ", Volum=" + volume);
+            System.out.println("Setari incarcate din baza de date: Sunet=" + loadedSettings.soundEnabled + ", Muzica=" + loadedSettings.musicEnabled + ", Volum=" + volume);
         } else {
-            soundEnabled = true;
-            musicEnabled = true;
             volume = 100;
             System.out.println("Nu s-au gasit setari salvate. Se folosesc setari implicite.");
         }
@@ -310,9 +285,9 @@ public class SettingsState extends State
 
             g.setColor(outlineColor);
             g.drawRect(x, y - buttonHeight / 2, buttonWidth, buttonHeight);
-            if(i == 2)
+            if(i < 1) // Am ajustat condiția pentru a afișa săgețile doar la volum
             {
-                g.setColor(Color.WHITE);
+                g.setColor(currentTextColor);
                 g.drawString("<", x - 30, textY);
                 g.drawString(">", x + buttonWidth + 10, textY);
             }

@@ -42,7 +42,6 @@ public class Agent extends Entity {
     private final long DAMAGE_COOLDOWN_MS = 500;
     private final long ATTACK_COOLDOWN_MS = 1000;
     private long lastAttackTime = 0;
-
     private enum Direction { UP, DOWN, LEFT, RIGHT }
 
 
@@ -64,7 +63,6 @@ public class Agent extends Entity {
         this.isPatrolling = isPatrolling;
 
         this.bounds = new Rectangle(0, 0, width, height);
-
         // Inițializarea animațiilor Agentului
         animIdleDown = safeAnimation(Assets.agentIdleDown, 200);
         animIdleUp = safeAnimation(Assets.agentIdleUp, 200);
@@ -80,7 +78,6 @@ public class Agent extends Entity {
         animRunUp = safeAnimation(Assets.agentRunUp, 100);
         animRunLeft = safeAnimation(Assets.agentRunLeft, 100);
         animRunRight = safeAnimation(Assets.agentRunRight, 100);
-
         animThrust = safeAnimation(Assets.agentThrust, 100);
         animSlash = safeAnimation(Assets.agentSlash, 100);
 
@@ -170,7 +167,6 @@ public class Agent extends Entity {
         float dx = playerCenterX - agentCenterX;
         float dy = playerCenterY - agentCenterY;
         float distance = (float) Math.sqrt(dx * dx + dy * dy);
-
         if (distance > 10) {
             x += (dx / distance) * CHASE_SPEED;
             y += (dy / distance) * CHASE_SPEED;
@@ -243,28 +239,24 @@ public class Agent extends Entity {
      * \brief Deseneaza agentul pe ecran.
      * \param g Contextul grafic.
      */
+    // Metoda Draw modificată (fără zoom)
     @Override
     public void Draw(Graphics g) {
         if (health <= 0) return;
-
-        int drawX = (int)((x - refLink.GetGameCamera().getxOffset()) * refLink.GetGameCamera().getZoomLevel());
-        int drawY = (int)((y - refLink.GetGameCamera().getyOffset()) * refLink.GetGameCamera().getZoomLevel());
-        int scaledWidth = (int)(width * refLink.GetGameCamera().getZoomLevel());
-        int scaledHeight = (int)(height * refLink.GetGameCamera().getZoomLevel());
+        int drawX = (int)(x - refLink.GetGameCamera().getxOffset());
+        int drawY = (int)(y - refLink.GetGameCamera().getyOffset());
         BufferedImage currentFrame = activeAnimation.getCurrentFrame();
-
         if (currentFrame != null) {
             boolean flip = lastDirection == Direction.LEFT;
             if (flip) {
-                g.drawImage(currentFrame, drawX + scaledWidth, drawY, -scaledWidth, scaledHeight, null);
+                g.drawImage(currentFrame, drawX + width, drawY, -width, height, null);
             } else {
-                g.drawImage(currentFrame, drawX, drawY, scaledWidth, scaledHeight, null);
+                g.drawImage(currentFrame, drawX, drawY, width, height, null);
             }
         } else {
             g.setColor(Color.BLUE);
-            g.fillRect(drawX, drawY, scaledWidth, scaledHeight);
+            g.fillRect(drawX, drawY, width, height);
         }
-
         drawHealthBar(g);
     }
 
@@ -273,8 +265,8 @@ public class Agent extends Entity {
         int barHeight = 5;
         int healthWidth = (int)(((double)health / maxHealth) * barWidth);
 
-        int drawX = (int)((x - refLink.GetGameCamera().getxOffset()) * refLink.GetGameCamera().getZoomLevel());
-        int drawY = (int)((y - refLink.GetGameCamera().getyOffset()) * refLink.GetGameCamera().getZoomLevel());
+        int drawX = (int)((x - refLink.GetGameCamera().getxOffset()));
+        int drawY = (int)((y - refLink.GetGameCamera().getyOffset()));
 
         g.setColor(Color.RED);
         g.fillRect(drawX, drawY - 10, barWidth, barHeight);

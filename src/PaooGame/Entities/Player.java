@@ -48,7 +48,6 @@ public class Player extends Entity {
     private boolean isSlashing;
     private enum Direction { UP, DOWN, LEFT, RIGHT }
     private Direction lastDirection = Direction.DOWN;
-
     private int attackDamage = 25;
 
     public Player(Game game, float x, float y) {
@@ -100,7 +99,6 @@ public class Player extends Entity {
     @Override
     public void Update() {
         if (game == null || game.GetKeyManager() == null) return;
-
         if (isHurt) {
             activeAnimation.Update();
             return;
@@ -129,12 +127,9 @@ public class Player extends Entity {
         GameCamera camera = game.GetRefLinks().GetGameCamera();
         BufferedImage playerFrame = GetActiveFrame();
         if (playerFrame != null) {
-            float zoom = camera.getZoomLevel();
-            int drawX = (int)((x - camera.getxOffset()) * zoom);
-            int drawY = (int)((y - camera.getyOffset()) * zoom);
-            int scaledWidth = (int)(width * zoom);
-            int scaledHeight = (int)(height * zoom);
-            g.drawImage(playerFrame, drawX, drawY, scaledWidth, scaledHeight, null);
+            int drawX = (int)(x - camera.getxOffset());
+            int drawY = (int)(y - camera.getyOffset());
+            g.drawImage(playerFrame, drawX, drawY, width, height, null);
         }
     }
 
@@ -174,7 +169,7 @@ public class Player extends Entity {
                     case RIGHT: activeAnimation = animJumpRight; break;
                 }
                 activeAnimation.reset();
-            } else if (game.GetKeyManager().isKeyJustPressed(KeyEvent.VK_E)) {
+            } else if (game.GetKeyManager().isKeyJustPressed(KeyEvent.VK_J)) {
                 isAttacking = true;
                 isThrusting = true; activeAnimation = animThrust; activeAnimation.reset();
             } else if (game.GetKeyManager().isKeyJustPressed(KeyEvent.VK_K)) {
@@ -240,7 +235,6 @@ public class Player extends Entity {
             int tx = (int) ((xAmt > 0 ? newX + width - 1 : newX) / Tile.TILE_WIDTH);
             int ty_top = (int) (y / Tile.TILE_HEIGHT);
             int ty_bottom = (int) ((y + height - 1) / Tile.TILE_HEIGHT);
-
             // Verificare coliziune cu dala ID 64
             if (currentMap.GetTile(tx, ty_top).GetId() == 64 || currentMap.GetTile(tx, ty_bottom).GetId() == 64) {
                 collision = true;
@@ -258,8 +252,8 @@ public class Player extends Entity {
                     if (entities != null) {
                         for (Entity e : entities) {
                             if (e.equals(this)) continue;
-                            if (e instanceof DecorativeObject && ((DecorativeObject)e).isSolid()) {
-                                if (proposedBoundsX.intersects(e.GetBounds())) {
+                            if (e instanceof DecorativeObject) {
+                                if (((DecorativeObject) e).isSolid() && proposedBoundsX.intersects(e.GetBounds())) {
                                     collision = true;
                                     break;
                                 }
@@ -267,6 +261,7 @@ public class Player extends Entity {
                         }
                     }
                 }
+
             }
 
             if (!collision) {
@@ -284,7 +279,6 @@ public class Player extends Entity {
             int ty = (int) ((yAmt > 0 ? newY + height - 1 : newY) / Tile.TILE_HEIGHT);
             int tx_left = (int) (x / Tile.TILE_WIDTH);
             int tx_right = (int) ((x + width - 1) / Tile.TILE_WIDTH);
-
             // Verificare coliziune cu dala ID 64
             if (currentMap.GetTile(tx_left, ty).GetId() == 64 || currentMap.GetTile(tx_right, ty).GetId() == 64) {
                 collision = true;
@@ -302,8 +296,8 @@ public class Player extends Entity {
                     if (entities != null) {
                         for (Entity e : entities) {
                             if (e.equals(this)) continue;
-                            if (e instanceof DecorativeObject && ((DecorativeObject)e).isSolid()) {
-                                if (proposedBoundsY.intersects(e.GetBounds())) {
+                            if (e instanceof DecorativeObject) {
+                                if (((DecorativeObject) e).isSolid() && proposedBoundsY.intersects(e.GetBounds())) {
                                     collision = true;
                                     break;
                                 }
@@ -311,6 +305,7 @@ public class Player extends Entity {
                         }
                     }
                 }
+
             }
 
             if (!collision) {
@@ -362,10 +357,8 @@ public class Player extends Entity {
         updateIdleAnimationBasedOnLastDirection();
     }
 
-    public int getHealth() { return health;
-    }
-    public int getMaxHealth() { return maxHealth;
-    }
+    public int getHealth() { return health; }
+    public int getMaxHealth() { return maxHealth; }
     public void takeDamage(int amount) {
         health -= amount;
         if (health < 0) { health = 0; }
@@ -381,6 +374,7 @@ public class Player extends Entity {
         if (this.health < 0) { this.health = 0; }
         System.out.println("DEBUG: Viata lui James a fost setata la " + this.health);
     }
+
     public void resetHealth() {
         health = maxHealth;
         System.out.println("DEBUG: Viata lui James a fost resetata la " + health);
@@ -403,13 +397,23 @@ public class Player extends Entity {
             int attackY = (int) y + height / 2;
 
             switch (lastDirection) {
-                case UP:    attackY -= (height / 2 + attackHeight); break;
+                case UP:    attackY -= (height / 2 + attackHeight);
+                    break;
                 case DOWN:  attackY += height / 2; break;
-                case LEFT:  attackX -= (width / 2 + attackWidth); break;
+                case LEFT:  attackX -= (width / 2 + attackWidth);
+                    break;
                 case RIGHT: attackX += width / 2; break;
             }
             return new Rectangle(attackX, attackY, attackWidth, attackHeight);
         }
         return null;
+    }
+
+    /*!
+     * \fn public void updateBoundingBox()
+     * \brief Actualizeaza bounding box-ul jucatorului.
+     */
+    public void updateBoundingBox() {
+        this.bounds.setLocation((int) x, (int) y);
     }
 }

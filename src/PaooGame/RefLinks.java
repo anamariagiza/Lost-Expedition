@@ -1,5 +1,4 @@
 package PaooGame;
-
 import PaooGame.Input.KeyManager;
 import PaooGame.Input.MouseManager;
 import PaooGame.Map.Map;
@@ -8,6 +7,7 @@ import PaooGame.States.State;
 import PaooGame.Entities.Player;
 import PaooGame.Camera.GameCamera;
 import PaooGame.Utils.DatabaseManager;
+import PaooGame.States.GameState;
 
 /*!
  * \class public class RefLinks
@@ -22,8 +22,7 @@ public class RefLinks
     private GameCamera gameCamera;
     private DatabaseManager dbManager;
     private MouseManager mouseManager;
-
-    private State previousState;
+    private GameState persistedGameState = null;
 
     /*!
      * \fn public RefLinks(Game game)
@@ -36,7 +35,6 @@ public class RefLinks
         this.gameCamera = game.GetGameCamera();
         this.dbManager = new DatabaseManager();
         this.mouseManager = game.GetMouseManager();
-        this.previousState = null;
     }
 
     /*!
@@ -146,21 +144,11 @@ public class RefLinks
     }
 
     /*!
-     * \fn public void SetStateWithPrevious(State state)
-     * \brief Seteaza noua stare a jocului, salvand-o pe cea curenta ca stare anterioara.
-     * \param state Noua stare a jocului.
-     */
-    public void SetStateWithPrevious(State state) {
-        this.previousState = State.GetState();
-        State.SetState(state);
-    }
-
-    /*!
      * \fn public State GetPreviousState()
      * \brief Returneaza starea anterioara salvata.
      */
     public State GetPreviousState() {
-        return previousState;
+        return State.GetPreviousStateStatic();
     }
 
     /*!
@@ -169,5 +157,23 @@ public class RefLinks
      */
     public DatabaseManager GetDatabaseManager() {
         return dbManager;
+    }
+
+    public GameState getPersistedGameState() {
+        return persistedGameState;
+    }
+
+    public void setPersistedGameState(GameState state) {
+        this.persistedGameState = state;
+    }
+
+    private GameState level1State;
+
+    public void SetLevel1State(GameState level1State) {
+        this.level1State = level1State;
+    }
+
+    public GameState GetLevel1State() {
+        return level1State;
     }
 }

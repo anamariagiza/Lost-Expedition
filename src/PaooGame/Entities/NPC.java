@@ -11,11 +11,6 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 
-/*!
- * \class public class NPC extends Entity
- * \brief Implementeaza notiunea de NPC (Non-Player Character) - Paznicul pesterii.
- * Un NPC este un caracter static cu care jucatorul poate interactiona.
- */
 public class NPC extends Entity {
 
     private Animation anim;
@@ -26,13 +21,6 @@ public class NPC extends Entity {
     private final int INTERACTION_DISTANCE = 60;
     private boolean hasGivenTalisman = false;
 
-    /*!
-     * \fn public NPC(RefLinks refLink, float x, float y)
-     * \brief Constructorul de initializare al clasei NPC.
-     * \param refLink Referinta catre obiectul RefLinks.
-     * \param x Coordonata X initiala.
-     * \param y Coordonata Y initiala.
-     */
     public NPC(RefLinks refLink, float x, float y) {
         super(refLink, x, y, Assets.NPC_FRAME_WIDTH, Assets.NPC_FRAME_HEIGHT);
         if (Assets.npcIdleAnim != null && Assets.npcIdleAnim.length > 0) {
@@ -44,10 +32,6 @@ public class NPC extends Entity {
         this.bounds = new Rectangle((int)x, (int)y, width, height);
     }
 
-    /*!
-     * \fn public void Update()
-     * \brief Actualizeaza starea NPC-ului (animatia si interacțiunea).
-     */
     @Override
     public void Update() {
         anim.Update();
@@ -58,10 +42,6 @@ public class NPC extends Entity {
         }
     }
 
-    /*!
-     * \fn private void checkPlayerInteraction()
-     * \brief Verifica interacțiunea jucatorului cu NPC-ul.
-     */
     private void checkPlayerInteraction() {
         Player player = refLink.GetPlayer();
         if (player == null) return;
@@ -73,7 +53,7 @@ public class NPC extends Entity {
                 GameState gameState = (GameState) currentState;
                 if (!hasGivenTalisman) {
                     if (gameState.hasTalismanCollected()) {
-                        dialogueMessage = "Ah, ai adus Talismanul Soarelui! Acum poarta spre pestera e deschisa!";
+                        dialogueMessage = "Ah, ai adus Talismanul Lunii! Acum poarta spre pestera e deschisa!";
                         showMessage = true;
                         messageDisplayTime = System.currentTimeMillis();
                         hasGivenTalisman = true;
@@ -81,7 +61,7 @@ public class NPC extends Entity {
                         gameState.removeTalismanFromInventory();
                         System.out.println("DEBUG NPC: Jucatorul a dat talismanul. Intrarea e deblocata.");
                     } else {
-                        dialogueMessage = "Pentru a intra in pestera, trebuie sa imi aduci Talismanul Soarelui.";
+                        dialogueMessage = "Pentru a intra in pestera, trebuie sa imi aduci Talismanul Lunii.";
                         showMessage = true;
                         messageDisplayTime = System.currentTimeMillis();
                         System.out.println("DEBUG NPC: Jucatorul a interactionat, dar nu are talismanul.");
@@ -96,27 +76,34 @@ public class NPC extends Entity {
     }
 
 
-    /*!
-     * \fn public void Draw(Graphics g)
-     * \brief Deseneaza NPC-ul pe ecran.
-     * \param g Contextul grafic.
-     */
     @Override
     public void Draw(Graphics g) {
-        int drawX = (int)((x - refLink.GetGameCamera().getxOffset()) * refLink.GetGameCamera().getZoomLevel());
-        int drawY = (int)((y - refLink.GetGameCamera().getyOffset()) * refLink.GetGameCamera().getZoomLevel());
-        int scaledWidth = (int)(width * refLink.GetGameCamera().getZoomLevel());
-        int scaledHeight = (int)(height * refLink.GetGameCamera().getZoomLevel());
+        int drawX = (int)((x - refLink.GetGameCamera().getxOffset()));
+        int drawY = (int)((y - refLink.GetGameCamera().getyOffset()));
+        int scaledWidth = (int)(width);
+        int scaledHeight = (int)(height);
         g.drawImage(anim.getCurrentFrame(), drawX, drawY, scaledWidth, scaledHeight, null);
 
+        if (!hasGivenTalisman) {
+            drawInteractionPopup(g);
+        }
+
         if (showMessage) {
-            g.setColor(new Color(0, 0, 0, 180));
-            g.fillRect(drawX - 50, drawY - 40, scaledWidth + 100, 30);
-            g.setColor(Color.WHITE);
-            g.setFont(new Font("Arial", Font.PLAIN, 12));
+            g.setFont(new Font("Arial", Font.PLAIN, 16));
             FontMetrics fm = g.getFontMetrics();
             int textWidth = fm.stringWidth(dialogueMessage);
-            g.drawString(dialogueMessage, drawX - 50 + (scaledWidth + 100 - textWidth) / 2, drawY - 25 + fm.getAscent() / 2);
+            int textHeight = fm.getHeight();
+            int padding = 10;
+            int boxWidth = textWidth + 2 * padding;
+            int boxHeight = textHeight + 2 * padding;
+            int boxX = drawX + (scaledWidth - boxWidth) / 2;
+            int boxY = drawY - boxHeight - 10;
+
+            g.setColor(new Color(0, 0, 0, 180));
+            g.fillRect(boxX, boxY, boxWidth, boxHeight);
+
+            g.setColor(Color.WHITE);
+            g.drawString(dialogueMessage, boxX + padding, boxY + padding + fm.getAscent());
         }
     }
 }

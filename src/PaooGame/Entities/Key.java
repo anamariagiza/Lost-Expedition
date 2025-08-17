@@ -9,10 +9,6 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 
-/*!
- * \class public class Key extends Entity
- * \brief Implementeaza notiunea de cheie, un obiect colectabil care deblocheaza progresul.
- */
 public class Key extends Entity {
 
     public enum KeyType {
@@ -28,15 +24,6 @@ public class Key extends Entity {
     private KeyType type;
     private int associatedPuzzleId = -1;
 
-    /*!
-     * \fn public Key(RefLinks refLink, float x, float y, BufferedImage image, KeyType type)
-     * \brief Constructorul de initializare al clasei Key cu specificarea tipului.
-     * \param refLink Referinta catre obiectul RefLinks.
-     * \param x Coordonata X initiala.
-     * \param y Coordonata Y initiala.
-     * \param image Imaginea cheii.
-     * \param type Tipul cheii (NEXT_LEVEL_KEY, DOOR_KEY).
-     */
     public Key(RefLinks refLink, float x, float y, BufferedImage image, KeyType type) {
         super(refLink, x, y, DEFAULT_KEY_WIDTH, DEFAULT_KEY_HEIGHT);
         SetPosition(x, y);
@@ -50,10 +37,6 @@ public class Key extends Entity {
         this.associatedPuzzleId = puzzleId;
     }
 
-    /*!
-     * \fn public void Update()
-     * \brief Actualizeaza starea cheii (verifica interacțiunea cu jucatorul).
-     */
     @Override
     public void Update() {
         if (collected) {
@@ -62,10 +45,6 @@ public class Key extends Entity {
         checkPlayerInteraction();
     }
 
-    /*!
-     * \fn private void checkPlayerInteraction()
-     * \brief Verifica interacțiunea jucatorului cu cheia (coliziune + apasarea tastei E).
-     */
     private void checkPlayerInteraction() {
         Player player = refLink.GetPlayer();
         if (player == null) return;
@@ -93,40 +72,28 @@ public class Key extends Entity {
         }
     }
 
-    /*!
-     * \fn public void Draw(Graphics g)
-     * \brief Deseneaza cheia pe ecran.
-     * \param g Contextul grafic.
-     */
     @Override
     public void Draw(Graphics g) {
         if (collected) {
             return;
         }
-        int drawX = (int)((x - refLink.GetGameCamera().getxOffset()) * refLink.GetGameCamera().getZoomLevel());
-        int drawY = (int)((y - refLink.GetGameCamera().getyOffset()) * refLink.GetGameCamera().getZoomLevel());
-        int scaledWidth = (int)(width * refLink.GetGameCamera().getZoomLevel());
-        int scaledHeight = (int)(height * refLink.GetGameCamera().getZoomLevel());
+        int drawX = (int)((x - refLink.GetGameCamera().getxOffset()));
+        int drawY = (int)((y - refLink.GetGameCamera().getyOffset()));
+        int scaledWidth = (int)(width);
+        int scaledHeight = (int)(height);
         if (keyImage != null) {
             g.drawImage(keyImage, drawX, drawY, scaledWidth, scaledHeight, null);
         } else {
             g.setColor(Color.BLUE);
             g.fillRect(drawX, drawY, scaledWidth, scaledHeight);
         }
+        drawInteractionPopup(g);
     }
 
-    /*!
-     * \fn public boolean isCollected()
-     * \brief Returneaza starea colectarii cheii.
-     */
     public boolean isCollected() {
         return collected;
     }
 
-    /*!
-     * \fn public void setCollected(boolean collected)
-     * \brief Seteaza starea colectarii cheii (util la incarcare joc).
-     */
     public void setCollected(boolean collected) {
         this.collected = collected;
     }
@@ -135,10 +102,6 @@ public class Key extends Entity {
         return associatedPuzzleId;
     }
 
-    /*!
-     * \fn public KeyType getType()
-     * \brief Returneaza tipul cheii.
-     */
     public KeyType getType() {
         return type;
     }

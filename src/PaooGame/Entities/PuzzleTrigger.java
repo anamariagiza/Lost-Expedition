@@ -58,7 +58,7 @@ public class PuzzleTrigger extends Entity {
                     GameState gameState = (GameState) currentState;
                     if (!gameState.isPuzzleSolved(puzzleId)) { // Previne re-intrarea intr-un puzzle deja rezolvat
                         System.out.println("DEBUG PuzzleTrigger: Trecere la PuzzleState pentru puzzle-ul #" + puzzleId);
-                        refLink.SetStateWithPrevious(new PuzzleState(refLink, puzzleId));
+                        refLink.SetState(new PuzzleState(refLink, puzzleId));
                     } else {
                         System.out.println("DEBUG PuzzleTrigger: Puzzle-ul #" + puzzleId + " a fost deja rezolvat.");
                     }
@@ -73,12 +73,9 @@ public class PuzzleTrigger extends Entity {
      */
     @Override
     public void Draw(Graphics g) {
-        // Obiectul e invizibil. Pentru debug, poti decomenta liniile de mai jos:
-        // g.setColor(new Color(0, 255, 0, 100));
-        // g.fillRect((int)((x - refLink.GetGameCamera().getxOffset()) * refLink.GetGameCamera().getZoomLevel()),
-        //            (int)((y - refLink.GetGameCamera().getyOffset()) * refLink.GetGameCamera().getZoomLevel()),
-        //            (int)(width * refLink.GetGameCamera().getZoomLevel()),
-        //            (int)(height * refLink.GetGameCamera().getZoomLevel()));
+        // Obiectul e invizibil.
+        // Pentru a desena pop-up-ul de interacțiune, apelăm metoda din clasa de bază.
+        drawInteractionPopup(g);
     }
 
     /*!

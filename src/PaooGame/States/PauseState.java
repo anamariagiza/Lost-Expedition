@@ -125,7 +125,6 @@ public class PauseState extends State {
 
     private void handleMouseInput() {
         if (refLink.GetMouseManager() == null || buttonBounds == null) return;
-
         for (int i = 0; i < buttonBounds.length; i++) {
             if (buttonBounds[i].contains(refLink.GetMouseManager().getMouseX(), refLink.GetMouseManager().getMouseY())) {
                 selectedOption = i;
@@ -144,10 +143,10 @@ public class PauseState extends State {
                 refLink.SetState(refLink.GetPreviousState());
                 break;
             case 1: // SETTINGS
-                refLink.SetStateWithPrevious(new SettingsState(refLink));
+                refLink.SetState(new SettingsState(refLink));
                 break;
             case 2: // HELP
-                refLink.SetStateWithPrevious(new HelpState(refLink));
+                refLink.SetState(new HelpState(refLink));
                 break;
             case 3: // RETURN TO MAIN MENU
                 refLink.SetState(new MenuState(refLink));
@@ -186,7 +185,7 @@ public class PauseState extends State {
         FontMetrics buttonFm = g.getFontMetrics();
         int startY = refLink.GetHeight() / 2 - 50;
         int gap = 60;
-        int buttonWidth = 350;
+        int buttonWidth = 400;
         int buttonHeight = 50;
         for (int i = 0; i < menuOptions.length; i++) {
             int x = (refLink.GetWidth() - buttonWidth) / 2;

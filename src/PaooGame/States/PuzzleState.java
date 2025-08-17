@@ -394,8 +394,16 @@ public class PuzzleState extends State {
 
     private void handlePuzzleFailure() {
         System.out.println("DEBUG Puzzle: Puzzle esuat! Capcana activata sau Game Over.");
-        refLink.SetState(new GameOverState(refLink));
+        if (refLink.GetPreviousState() instanceof GameState) {
+            ((GameState) refLink.GetPreviousState()).onPuzzleFailure();
+            refLink.SetState(refLink.GetPreviousState()); // Adaugă această linie
+        } else {
+            // Fallback la Game Over dacă starea anterioară nu e GameState
+            refLink.SetState(new GameOverState(refLink));
+        }
     }
+
+    // Înlocuiește metoda Draw din clasa PuzzleState cu această versiune corectată:
 
     @Override
     public void Draw(Graphics g) {
@@ -408,14 +416,23 @@ public class PuzzleState extends State {
 
         int centerX = refLink.GetWidth() / 2;
         int centerY = refLink.GetHeight() / 2;
+        int puzzleTopY = (int)(refLink.GetHeight() * 0.2);
 
+        // Centrarea dinamică a titlului puzzle-ului
         g.setColor(textColor);
         g.setFont(titleFont);
-        FontMetrics fm = g.getFontMetrics();
-        g.drawString(currentPuzzleTitle, centerX - fm.stringWidth(currentPuzzleTitle) / 2, centerY - 150);
+        FontMetrics titleFm = g.getFontMetrics(); // FontMetrics specific pentru titleFont
+        String title = currentPuzzleTitle;
+        int titleWidth = titleFm.stringWidth(title);
+        g.drawString(title, centerX - titleWidth / 2, puzzleTopY);
 
+        // Centrarea dinamică a obiectivului puzzle-ului
         g.setFont(textFont);
-        g.drawString(currentObjective, centerX - fm.stringWidth(currentObjective) / 2, centerY - 100);
+        FontMetrics textFm = g.getFontMetrics(); // FontMetrics specific pentru textFont
+        String objective = currentObjective;
+        int objectiveWidth = textFm.stringWidth(objective);
+        g.drawString(objective, centerX - objectiveWidth / 2, puzzleTopY + 30);
+
         if(puzzleActive) {
             long timeLeft = TIME_LIMIT_MS - (System.currentTimeMillis() - puzzleStartTime);
             g.setFont(timerFont);
@@ -435,29 +452,42 @@ public class PuzzleState extends State {
         if (puzzleSolved) {
             g.setColor(Color.GREEN);
             g.setFont(titleFont);
+            FontMetrics successTitleFm = g.getFontMetrics(); // FontMetrics pentru titleFont
             String msg = "PUZZLE REZOLVAT CU SUCCES!";
-            g.drawString(msg, centerX - fm.stringWidth(msg) / 2, centerY);
+            int msgWidth = successTitleFm.stringWidth(msg);
+            g.drawString(msg, centerX - msgWidth / 2, centerY);
+
             g.setFont(instructionFont);
+            FontMetrics instructionFm = g.getFontMetrics(); // FontMetrics pentru instructionFont
             g.setColor(instructionColor);
             String instruction = "Apasa ENTER pentru a continua.";
-            g.drawString(instruction, centerX - fm.stringWidth(instruction) / 2, centerY + 50);
+            int instructionWidth = instructionFm.stringWidth(instruction);
+            g.drawString(instruction, centerX - instructionWidth / 2, centerY + 50);
         } else if (puzzleFailed) {
             g.setColor(Color.RED);
             g.setFont(titleFont);
+            FontMetrics failTitleFm = g.getFontMetrics(); // FontMetrics pentru titleFont
             String msg = "PUZZLE ESUAT! CAPCANA ACTIVATA!";
-            g.drawString(msg, centerX - fm.stringWidth(msg) / 2, centerY);
+            int msgWidth = failTitleFm.stringWidth(msg);
+            g.drawString(msg, centerX - msgWidth / 2, centerY);
+
             g.setFont(instructionFont);
+            FontMetrics instructionFm = g.getFontMetrics(); // FontMetrics pentru instructionFont
             g.setColor(instructionColor);
             String instruction = "Apasa ENTER pentru a continua.";
-            g.drawString(instruction, centerX - fm.stringWidth(instruction) / 2, centerY + 50);
+            int instructionWidth = instructionFm.stringWidth(instruction);
+            g.drawString(instruction, centerX - instructionWidth / 2, centerY + 50);
         }
     }
 
     private void drawPuzzle1(Graphics g, int centerX, int centerY) {
         int gridSize = 3;
         int tileSize = 60;
-        int gridX = centerX - (gridSize * tileSize) / 2;
-        int gridY = centerY - (gridSize * tileSize) / 2;
+        int gridWidth = gridSize * tileSize;
+        int gridHeight = gridSize * tileSize;
+        int gridX = centerX - gridWidth / 2;
+        int gridY = centerY - gridHeight / 2;
+
         for (int r = 0; r < gridSize; r++) {
             for (int c = 0; c < gridSize; c++) {
                 int tileX = gridX + c * tileSize;
@@ -482,13 +512,14 @@ public class PuzzleState extends State {
 
         g.setFont(instructionFont);
         g.setColor(instructionColor);
-
         String optionsText = "Alege simbolul care lipsește.";
-        g.drawString(optionsText, centerX - g.getFontMetrics().stringWidth(optionsText)/2, gridY + gridSize * tileSize + 50);
-        int optionsY = gridY + gridSize * tileSize + 100;
+        int optionsTextWidth = g.getFontMetrics().stringWidth(optionsText);
+        g.drawString(optionsText, centerX - optionsTextWidth / 2, gridY + gridHeight + 50);
+
+        int optionsY = gridY + gridHeight + 100;
         int optionWidth = 60;
         int optionSpacing = 20;
-        int optionsTotalWidth = options1.size() * (optionWidth + optionSpacing);
+        int optionsTotalWidth = options1.size() * (optionWidth + optionSpacing) - optionSpacing;
         int startX = centerX - optionsTotalWidth / 2;
         optionBounds1.clear();
         for (int i = 0; i < options1.size(); i++) {
@@ -506,7 +537,11 @@ public class PuzzleState extends State {
         g.setColor(Color.WHITE);
         g.setFont(textFont);
         FontMetrics fm = g.getFontMetrics();
-        g.drawString("Indiciu: " + clue2, centerX - fm.stringWidth("Indiciu: " + clue2) / 2, centerY - 50);
+
+        String clueText = "Indiciu: " + clue2;
+        int clueWidth = fm.stringWidth(clueText);
+        g.drawString(clueText, centerX - clueWidth / 2, centerY - 50);
+
         int pedestalSize = 60;
         int spacing = 20;
         int totalWidth = (4 * pedestalSize) + (3 * spacing);
@@ -526,7 +561,6 @@ public class PuzzleState extends State {
                     case "RUBIN": gemImage = gemSprites[2]; break;
                     case "DIAMANT": gemImage = gemSprites[3]; break;
                 }
-
                 if (gemImage != null) {
                     g.drawImage(gemImage, x + (pedestalSize - GEM_WIDTH) / 2, centerY + (pedestalSize - GEM_HEIGHT) / 2, GEM_WIDTH, GEM_HEIGHT, null);
                 }
@@ -549,16 +583,18 @@ public class PuzzleState extends State {
         g.setFont(instructionFont);
         g.setColor(instructionColor);
         String optionsText = "Alege pietrele apasand pe ele.";
-        g.drawString(optionsText, centerX - fm.stringWidth(optionsText)/2, optionsY + optionWidth + 40);
+        int optionsTextWidth = fm.stringWidth(optionsText);
+        g.drawString(optionsText, centerX - optionsTextWidth / 2, optionsY + optionWidth + 40);
 
         String attemptsText = "Incercari ramase: " + (MAX_WRONG_ATTEMPTS - wrongAttempts2);
-        g.drawString(attemptsText, centerX - fm.stringWidth(attemptsText)/2, optionsY + optionWidth + 70);
+        int attemptsTextWidth = fm.stringWidth(attemptsText);
+        g.drawString(attemptsText, centerX - attemptsTextWidth / 2, optionsY + optionWidth + 70);
     }
 
     private void drawPuzzle3(Graphics g, int centerX, int centerY) {
         if (Assets.puzzle3Scroll != null) {
-            int scrollWidth = 1000;
-            int scrollHeight = 600;
+            int scrollWidth = (int)(refLink.GetWidth() * 0.8);
+            int scrollHeight = (int)(refLink.GetHeight() * 0.7);
             int scrollX = centerX - scrollWidth / 2;
             int scrollY = centerY - scrollHeight / 2;
             g.drawImage(Assets.puzzle3Scroll, scrollX, scrollY, scrollWidth, scrollHeight, null);
@@ -567,16 +603,26 @@ public class PuzzleState extends State {
             g.setFont(textFont);
             FontMetrics fm = g.getFontMetrics();
             String riddleText = riddle3;
-            g.drawString(riddleText, scrollX + (scrollWidth - fm.stringWidth(riddleText)) / 2, scrollY + 150);
+            String[] lines = riddleText.split("\\.");
 
-            int answerWidth = 250;
-            int answerHeight = 70;
-            int answerX = centerX - (3 * answerWidth + 2 * 20) / 2;
-            int answerY = centerY + 50;
+            int textY = scrollY + (int)(scrollHeight * 0.25);
+            for (String line : lines) {
+                line = line.trim();
+                int textWidth = fm.stringWidth(line);
+                g.drawString(line, scrollX + (scrollWidth - textWidth) / 2, textY);
+                textY += fm.getHeight();
+            }
+
+            int answerWidth = (int)(scrollWidth * 0.2);
+            int answerHeight = (int)(scrollHeight * 0.1);
+            int answerSpacing = (int)(scrollWidth * 0.05);
+            int totalAnswersWidth = answers3.size() * answerWidth + (answers3.size() - 1) * answerSpacing;
+            int answerX = centerX - totalAnswersWidth / 2;
+            int answerY = scrollY + (int)(scrollHeight * 0.5);
             answerBounds3.clear();
 
             for (int i = 0; i < answers3.size(); i++) {
-                int currentX = answerX + i * (answerWidth + 20);
+                int currentX = answerX + i * (answerWidth + answerSpacing);
                 if (selectedAnswerIndex3 == i) {
                     g.setColor(new Color(255, 255, 0, 150));
                 } else {
@@ -589,7 +635,8 @@ public class PuzzleState extends State {
 
                 String answerText = answers3.get(i);
                 int textWidth = fm.stringWidth(answerText);
-                g.drawString(answerText, currentX + (answerWidth - textWidth) / 2, answerY + (answerHeight + fm.getAscent()) / 2);
+                int textY2 = answerY + (answerHeight + fm.getAscent()) / 2;
+                g.drawString(answerText, currentX + (answerWidth - textWidth) / 2, textY2);
             }
         } else {
             // Desenam placeholder-uri
@@ -604,29 +651,37 @@ public class PuzzleState extends State {
         g.setColor(Color.WHITE);
         g.setFont(textFont);
         FontMetrics fm = g.getFontMetrics();
-        g.drawString("Problema: " + questions4.get(currentQuestionIndex4), centerX - fm.stringWidth("Problema: " + questions4.get(currentQuestionIndex4)) / 2, centerY - 50);
-        g.drawString("Răspuns: " + playerInput4, centerX - fm.stringWidth("Răspuns: " + playerInput4) / 2, centerY + 20);
-        g.drawString("Apăsați ENTER pentru a confirma.", centerX - fm.stringWidth("Apăsați ENTER pentru a confirma.") / 2, centerY + 80);
+        int textYStart = centerY - 80;
+
+        String problemText = "Problema: " + questions4.get(currentQuestionIndex4);
+        int problemTextWidth = fm.stringWidth(problemText);
+        g.drawString(problemText, centerX - problemTextWidth / 2, textYStart);
+
+        String answerText = "Răspuns: " + playerInput4;
+        int answerTextWidth = fm.stringWidth(answerText);
+        g.drawString(answerText, centerX - answerTextWidth / 2, textYStart + 60);
+
+        String confirmText = "Apăsați ENTER pentru a confirma.";
+        int confirmTextWidth = fm.stringWidth(confirmText);
+        g.drawString(confirmText, centerX - confirmTextWidth / 2, textYStart + 110);
+
         if (!lastAnswerStatus4.isEmpty()) {
             String msg = lastAnswerStatus4;
+            int msgWidth = fm.stringWidth(msg);
             g.setColor(msg.equals("CORECT!") ? Color.GREEN : Color.RED);
-            g.drawString(msg, centerX - fm.stringWidth(msg) / 2, centerY + 50);
+            g.drawString(msg, centerX - msgWidth / 2, textYStart + 160);
         }
     }
 
-    // Inlocuieste complet aceasta metoda in PuzzleState.java
-
     private void drawPuzzle5(Graphics g, int centerX, int centerY) {
-        // Folosim noile constante pentru latime si inaltime
         int cardWidth = 62;
         int cardHeight = 86;
         int cardSpacing = 10;
 
-        // Calculeaza pozitia de start a grilei de carti
         int totalGridWidth = GRID_SIZE_5 * (cardWidth + cardSpacing) - cardSpacing;
         int totalGridHeight = GRID_SIZE_5 * (cardHeight + cardSpacing) - cardSpacing;
         int startX = centerX - totalGridWidth / 2;
-        int startY = centerY - totalGridHeight / 2 - 20; // Un pic mai sus pe ecran
+        int startY = centerY - totalGridHeight / 2;
 
         cardBounds5.clear();
         for (int i = 0; i < GRID_SIZE_5 * GRID_SIZE_5; i++) {
@@ -635,18 +690,13 @@ public class PuzzleState extends State {
             int cardX = startX + col * (cardWidth + cardSpacing);
             int cardY = startY + row * (cardHeight + cardSpacing);
 
-            // Adaugam dreptunghiul de coliziune cu dimensiunile corecte
             cardBounds5.add(new Rectangle(cardX, cardY, cardWidth, cardHeight));
-
-            // Verificam daca trebuie sa desenam fata sau spatele cartii
             if (revealedCards5[i]) {
-                int cardId = cardLayout5.get(i); // Obtinem ID-ul cartii (0-7)
+                int cardId = cardLayout5.get(i);
                 if (Assets.puzzle5CardFaces != null && cardId < Assets.puzzle5CardFaces.length) {
-                    // Desenam fata corecta a cartii
                     g.drawImage(Assets.puzzle5CardFaces[cardId], cardX, cardY, cardWidth, cardHeight, null);
                 }
             } else {
-                // Desenam spatele cartii
                 if (Assets.puzzle5CardBack != null) {
                     g.drawImage(Assets.puzzle5CardBack, cardX, cardY, cardWidth, cardHeight, null);
                 }

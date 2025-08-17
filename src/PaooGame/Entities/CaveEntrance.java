@@ -3,9 +3,9 @@ package PaooGame.Entities;
 import PaooGame.RefLinks;
 import PaooGame.States.State;
 import PaooGame.States.GameState;
-
-import java.awt.*;
+import java.awt.Graphics;
 import java.awt.event.KeyEvent;
+import PaooGame.Tiles.Tile;
 
 /*!
  * \class public class CaveEntrance extends Entity
@@ -68,9 +68,7 @@ public class CaveEntrance extends Entity {
      */
     @Override
     public void Draw(Graphics g) {
-        // De obicei, acest obiect este invizibil.
-        // Pentru debug, poți desena o formă semi-transparentă.
-        // g.setColor(new Color(255, 0, 0, 100));
-        // g.fillRect((int)x, (int)y, width, height);
+        // Obiectul este invizibil, dar putem desena un pop-up de interacțiune
+        drawInteractionPopup(g);
     }
 }

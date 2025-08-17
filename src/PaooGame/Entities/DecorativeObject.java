@@ -1,52 +1,73 @@
 package PaooGame.Entities;
 
 import PaooGame.RefLinks;
-import java.awt.*;
+import PaooGame.Graphics.Assets;
+import PaooGame.Graphics.ImageLoader;
+import java.awt.Graphics;
+import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
+import PaooGame.States.State;
+import PaooGame.States.GameState;
+import java.awt.event.KeyEvent;
+import java.awt.*;
 
-/**
+/*!
  * \class DecorativeObject
  * \brief O clasa pentru entitati decorative, care pot fi optionale solide.
  */
 public class DecorativeObject extends Entity {
 
     private BufferedImage image;
-    private boolean solid; // ## MODIFICARE ##: Am adaugat o variabila pentru a sti daca obiectul este solid
+    private boolean solid;
+    private String dialogueMessage;
 
-    /**
-     * \fn public DecorativeObject(RefLinks refLink, float x, float y, int width, int height, BufferedImage image, boolean solid)
-     * \brief Constructorul clasei.
-     * \param solid Parametru nou care defineste daca obiectul are coliziune.
-     */
     public DecorativeObject(RefLinks refLink, float x, float y, int width, int height, BufferedImage image, boolean solid) {
         super(refLink, x, y, width, height);
         this.image = image;
-        this.solid = solid; // Se seteaza starea de coliziune
+        this.solid = solid;
     }
 
-    /**
-     * \fn public boolean isSolid()
-     * \brief Metoda noua care returneaza daca obiectul este solid.
-     * Aceasta este metoda pe care clasa Player incearca sa o apeleze.
-     */
     public boolean isSolid() {
         return solid;
     }
 
+    public void setDialogueMessage(String message) {
+        this.dialogueMessage = message;
+    }
+
     @Override
     public void Update() {
-        // Obiect static, nu face nimic in Update
+        if (refLink.GetPlayer() == null) return;
+
+        // Logica pentru a verifica interacțiunea
+        if (this.bounds.intersects(refLink.GetPlayer().GetBounds())) {
+            if (refLink.GetKeyManager().isKeyJustPressed(KeyEvent.VK_E) && dialogueMessage != null) {
+
+                // Trimitere mesaj către GameState pentru a fi afișat
+                if (State.GetState() instanceof GameState) {
+                    ((GameState) State.GetState()).showWoodSignMessage(dialogueMessage);
+                }
+            }
+        }
     }
 
     @Override
     public void Draw(Graphics g) {
         if (image != null) {
-            int drawX = (int)((x - refLink.GetGameCamera().getxOffset()) * refLink.GetGameCamera().getZoomLevel());
-            int drawY = (int)((y - refLink.GetGameCamera().getyOffset()) * refLink.GetGameCamera().getZoomLevel());
-            int scaledWidth = (int)(width * refLink.GetGameCamera().getZoomLevel());
-            int scaledHeight = (int)(height * refLink.GetGameCamera().getZoomLevel());
-
+            int drawX = (int)((x - refLink.GetGameCamera().getxOffset()));
+            int drawY = (int)((y - refLink.GetGameCamera().getyOffset()));
+            int scaledWidth = (int)(width);
+            int scaledHeight = (int)(height);
             g.drawImage(image, drawX, drawY, scaledWidth, scaledHeight, null);
+
+            // Desenăm pop-up-ul E doar dacă este un panou de lemn și nu se afișează deja un mesaj
+            if (image == Assets.woodSignImage && State.GetState() instanceof GameState && !((GameState) State.GetState()).isWoodSignMessageShowing()) {
+                drawInteractionPopup(g);
+            }
         }
+    }
+
+    public String getDialogueMessage() {
+        return this.dialogueMessage;
     }
 }

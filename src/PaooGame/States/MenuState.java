@@ -27,13 +27,11 @@ public class MenuState extends State
     private boolean downPressed = false;
 
     private int lastWidth, lastHeight;
-
     private long stateEnterTime;
     private final long INPUT_COOLDOWN_MS = 200;
     private long lastDebugTime = 0;
 
     private boolean saveGameExists;
-
     public MenuState(RefLinks refLink)
     {
         super(refLink);
@@ -144,7 +142,6 @@ public class MenuState extends State
 
     private void handleMouseInput() {
         if (refLink.GetMouseManager() == null || buttonBounds == null) return;
-
         for (int i = 0; i < buttonBounds.length; i++) {
             if (buttonBounds[i].contains(refLink.GetMouseManager().getMouseX(), refLink.GetMouseManager().getMouseY())) {
                 selectedOption = i;
@@ -170,10 +167,10 @@ public class MenuState extends State
                 }
                 break;
             case 2: // SETTINGS
-                refLink.SetStateWithPrevious(new SettingsState(refLink));
+                refLink.SetState(new SettingsState(refLink));
                 break;
             case 3: // HELP (opțiunea nouă)
-                refLink.SetStateWithPrevious(new HelpState(refLink));
+                refLink.SetState(new HelpState(refLink));
                 break;
             case 4: // ABOUT
                 refLink.SetState(new AboutState(refLink));

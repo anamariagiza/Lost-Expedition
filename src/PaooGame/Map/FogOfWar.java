@@ -3,6 +3,9 @@ package PaooGame.Map;
 import PaooGame.Entities.Player;
 import PaooGame.Tiles.Tile;
 import PaooGame.RefLinks;
+import PaooGame.Camera.GameCamera;
+
+import java.awt.*;
 
 /*!
  * \class public class FogOfWar
@@ -16,7 +19,8 @@ public class FogOfWar {
     private int mapHeightTiles;
     private boolean[][] revealedTiles; // True daca dala a fost descoperita permanent
 
-    private static final int VISION_RADIUS_TILES = 5; // Raza de vizibilitate a jucatorului in dale
+    private static final int VISION_RADIUS_TILES = 5;
+    // Raza de vizibilitate a jucatorului in dale
 
     /*!
      * \fn public FogOfWar(RefLinks refLink, int mapWidthTiles, int mapHeightTiles)
@@ -41,10 +45,8 @@ public class FogOfWar {
      */
     public void update() {
         if (refLink.GetPlayer() == null) return;
-
         int playerTileX = (int) ((refLink.GetPlayer().GetX() + refLink.GetPlayer().GetWidth() / 2) / Tile.TILE_WIDTH);
         int playerTileY = (int) ((refLink.GetPlayer().GetY() + refLink.GetPlayer().GetHeight() / 2) / Tile.TILE_HEIGHT);
-
         // Ensure player tile coordinates are within bounds
         playerTileX = Math.max(0, Math.min(mapWidthTiles - 1, playerTileX));
         playerTileY = Math.max(0, Math.min(mapHeightTiles - 1, playerTileY));
@@ -64,6 +66,33 @@ public class FogOfWar {
         }
     }
 
+    // Metoda adaugata pentru a rezolva eroarea de compilare
+    public void render(Graphics g) {
+        if (refLink.GetPlayer() == null) return;
+        GameCamera camera = refLink.GetGameCamera();
+        Graphics2D g2d = (Graphics2D) g.create();
+
+        int playerScreenX = (int) ((refLink.GetPlayer().GetX() - camera.getxOffset()) + refLink.GetPlayer().GetWidth() / 2);
+        int playerScreenY = (int) ((refLink.GetPlayer().GetY() - camera.getyOffset()) + refLink.GetPlayer().GetHeight() / 2);
+        float radius = (float) (VISION_RADIUS_TILES * Tile.TILE_WIDTH);
+
+        Color transparentBlack = new Color(0, 0, 0, 0);
+        Color opaqueBlack = new Color(0, 0, 0, 220);
+
+        float[] dist = {0.0f, 0.7f, 1.0f};
+        Color[] colors = {transparentBlack, transparentBlack, opaqueBlack};
+        RadialGradientPaint p = new RadialGradientPaint(
+                playerScreenX, playerScreenY,
+                radius,
+                dist,
+                colors,
+                MultipleGradientPaint.CycleMethod.NO_CYCLE
+        );
+        g2d.setPaint(p);
+        g2d.fillRect(0, 0, refLink.GetWidth(), refLink.GetHeight());
+        g2d.dispose();
+    }
+
     /*!
      * \fn public boolean isTileVisible(int x, int y)
      * \brief Verifica daca o dala este in raza vizuala curenta a jucatorului.
@@ -74,16 +103,13 @@ public class FogOfWar {
     public boolean isTileVisible(int x, int y) {
         if (refLink.GetPlayer() == null) return false;
         if (x < 0 || x >= mapWidthTiles || y < 0 || y >= mapHeightTiles) return false;
-
         int playerTileX = (int) ((refLink.GetPlayer().GetX() + refLink.GetPlayer().GetWidth() / 2) / Tile.TILE_WIDTH);
         int playerTileY = (int) ((refLink.GetPlayer().GetY() + refLink.GetPlayer().GetHeight() / 2) / Tile.TILE_HEIGHT);
-
         // Ensure player tile coordinates are within bounds
         playerTileX = Math.max(0, Math.min(mapWidthTiles - 1, playerTileX));
         playerTileY = Math.max(0, Math.min(mapHeightTiles - 1, playerTileY));
 
         double distance = Math.sqrt(Math.pow(playerTileX - x, 2) + Math.pow(playerTileY - y, 2));
-
         return distance <= VISION_RADIUS_TILES;
     }
 

@@ -18,13 +18,22 @@ public class Trap extends Entity {
     private boolean active = false;
     private boolean isAnimating = false;
     private Animation activeAnimation;
+    private BufferedImage stillImage;
     private long activationTime = 0;
     private final long ACTIVE_DURATION_MS = 2000;
 
     public Trap(RefLinks refLink, float x, float y) {
         super(refLink, x, y, DEFAULT_TRAP_WIDTH, DEFAULT_TRAP_HEIGHT);
-        SetPosition(x, y);
-        this.activeAnimation = new Animation(150, Arrays.asList(Assets.trapActiveAnim[0], Assets.trapActiveAnim[1], Assets.trapActiveAnim[2]).toArray(new BufferedImage[0]));
+        this.bounds = new Rectangle((int) x, (int) y, width, height);
+        this.activeAnimation = new Animation(150, Arrays.asList(Assets.trapActiveAnim).toArray(new BufferedImage[0]));
+        this.stillImage = Assets.trapDisabled;
+    }
+
+    public Trap(RefLinks refLink, float x, float y, BufferedImage image) {
+        super(refLink, x, y, DEFAULT_TRAP_WIDTH, DEFAULT_TRAP_HEIGHT);
+        this.bounds = new Rectangle((int) x, (int) y, width, height);
+        this.activeAnimation = null;
+        this.stillImage = image;
     }
 
     public void setActive(boolean active) {
@@ -32,7 +41,9 @@ public class Trap extends Entity {
         this.active = active;
         if (active) {
             isAnimating = true;
-            this.activeAnimation.reset();
+            if(activeAnimation != null) {
+                this.activeAnimation.reset();
+            }
             activationTime = System.currentTimeMillis();
         } else {
             isAnimating = false;
@@ -49,14 +60,13 @@ public class Trap extends Entity {
 
     @Override
     public void Update() {
-        if (isAnimating) {
+        if (isAnimating && activeAnimation != null) {
             this.activeAnimation.Update();
             if (this.activeAnimation.isFinished()) {
                 isAnimating = false;
             }
         }
 
-        // Timer pentru închiderea capcanei după 2 secunde
         if (active && System.currentTimeMillis() - activationTime >= ACTIVE_DURATION_MS) {
             setActive(false);
             System.out.println("DEBUG Trap: Capcana s-a dezactivat.");
@@ -67,16 +77,16 @@ public class Trap extends Entity {
     public void Draw(Graphics g) {
         BufferedImage imageToDraw;
         if (active || isAnimating) {
-            imageToDraw = activeAnimation.getCurrentFrame();
+            imageToDraw = (activeAnimation != null) ? activeAnimation.getCurrentFrame() : stillImage;
         } else {
-            imageToDraw = Assets.trapDisabled;
+            imageToDraw = stillImage;
         }
 
         if (imageToDraw != null) {
-            int drawX = (int) ((x - refLink.GetGameCamera().getxOffset()) * refLink.GetGameCamera().getZoomLevel());
-            int drawY = (int) ((y - refLink.GetGameCamera().getyOffset()) * refLink.GetGameCamera().getZoomLevel());
-            int scaledWidth = (int) (width * refLink.GetGameCamera().getZoomLevel());
-            int scaledHeight = (int) (height * refLink.GetGameCamera().getZoomLevel());
+            int drawX = (int) ((x - refLink.GetGameCamera().getxOffset()));
+            int drawY = (int) ((y - refLink.GetGameCamera().getyOffset()));
+            int scaledWidth = (int) (width);
+            int scaledHeight = (int) (height);
             g.drawImage(imageToDraw, drawX, drawY, scaledWidth, scaledHeight, null);
         } else {
             g.setColor(Color.RED);

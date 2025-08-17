@@ -26,7 +26,7 @@ public class Animal extends Entity {
     private float patrolStartX, patrolEndX;
     private boolean movingRight = true;
     private float moveX;
-    private int damage; // NOU: Variabila pentru daune
+    private int damage;
 
     /*!
      * \fn public Animal(RefLinks refLink, float x, float y, float patrolStartX, float patrolEndX, AnimalType type)
@@ -40,21 +40,13 @@ public class Animal extends Entity {
      */
     public Animal(RefLinks refLink, float x, float y, float patrolStartX, float patrolEndX, AnimalType type) {
         super(refLink, x, y, getAnimalWidth(type), getAnimalHeight(type));
-
         this.type = type;
         this.patrolStartX = patrolStartX;
         this.patrolEndX = patrolEndX;
         this.speed = getAnimalSpeed(type);
 
         SetPosition(x, y);
-
-        // NOU: Setam valoarea de daune in functie de tipul animalului
-        switch (type) {
-            case JAGUAR: this.damage = 50; break;
-            case MONKEY: this.damage = 30; break;
-            case BAT:    this.damage = 20; break;
-            default:     this.damage = 0; break;
-        }
+        this.damage = getAnimalDamage(type);
 
         BufferedImage[] frames = null;
         switch (type) {
@@ -77,7 +69,6 @@ public class Animal extends Entity {
         }
     }
 
-    // Metode statice helper pentru a obtine dimensiuni si viteza
     private static int getAnimalWidth(AnimalType type) {
         switch (type) {
             case JAGUAR: return Assets.JAGUAR_FRAME_WIDTH;
@@ -105,21 +96,21 @@ public class Animal extends Entity {
         }
     }
 
+    private static int getAnimalDamage(AnimalType type) {
+        switch (type) {
+            case JAGUAR: return 50;
+            case MONKEY: return 30;
+            case BAT:    return 20;
+            default:     return 0;
+        }
+    }
 
-    /*!
-     * \fn public void Update()
-     * \brief Actualizeaza starea animalului (miscarea).
-     */
     @Override
     public void Update() {
         anim.Update();
         moveAnimal();
     }
 
-    /*!
-     * \fn private void moveAnimal()
-     * \brief Implementeaza logica de miscare a animalului (patrulare orizontala) si actualizeaza bounding box-ul.
-     */
     private void moveAnimal() {
         if (movingRight) {
             moveX = speed;
@@ -133,22 +124,15 @@ public class Animal extends Entity {
             }
         }
         x += moveX;
-        // NOU: Actualizam corect bounding box-ul.
         bounds.setLocation((int)x, (int)y);
     }
 
-    /*!
-     * \fn public void Draw(Graphics g)
-     * \brief Deseneaza animalul pe ecran.
-     * \param g Contextul grafic.
-     */
     @Override
     public void Draw(Graphics g) {
-        int drawX = (int)((x - refLink.GetGameCamera().getxOffset()) * refLink.GetGameCamera().getZoomLevel());
-        int drawY = (int)((y - refLink.GetGameCamera().getyOffset()) * refLink.GetGameCamera().getZoomLevel());
-        int scaledWidth = (int)(width * refLink.GetGameCamera().getZoomLevel());
-        int scaledHeight = (int)(height * refLink.GetGameCamera().getZoomLevel());
-
+        int drawX = (int)((x - refLink.GetGameCamera().getxOffset()));
+        int drawY = (int)((y - refLink.GetGameCamera().getyOffset()));
+        int scaledWidth = (int)(width);
+        int scaledHeight = (int)(height);
         BufferedImage currentFrame = anim.getCurrentFrame();
         if (currentFrame != null) {
             if (!movingRight) {
@@ -162,10 +146,6 @@ public class Animal extends Entity {
         }
     }
 
-    /*!
-     * \fn public int getDamage()
-     * \brief Returneaza valoarea de daune a animalului.
-     */
     public int getDamage() {
         return damage;
     }

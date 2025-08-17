@@ -7,6 +7,10 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.Rectangle;
 
+/*!
+ * \class public class HelpState extends State
+ * \brief Implementeaza notiunea de ecran de ajutor.
+ */
 public class HelpState extends State {
 
     private final Color backgroundColor = new Color(0, 0, 0);
@@ -20,7 +24,6 @@ public class HelpState extends State {
     private final String backInstruction = "Apasa ESC pentru a reveni.";
 
     private int lastWidth, lastHeight;
-
 
     public HelpState(RefLinks refLink) {
         super(refLink);
@@ -47,7 +50,6 @@ public class HelpState extends State {
 
     private void handleMouseInput() {
         if (refLink.GetMouseManager() == null || backButtonBounds == null) return;
-
         if (backButtonBounds.contains(refLink.GetMouseManager().getMouseX(), refLink.GetMouseManager().getMouseY())) {
             if (refLink.GetMouseManager().isMouseJustClicked()) {
                 refLink.SetState(refLink.GetPreviousState());
@@ -74,7 +76,6 @@ public class HelpState extends State {
         String title = "CONTROLUL JOCULUI";
         int titleWidth = titleFm.stringWidth(title);
         g.drawString(title, (refLink.GetWidth() - titleWidth) / 2, 80);
-
         g.setFont(textFont);
         g.setColor(textColor);
         FontMetrics textFm = g.getFontMetrics();
@@ -98,11 +99,10 @@ public class HelpState extends State {
         int totalTextHeight = infoLines.length * (lineHeight + 5);
         int rectHeight = totalTextHeight + 2 * rectPadding;
         int rectY = 150 - textFm.getAscent() - rectPadding;
-
         g.setColor(new Color(0, 0, 0, 180));
         g.fillRect(rectX, rectY, rectWidth, rectHeight);
 
-        g.setColor(Color.WHITE); // Culoare font pentru textul principal
+        g.setColor(Color.WHITE);
         for (String line : infoLines) {
             int lineWidth = textFm.stringWidth(line);
             g.drawString(line, rectX + (rectWidth - lineWidth) / 2, startY);
@@ -118,7 +118,6 @@ public class HelpState extends State {
         int instrY = refLink.GetHeight() - 50;
 
         g.drawString(backInstruction, instrX, instrY);
-
         if (backButtonBounds == null) {
             backButtonBounds = new Rectangle(instrX, instrY - instrFm.getAscent(), instrWidth, instrFm.getHeight());
         }

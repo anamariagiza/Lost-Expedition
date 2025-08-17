@@ -5,6 +5,7 @@ import PaooGame.Graphics.Animation;
 import PaooGame.RefLinks;
 import PaooGame.Tiles.Tile;
 import java.awt.Graphics;
+import java.awt.image.BufferedImage;
 
 public class Torch extends Entity {
     private Animation anim;
@@ -24,10 +25,10 @@ public class Torch extends Entity {
     @Override
     public void Draw(Graphics g) {
         if (anim != null && anim.getCurrentFrame() != null) {
-            int drawX = (int)((x - refLink.GetGameCamera().getxOffset()) * refLink.GetGameCamera().getZoomLevel());
-            int drawY = (int)((y - refLink.GetGameCamera().getyOffset()) * refLink.GetGameCamera().getZoomLevel());
-            int scaledWidth = (int)(width * refLink.GetGameCamera().getZoomLevel());
-            int scaledHeight = (int)(height * refLink.GetGameCamera().getZoomLevel());
+            int drawX = (int)((x - refLink.GetGameCamera().getxOffset()));
+            int drawY = (int)((y - refLink.GetGameCamera().getyOffset()));
+            int scaledWidth = (int)(width);
+            int scaledHeight = (int)(height);
             g.drawImage(anim.getCurrentFrame(), drawX, drawY, scaledWidth, scaledHeight, null);
         }
     }
