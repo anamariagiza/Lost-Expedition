@@ -55,7 +55,7 @@ public class Player extends Entity {
 
     private enum Direction { UP, DOWN, LEFT, RIGHT }
     private Direction lastDirection = Direction.DOWN;
-    private int attackDamage = 25;
+    private int attackDamage = 20;
 
     public Player(Game game, float x, float y) {
         super(game.GetRefLinks(), x, y, Assets.PLAYER_FRAME_WIDTH, Assets.PLAYER_FRAME_HEIGHT);
@@ -70,6 +70,7 @@ public class Player extends Entity {
         int hurtAnimationSpeed = 150;
         int idleCombatSpeed = 200;
 
+        // Animații care trebuie să ruleze în buclă (loops = true)
         animDown = new Animation(animationSpeed, Assets.playerDown);
         animUp = new Animation(animationSpeed, Assets.playerUp);
         animLeft = new Animation(animationSpeed, Assets.playerLeft);
@@ -82,25 +83,31 @@ public class Player extends Entity {
         animRunUp = new Animation(runAnimationSpeed, Assets.playerRunUp);
         animRunLeft = new Animation(runAnimationSpeed, Assets.playerRunLeft);
         animRunRight = new Animation(runAnimationSpeed, Assets.playerRunRight);
-        animJumpDown = new Animation(jumpAnimationSpeed, Assets.playerJumpDown);
-        animJumpUp = new Animation(jumpAnimationSpeed, Assets.playerJumpUp);
-        animJumpLeft = new Animation(jumpAnimationSpeed, Assets.playerJumpLeft);
-        animJumpRight = new Animation(jumpAnimationSpeed, Assets.playerJumpRight);
         animCombatIdle = new Animation(idleCombatSpeed, Assets.playerCombatIdle);
-        animHurt = new Animation(hurtAnimationSpeed, Assets.playerHurt, false);
-        animThrustUp = new Animation(attackAnimationSpeed, Assets.playerThrustUp);
-        animThrustDown = new Animation(attackAnimationSpeed, Assets.playerThrustDown);
-        animThrustLeft = new Animation(attackAnimationSpeed, Assets.playerThrustLeft);
-        animThrustRight = new Animation(attackAnimationSpeed, Assets.playerThrustRight);
-        animHalfslashUp = new Animation(attackAnimationSpeed, Assets.playerHalfslashUp);
-        animHalfslashDown = new Animation(attackAnimationSpeed, Assets.playerHalfslashDown);
-        animHalfslashLeft = new Animation(attackAnimationSpeed, Assets.playerHalfslashLeft);
-        animHalfslashRight = new Animation(attackAnimationSpeed, Assets.playerHalfslashRight);
-        animSlashUp = new Animation(attackAnimationSpeed, Assets.playerSlashUp);
-        animSlashDown = new Animation(attackAnimationSpeed, Assets.playerSlashDown);
-        animSlashLeft = new Animation(attackAnimationSpeed, Assets.playerSlashLeft);
-        animSlashRight = new Animation(attackAnimationSpeed, Assets.playerSlashRight);
 
+        // Animații de acțiune care rulează o singură dată (loops = false)
+        animHurt = new Animation(hurtAnimationSpeed, Assets.playerHurt, false);
+        animJumpDown = new Animation(jumpAnimationSpeed, Assets.playerJumpDown, false);
+        animJumpUp = new Animation(jumpAnimationSpeed, Assets.playerJumpUp, false);
+        animJumpLeft = new Animation(jumpAnimationSpeed, Assets.playerJumpLeft, false);
+        animJumpRight = new Animation(jumpAnimationSpeed, Assets.playerJumpRight, false);
+
+        animThrustUp = new Animation(attackAnimationSpeed, Assets.playerThrustUp, false);
+        animThrustDown = new Animation(attackAnimationSpeed, Assets.playerThrustDown, false);
+        animThrustLeft = new Animation(attackAnimationSpeed, Assets.playerThrustLeft, false);
+        animThrustRight = new Animation(attackAnimationSpeed, Assets.playerThrustRight, false);
+
+        animHalfslashUp = new Animation(attackAnimationSpeed, Assets.playerHalfslashUp, false);
+        animHalfslashDown = new Animation(attackAnimationSpeed, Assets.playerHalfslashDown, false);
+        animHalfslashLeft = new Animation(attackAnimationSpeed, Assets.playerHalfslashLeft, false);
+        animHalfslashRight = new Animation(attackAnimationSpeed, Assets.playerHalfslashRight, false);
+
+        animSlashUp = new Animation(attackAnimationSpeed, Assets.playerSlashUp, false);
+        animSlashDown = new Animation(attackAnimationSpeed, Assets.playerSlashDown, false);
+        animSlashLeft = new Animation(attackAnimationSpeed, Assets.playerSlashLeft, false);
+        animSlashRight = new Animation(attackAnimationSpeed, Assets.playerSlashRight, false);
+
+        // Setări inițiale
         activeAnimation = animIdleDown;
         lastDirection = Direction.DOWN;
         isMoving = false;

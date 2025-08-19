@@ -13,7 +13,7 @@ public class Trap extends Entity {
 
     private static final int DEFAULT_TRAP_WIDTH = 48;
     private static final int DEFAULT_TRAP_HEIGHT = 48;
-    private static final int DAMAGE_AMOUNT = 40;
+    private static final int DAMAGE_AMOUNT = 5;
 
     private boolean active = false;
     private boolean isAnimating = false;

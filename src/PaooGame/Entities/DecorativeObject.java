@@ -39,13 +39,23 @@ public class DecorativeObject extends Entity {
     public void Update() {
         if (refLink.GetPlayer() == null) return;
 
-        // Logica pentru a verifica interacțiunea
+        // Verifică dacă jucătorul este în zona de interacțiune
         if (this.bounds.intersects(refLink.GetPlayer().GetBounds())) {
+            // Verifică dacă a fost apăsată tasta 'E'
             if (refLink.GetKeyManager().isKeyJustPressed(KeyEvent.VK_E) && dialogueMessage != null) {
 
-                // Trimitere mesaj către GameState pentru a fi afișat
-                if (State.GetState() instanceof GameState) {
-                    ((GameState) State.GetState()).showWoodSignMessage(dialogueMessage);
+                GameState gameState = refLink.GetGameState();
+                if (gameState != null) {
+                    // Dacă mesajul acestui panou este deja afișat, închide-l și arată obiectivul
+                    if (gameState.isWoodSignMessageShowing() && gameState.getWoodSignMessage().equals(this.dialogueMessage)) {
+                        gameState.showWoodSignMessage(null);
+                        gameState.setObjectiveDisplayed(true);
+                    }
+                    // Altfel, dacă niciun alt mesaj nu este afișat, deschide-l pe acesta și ascunde obiectivul
+                    else if (!gameState.isWoodSignMessageShowing()) {
+                        gameState.showWoodSignMessage(dialogueMessage);
+                        gameState.setObjectiveDisplayed(false);
+                    }
                 }
             }
         }

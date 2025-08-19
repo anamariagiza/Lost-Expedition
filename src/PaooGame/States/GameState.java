@@ -295,7 +295,6 @@ public class GameState extends State {
                 entities.add(finalChest);
 
                 entities.add(new DecorativeObject(refLink, 75 * Tile.TILE_WIDTH, 26 * Tile.TILE_HEIGHT, Tile.TILE_WIDTH, Tile.TILE_HEIGHT, Assets.puzzleTableImage, true));
-                entities.add(new Key(refLink, 77 * Tile.TILE_WIDTH, 31 * Tile.TILE_HEIGHT, Assets.keyImage, 6));
                 int[][] trapTiles = {
                         {29,22}, {30,22}, {31,22}, {32,22}, {29,23}, {30,23}, {31,23}, {32,23},
                         {29,36}, {30,36}, {31,36}, {32,36}, {29,37}, {30,37}, {31,37}, {32,37},
@@ -336,15 +335,20 @@ public class GameState extends State {
         }
     }
 
+    public void addEntity(Entity e) {
+        if (entities != null) {
+            entities.add(e);
+        }
+    }
+
+    public void setObjectiveDisplayed(boolean displayed) {
+        this.isObjectiveDisplayed = displayed;
+    }
+
+    @Override
     public void Update() {
         if (collectionMessage != null && System.currentTimeMillis() - collectionMessageTime > MESSAGE_DURATION_MS) {
             collectionMessage = null;
-        }
-
-        if (woodSignMessage != null && refLink.GetKeyManager().isKeyJustPressed(KeyEvent.VK_E)) {
-            woodSignMessage = null;
-            isObjectiveDisplayed = true;
-            return;
         }
 
         if (refLink.GetKeyManager().isKeyJustPressed(KeyEvent.VK_P) && player != null) {
@@ -430,36 +434,50 @@ public class GameState extends State {
         }
 
         if (currentLevelIndex == 2) {
-            if (refLink.GetKeyManager().isKeyJustPressed(KeyEvent.VK_E)) {
-                checkAndOpenFinalDoor();
-            }
-            if (finalBoss != null) {
-                int playerTileX = (int) (player.GetX() / Tile.TILE_WIDTH);
-                int playerTileY = (int) (player.GetY() / Tile.TILE_HEIGHT);
 
+            // BLOC PENTRU ACTIVAREA PUZZLE-ULUI FINAL DE LA MASĂ (PRIN COORDONATE)
+            int playerTileX = (int) (player.GetX() / Tile.TILE_WIDTH);
+            int playerTileY = (int) (player.GetY() / Tile.TILE_HEIGHT);
+            int tableTileX = 75;
+            int tableTileY = 26;
+
+            // Verificăm dacă player-ul este la maxim 1 dală distanță de masă
+            if (Math.abs(playerTileX - tableTileX) <= 1 && Math.abs(playerTileY - tableTileY) <= 1) {
+                // Verificăm dacă a apăsat E și dacă nu este un panou de text deja deschis
+                if (refLink.GetKeyManager().isKeyJustPressed(KeyEvent.VK_E) && !isWoodSignMessageShowing()) {
+                    System.out.println("DEBUG: Se deschide puzzle-ul final...");
+                    refLink.SetState(new WordPuzzleState(refLink));
+                }
+            }
+            // SFÂRȘIT BLOC
+
+            // Logica pentru capcane și agentul final
+            if (!trapsTriggered) {
+                for (Entity e : entities) {
+                    if (e instanceof TrapTrigger && e.GetBounds().intersects(player.GetBounds())) {
+                        trapsTriggered = true;
+                        trapActivationTime = System.currentTimeMillis();
+                        break;
+                    }
+                }
+            }
+
+            if (trapsTriggered && System.currentTimeMillis() - trapActivationTime >= GLOBAL_ACTIVATION_DELAY_MS) {
+                for (Trap trap : arenaTraps) {
+                    trap.setActive(true);
+                }
+                trapsTriggered = false;
+            }
+
+            if (finalBoss != null) {
                 if (!agentIsChasing && ( (playerTileX >= 39 && playerTileX <= 40) && playerTileY == 39) ) {
-                    System.out.println("DEBUG GameState: Player-ul a calcat pe dalele de declansare. Agentul va incepe urmarirea.");
                     agentIsChasing = true;
                     finalBoss.setChaseMode(true);
                 }
 
                 if (finalBoss.getHealth() <= 0 && !bossDefeated) {
-                    System.out.println("DEBUG GameState: Agentul a fost invins!");
                     bossDefeated = true;
                     finalChest.setCanInteract(true);
-                }
-
-                // Logica de lupta - Jucator vs Agent
-                if (player.isAttacking() && player.GetBounds().intersects(finalBoss.GetBounds()) &&
-                        System.currentTimeMillis() - lastAgentAttackTime > ATTACK_COOLDOWN_MS) {
-                    finalBoss.takeDamage(PUNCH_DAMAGE);
-                    lastAgentAttackTime = System.currentTimeMillis();
-                }
-
-                if (finalBoss.isAttacking() && finalBoss.GetBounds().intersects(player.GetBounds()) &&
-                        System.currentTimeMillis() - lastAgentAttackTime > ATTACK_COOLDOWN_MS) {
-                    player.takeDamage(PUNCH_DAMAGE);
-                    lastAgentAttackTime = System.currentTimeMillis();
                 }
             }
         }
@@ -494,14 +512,12 @@ public class GameState extends State {
             if (e instanceof Trap) {
                 Trap trap = (Trap) e;
                 if (trap.isActive()) {
-                    // Logica de daune pentru jucator
                     if (player.GetBounds().intersects(trap.GetBounds())) {
                         if (System.currentTimeMillis() - lastTrapDamageTime >= TRAP_DAMAGE_COOLDOWN_MS) {
                             player.takeDamage(trap.getDamage());
                             lastTrapDamageTime = System.currentTimeMillis();
                         }
                     }
-                    // Logica de daune pentru agent
                     if (finalBoss != null && finalBoss.GetBounds().intersects(trap.GetBounds())) {
                         if (System.currentTimeMillis() - lastAgentTrapDamageTime >= TRAP_DAMAGE_COOLDOWN_MS) {
                             finalBoss.takeDamage(trap.getDamage());

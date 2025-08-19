@@ -22,8 +22,11 @@ public class Agent extends Entity {
     private Animation animIdleDown, animIdleUp, animIdleLeft, animIdleRight;
     private Animation animWalkDown, animWalkUp, animWalkLeft, animWalkRight;
     private Animation animRunDown, animRunUp, animRunLeft, animRunRight;
-    private Animation animThrust;
-    private Animation animSlash;
+    private Animation animJumpDown, animJumpUp, animJumpLeft, animJumpRight;
+    private Animation animHurt, animCombatIdle;
+    private Animation animThrust, animThrustUp, animThrustDown, animThrustLeft, animThrustRight;
+    private Animation animSlash, animSlashUp, animSlashDown, animSlashLeft, animSlashRight;
+    private Animation animHalfslashUp, animHalfslashDown, animHalfslashLeft, animHalfslashRight;
     private Animation activeAnimation;
 
     private float speed;
@@ -32,12 +35,11 @@ public class Agent extends Entity {
     private boolean isPatrolling = false;
     private boolean isChasing = false;
     private boolean isAttacking = false;
+    private boolean isDefeated = false;
     private Direction lastDirection = Direction.DOWN;
 
     private float xMove, yMove;
-
-    private int damage = 30;
-
+    private int damage = 10;
     private int health;
     private int maxHealth = 100;
     private long lastDamageTakenTime = 0;
@@ -45,9 +47,6 @@ public class Agent extends Entity {
     private final long ATTACK_COOLDOWN_MS = 1000;
     private long lastAttackTime = 0;
     private enum Direction { UP, DOWN, LEFT, RIGHT }
-
-    private Animation animHurt;
-    private boolean isDefeated = false;
 
     /*!
      * \fn public Agent(RefLinks refLink, float x, float y, float patrolStartX, float patrolEndX, boolean isPatrolling)
@@ -70,22 +69,48 @@ public class Agent extends Entity {
         this.bounds = new Rectangle(0, 0, width, height);
         this.health = maxHealth;
 
-        // Inițializarea animațiilor
-        animIdleDown = new Animation(200, Assets.agentIdleDown);
-        animIdleUp = new Animation(200, Assets.agentIdleUp);
-        animIdleLeft = new Animation(200, Assets.agentIdleLeft);
-        animIdleRight = new Animation(200, Assets.agentIdleRight);
-        animWalkDown = new Animation(150, Assets.agentDown);
-        animWalkUp = new Animation(150, Assets.agentUp);
-        animWalkLeft = new Animation(150, Assets.agentLeft);
-        animWalkRight = new Animation(150, Assets.agentRight);
+        // Inițializarea tuturor animațiilor, similar cu Player
+        int animSpeed = 150;
+        int attackSpeed = 100;
+
+        // Animații care rulează în buclă
+        animIdleDown = new Animation(animSpeed * 2, Assets.agentIdleDown);
+        animIdleUp = new Animation(animSpeed * 2, Assets.agentIdleUp);
+        animIdleLeft = new Animation(animSpeed * 2, Assets.agentIdleLeft);
+        animIdleRight = new Animation(animSpeed * 2, Assets.agentIdleRight);
+        animWalkDown = new Animation(animSpeed, Assets.agentDown);
+        animWalkUp = new Animation(animSpeed, Assets.agentUp);
+        animWalkLeft = new Animation(animSpeed, Assets.agentLeft);
+        animWalkRight = new Animation(animSpeed, Assets.agentRight);
         animRunDown = new Animation(100, Assets.agentRunDown);
         animRunUp = new Animation(100, Assets.agentRunUp);
         animRunLeft = new Animation(100, Assets.agentRunLeft);
         animRunRight = new Animation(100, Assets.agentRunRight);
-        animThrust = new Animation(100, Assets.agentThrust);
-        animSlash = new Animation(100, Assets.agentSlash);
-        animHurt = new Animation(150, Assets.agentHurt, false); // Animație non-looping
+        animCombatIdle = new Animation(animSpeed * 2, Assets.agentCombatIdle);
+
+        // Animații de acțiune care rulează o singură dată
+        animHurt = new Animation(animSpeed, Assets.agentHurt, false);
+        animJumpDown = new Animation(animSpeed, Assets.agentJumpDown, false);
+        animJumpUp = new Animation(animSpeed, Assets.agentJumpUp, false);
+        animJumpLeft = new Animation(animSpeed, Assets.agentJumpLeft, false);
+        animJumpRight = new Animation(animSpeed, Assets.agentJumpRight, false);
+
+        animThrust = new Animation(attackSpeed, Assets.agentThrust, false);
+        animThrustUp = new Animation(attackSpeed, Assets.agentThrustUp, false);
+        animThrustDown = new Animation(attackSpeed, Assets.agentThrustDown, false);
+        animThrustLeft = new Animation(attackSpeed, Assets.agentThrustLeft, false);
+        animThrustRight = new Animation(attackSpeed, Assets.agentThrustRight, false);
+
+        animSlash = new Animation(attackSpeed, Assets.agentSlash, false);
+        animSlashUp = new Animation(attackSpeed, Assets.agentSlashUp, false);
+        animSlashDown = new Animation(attackSpeed, Assets.agentSlashDown, false);
+        animSlashLeft = new Animation(attackSpeed, Assets.agentSlashLeft, false);
+        animSlashRight = new Animation(attackSpeed, Assets.agentSlashRight, false);
+
+        animHalfslashUp = new Animation(attackSpeed, Assets.agentHalfslashUp, false);
+        animHalfslashDown = new Animation(attackSpeed, Assets.agentHalfslashDown, false);
+        animHalfslashLeft = new Animation(attackSpeed, Assets.agentHalfslashLeft, false);
+        animHalfslashRight = new Animation(attackSpeed, Assets.agentHalfslashRight, false);
 
         activeAnimation = animIdleDown;
         lastDirection = Direction.DOWN;
@@ -241,17 +266,21 @@ public class Agent extends Entity {
         if (player == null) return;
 
         if (this.bounds.intersects(player.GetBounds()) && !isAttacking() && System.currentTimeMillis() - lastAttackTime > ATTACK_COOLDOWN_MS) {
-            System.out.println("DEBUG Agent: Coliziune cu jucatorul!");
             player.takeDamage(damage);
             isAttacking = true;
-            // Alege animația de atac corectă pe baza direcției
+
+            // MODIFICARE: Folosim animația halfslash în funcție de direcție
             switch(lastDirection) {
-                case UP: activeAnimation = animThrust; break;
-                case DOWN: activeAnimation = animThrust; break;
-                case LEFT: activeAnimation = animThrust; break;
-                case RIGHT: activeAnimation = animThrust; break;
+                case UP: activeAnimation = animHalfslashUp; break;
+                case DOWN: activeAnimation = animHalfslashDown; break;
+                case LEFT: activeAnimation = animHalfslashLeft; break;
+                case RIGHT: activeAnimation = animHalfslashRight; break;
+                default: activeAnimation = animHalfslashDown; break;
             }
-            activeAnimation.reset();
+
+            if (activeAnimation != null) {
+                activeAnimation.reset();
+            }
             lastAttackTime = System.currentTimeMillis();
         }
     }
@@ -337,15 +366,10 @@ public class Agent extends Entity {
             int tx = (int) ((xAmt > 0 ? newX + width - 1 : newX) / Tile.TILE_WIDTH);
             int ty_top = (int) (y / Tile.TILE_HEIGHT);
             int ty_bottom = (int) ((y + height - 1) / Tile.TILE_HEIGHT);
-
-            if (refLink.GetMap().GetTile(tx, ty_top).GetId() == 64 || refLink.GetMap().GetTile(tx, ty_bottom).GetId() == 64) {
-                collision = true;
-            }
-            if (!collision && (refLink.GetMap().GetTile(tx, ty_top).IsSolid() || refLink.GetMap().GetTile(tx, ty_bottom).IsSolid())) {
+            if (refLink.GetMap().GetTile(tx, ty_top).IsSolid() || refLink.GetMap().GetTile(tx, ty_bottom).IsSolid()) {
                 collision = true;
             }
 
-            // Verificare coliziune cu entitati solide
             if (!collision) {
                 for (Entity e : refLink.GetGameState().getEntities()) {
                     if (e.equals(this)) continue;
@@ -368,15 +392,10 @@ public class Agent extends Entity {
             int ty = (int) ((yAmt > 0 ? newY + height - 1 : newY) / Tile.TILE_HEIGHT);
             int tx_left = (int) (x / Tile.TILE_WIDTH);
             int tx_right = (int) ((x + width - 1) / Tile.TILE_WIDTH);
-
-            if (refLink.GetMap().GetTile(tx_left, ty).GetId() == 64 || refLink.GetMap().GetTile(tx_right, ty).GetId() == 64) {
-                collision = true;
-            }
-            if (!collision && (refLink.GetMap().GetTile(tx_left, ty).IsSolid() || refLink.GetMap().GetTile(tx_right, ty).IsSolid())) {
+            if (refLink.GetMap().GetTile(tx_left, ty).IsSolid() || refLink.GetMap().GetTile(tx_right, ty).IsSolid()) {
                 collision = true;
             }
 
-            // Verificare coliziune cu entitati solide
             if (!collision) {
                 for (Entity e : refLink.GetGameState().getEntities()) {
                     if (e.equals(this)) continue;

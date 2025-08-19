@@ -4,8 +4,7 @@ import PaooGame.RefLinks;
 import PaooGame.States.State;
 import PaooGame.States.GameState;
 import PaooGame.States.PuzzleState;
-import PaooGame.Tiles.Tile;
-
+import PaooGame.States.WordPuzzleState; // Importă noua clasă
 import java.awt.*;
 import java.awt.event.KeyEvent;
 
@@ -21,12 +20,6 @@ public class PuzzleTrigger extends Entity {
     /*!
      * \fn public PuzzleTrigger(RefLinks refLink, float x, float y, int width, int height, int puzzleId)
      * \brief Constructorul de initializare al clasei PuzzleTrigger.
-     * \param refLink Referinta catre obiectul RefLinks.
-     * \param x Coordonata X a pozitiei.
-     * \param y Coordonata Y a pozitiei.
-     * \param width Latimea zonei de coliziune.
-     * \param height Inaltimea zonei de coliziune.
-     * \param puzzleId ID-ul unic al puzzle-ului asociat.
      */
     public PuzzleTrigger(RefLinks refLink, float x, float y, int width, int height, int puzzleId) {
         super(refLink, x, y, width, height);
@@ -53,14 +46,20 @@ public class PuzzleTrigger extends Entity {
 
         if (this.bounds.intersects(player.GetBounds())) {
             if (refLink.GetKeyManager().isKeyJustPressed(KeyEvent.VK_E)) {
-                State currentState = State.GetState();
-                if (currentState instanceof GameState) {
-                    GameState gameState = (GameState) currentState;
-                    if (!gameState.isPuzzleSolved(puzzleId)) { // Previne re-intrarea intr-un puzzle deja rezolvat
-                        System.out.println("DEBUG PuzzleTrigger: Trecere la PuzzleState pentru puzzle-ul #" + puzzleId);
-                        refLink.SetState(new PuzzleState(refLink, puzzleId));
-                    } else {
-                        System.out.println("DEBUG PuzzleTrigger: Puzzle-ul #" + puzzleId + " a fost deja rezolvat.");
+                GameState gameState = refLink.GetGameState();
+                if (gameState != null) {
+                    // NU deschide puzzle-ul dacă un mesaj este deja afișat.
+                    // Asta permite ca 'E' să fie folosit pentru a închide mesajul mai întâi.
+                    if (gameState.isWoodSignMessageShowing()) {
+                        return;
+                    }
+
+                    if (!gameState.isPuzzleSolved(puzzleId)) {
+                        if (puzzleId == 99) {
+                            refLink.SetState(new WordPuzzleState(refLink));
+                        } else {
+                            refLink.SetState(new PuzzleState(refLink, puzzleId));
+                        }
                     }
                 }
             }
@@ -73,9 +72,11 @@ public class PuzzleTrigger extends Entity {
      */
     @Override
     public void Draw(Graphics g) {
-        // Obiectul e invizibil.
-        // Pentru a desena pop-up-ul de interacțiune, apelăm metoda din clasa de bază.
-        drawInteractionPopup(g);
+        // Nu desenăm pop-up dacă puzzle-ul e deja rezolvat
+        GameState gameState = refLink.GetGameState();
+        if (gameState != null && !gameState.isPuzzleSolved(puzzleId)) {
+            drawInteractionPopup(g);
+        }
     }
 
     /*!
