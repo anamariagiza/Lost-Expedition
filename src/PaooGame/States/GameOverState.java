@@ -121,12 +121,12 @@ public class GameOverState extends State {
         }
     }
 
-
     private void executeSelectedOption() {
         switch (selectedOption) {
-            case 0: // TRY AGAIN (reincepe nivelul curent de la pozitia initiala)
-                System.out.println("Incercare din nou...");
-                refLink.SetState(new GameState(refLink));
+            case 0: // TRY AGAIN
+                System.out.println("Incercare din nou de la Nivelul 3...");
+                // Folosim constructorul care acceptă indexul nivelului (2 = Level 3)
+                refLink.SetState(new GameState(refLink, 2));
                 break;
             case 1: // RETURN TO MAIN MENU
                 System.out.println("Revenire la meniul principal...");

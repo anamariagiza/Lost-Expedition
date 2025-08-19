@@ -3,6 +3,7 @@ package PaooGame.Entities;
 import PaooGame.Game;
 import PaooGame.Graphics.Assets;
 import PaooGame.Graphics.Animation;
+import PaooGame.States.GameOverState;
 import PaooGame.States.GameState;
 import PaooGame.States.State;
 import PaooGame.Tiles.Tile;
@@ -59,7 +60,6 @@ public class Player extends Entity {
     public Player(Game game, float x, float y) {
         super(game.GetRefLinks(), x, y, Assets.PLAYER_FRAME_WIDTH, Assets.PLAYER_FRAME_HEIGHT);
         this.game = game;
-
         currentSpeed = walkSpeed;
         health = maxHealth;
 
@@ -70,41 +70,36 @@ public class Player extends Entity {
         int hurtAnimationSpeed = 150;
         int idleCombatSpeed = 200;
 
-        // Animații de mișcare
-        animDown = safeAnimation(Assets.playerDown, animationSpeed);
-        animUp = safeAnimation(Assets.playerUp, animationSpeed);
-        animLeft = safeAnimation(Assets.playerLeft, animationSpeed);
-        animRight = safeAnimation(Assets.playerRight, animationSpeed);
-        animIdleDown = safeAnimation(Assets.playerIdleDown, animationSpeed * 2);
-        animIdleUp = safeAnimation(Assets.playerIdleUp, animationSpeed * 2);
-        animIdleLeft = safeAnimation(Assets.playerIdleLeft, animationSpeed * 2);
-        animIdleRight = safeAnimation(Assets.playerIdleRight, animationSpeed * 2);
-        animRunDown = safeAnimation(Assets.playerRunDown, runAnimationSpeed);
-        animRunUp = safeAnimation(Assets.playerRunUp, runAnimationSpeed);
-        animRunLeft = safeAnimation(Assets.playerRunLeft, runAnimationSpeed);
-        animRunRight = safeAnimation(Assets.playerRunRight, runAnimationSpeed);
-        animJumpDown = safeAnimation(Assets.playerJumpDown, jumpAnimationSpeed);
-        animJumpUp = safeAnimation(Assets.playerJumpUp, jumpAnimationSpeed);
-        animJumpLeft = safeAnimation(Assets.playerJumpLeft, jumpAnimationSpeed);
-        animJumpRight = safeAnimation(Assets.playerJumpRight, jumpAnimationSpeed);
-        animHurt = safeAnimation(Assets.playerHurt, hurtAnimationSpeed);
-        animCombatIdle = safeAnimation(Assets.playerCombatIdle, idleCombatSpeed);
-
-        // Animații de atac pe direcții - dacă nu există în Assets, se vor folosi frame-uri default
-        animThrustUp = safeAnimation(Assets.playerThrustUp != null ? Assets.playerThrustUp : Assets.playerThrust, attackAnimationSpeed);
-        animThrustDown = safeAnimation(Assets.playerThrustDown != null ? Assets.playerThrustDown : Assets.playerThrust, attackAnimationSpeed);
-        animThrustLeft = safeAnimation(Assets.playerThrustLeft != null ? Assets.playerThrustLeft : Assets.playerThrust, attackAnimationSpeed);
-        animThrustRight = safeAnimation(Assets.playerThrustRight != null ? Assets.playerThrustRight : Assets.playerThrust, attackAnimationSpeed);
-
-        animHalfslashUp = safeAnimation(Assets.playerHalfslashUp != null ? Assets.playerHalfslashUp : Assets.playerHalfslash, attackAnimationSpeed);
-        animHalfslashDown = safeAnimation(Assets.playerHalfslashDown != null ? Assets.playerHalfslashDown : Assets.playerHalfslash, attackAnimationSpeed);
-        animHalfslashLeft = safeAnimation(Assets.playerHalfslashLeft != null ? Assets.playerHalfslashLeft : Assets.playerHalfslash, attackAnimationSpeed);
-        animHalfslashRight = safeAnimation(Assets.playerHalfslashRight != null ? Assets.playerHalfslashRight : Assets.playerHalfslash, attackAnimationSpeed);
-
-        animSlashUp = safeAnimation(Assets.playerSlashUp != null ? Assets.playerSlashUp : Assets.playerSlash, attackAnimationSpeed);
-        animSlashDown = safeAnimation(Assets.playerSlashDown != null ? Assets.playerSlashDown : Assets.playerSlash, attackAnimationSpeed);
-        animSlashLeft = safeAnimation(Assets.playerSlashLeft != null ? Assets.playerSlashLeft : Assets.playerSlash, attackAnimationSpeed);
-        animSlashRight = safeAnimation(Assets.playerSlashRight != null ? Assets.playerSlashRight : Assets.playerSlash, attackAnimationSpeed);
+        animDown = new Animation(animationSpeed, Assets.playerDown);
+        animUp = new Animation(animationSpeed, Assets.playerUp);
+        animLeft = new Animation(animationSpeed, Assets.playerLeft);
+        animRight = new Animation(animationSpeed, Assets.playerRight);
+        animIdleDown = new Animation(animationSpeed * 2, Assets.playerIdleDown);
+        animIdleUp = new Animation(animationSpeed * 2, Assets.playerIdleUp);
+        animIdleLeft = new Animation(animationSpeed * 2, Assets.playerIdleLeft);
+        animIdleRight = new Animation(animationSpeed * 2, Assets.playerIdleRight);
+        animRunDown = new Animation(runAnimationSpeed, Assets.playerRunDown);
+        animRunUp = new Animation(runAnimationSpeed, Assets.playerRunUp);
+        animRunLeft = new Animation(runAnimationSpeed, Assets.playerRunLeft);
+        animRunRight = new Animation(runAnimationSpeed, Assets.playerRunRight);
+        animJumpDown = new Animation(jumpAnimationSpeed, Assets.playerJumpDown);
+        animJumpUp = new Animation(jumpAnimationSpeed, Assets.playerJumpUp);
+        animJumpLeft = new Animation(jumpAnimationSpeed, Assets.playerJumpLeft);
+        animJumpRight = new Animation(jumpAnimationSpeed, Assets.playerJumpRight);
+        animCombatIdle = new Animation(idleCombatSpeed, Assets.playerCombatIdle);
+        animHurt = new Animation(hurtAnimationSpeed, Assets.playerHurt, false);
+        animThrustUp = new Animation(attackAnimationSpeed, Assets.playerThrustUp);
+        animThrustDown = new Animation(attackAnimationSpeed, Assets.playerThrustDown);
+        animThrustLeft = new Animation(attackAnimationSpeed, Assets.playerThrustLeft);
+        animThrustRight = new Animation(attackAnimationSpeed, Assets.playerThrustRight);
+        animHalfslashUp = new Animation(attackAnimationSpeed, Assets.playerHalfslashUp);
+        animHalfslashDown = new Animation(attackAnimationSpeed, Assets.playerHalfslashDown);
+        animHalfslashLeft = new Animation(attackAnimationSpeed, Assets.playerHalfslashLeft);
+        animHalfslashRight = new Animation(attackAnimationSpeed, Assets.playerHalfslashRight);
+        animSlashUp = new Animation(attackAnimationSpeed, Assets.playerSlashUp);
+        animSlashDown = new Animation(attackAnimationSpeed, Assets.playerSlashDown);
+        animSlashLeft = new Animation(attackAnimationSpeed, Assets.playerSlashLeft);
+        animSlashRight = new Animation(attackAnimationSpeed, Assets.playerSlashRight);
 
         activeAnimation = animIdleDown;
         lastDirection = Direction.DOWN;
@@ -117,33 +112,31 @@ public class Player extends Entity {
         isThrusting = false;
         isHalfslashing = false;
         isSlashing = false;
-
         this.bounds = new Rectangle((int)x, (int)y, width, height);
     }
 
     @Override
     public void Update() {
         if (game == null || game.GetKeyManager() == null) return;
+
         if (isHurt) {
             activeAnimation.Update();
             if (activeAnimation.isFinished()) {
-                isHurt = false;
-                updateIdleAnimationBasedOnLastDirection();
+                refLink.SetState(new GameOverState(refLink));
             }
             return;
         }
 
         GetInput();
-
         game.GetRefLinks().GetGameCamera().centerOnEntity(this);
-        if (!isAttacking && !isHurt && !isJumping && !isCombatIdle &&
+
+        if (!isAttacking && !isJumping && !isCombatIdle &&
                 !isThrusting && !isHalfslashing && !isSlashing) {
             updateMovementAnimation();
         } else {
             activeAnimation.Update();
             if (activeAnimation.isFinished()) {
                 isAttacking = false;
-                isHurt = false;
                 isJumping = false;
                 isCombatIdle = false;
                 isThrusting = false;
@@ -411,9 +404,12 @@ public class Player extends Entity {
     public int getMaxHealth() { return maxHealth; }
 
     public void takeDamage(int amount) {
+        if(isHurt) return;
+
         health -= amount;
         if (health < 0) { health = 0; }
         System.out.println("DEBUG: James a luat " + amount + " daune. Viata ramasa: " + health);
+
         if (health <= 0) {
             isHurt = true;
             activeAnimation = animHurt;

@@ -290,8 +290,6 @@ public class Assets {
             playerThrustLeft = cropFramesFromArbitrarySheet(playerThrustSheet, PLAYER_FRAME_WIDTH, PLAYER_FRAME_HEIGHT, 1, 8, 1, 0);
             playerThrustDown = cropFramesFromArbitrarySheet(playerThrustSheet, PLAYER_FRAME_WIDTH, PLAYER_FRAME_HEIGHT, 1, 8, 2, 0);
             playerThrustRight = cropFramesFromArbitrarySheet(playerThrustSheet, PLAYER_FRAME_WIDTH, PLAYER_FRAME_HEIGHT, 1, 8, 3, 0);
-        } else {
-            System.err.println("EROARE: Nu s-a putut incarca /textures/player/thrust.png");
         }
 
         BufferedImage playerHalfslashSheet = ImageLoader.LoadImage("/textures/player/halfslash.png");
@@ -300,36 +298,26 @@ public class Assets {
             playerHalfslashLeft = cropFramesFromArbitrarySheet(playerHalfslashSheet, PLAYER_FRAME_WIDTH, PLAYER_FRAME_HEIGHT, 1, 7, 1, 0);
             playerHalfslashDown = cropFramesFromArbitrarySheet(playerHalfslashSheet, PLAYER_FRAME_WIDTH, PLAYER_FRAME_HEIGHT, 1, 7, 2, 0);
             playerHalfslashRight = cropFramesFromArbitrarySheet(playerHalfslashSheet, PLAYER_FRAME_WIDTH, PLAYER_FRAME_HEIGHT, 1, 7, 3, 0);
-        } else {
-            System.err.println("EROARE: Nu s-a putut incarca /textures/player/halfslash.png");
         }
 
         BufferedImage playerBackslashSheet = ImageLoader.LoadImage("/textures/player/backslash.png");
         if (playerBackslashSheet != null) {
             playerBackslash = cropFramesFromArbitrarySheet(playerBackslashSheet, PLAYER_FRAME_WIDTH, PLAYER_FRAME_HEIGHT, 4, 13, 0, 0);
-        } else {
-            System.err.println("EROARE: Nu s-a putut incarca /textures/player/backslash.png");
         }
 
         BufferedImage playerSpellcastSheet = ImageLoader.LoadImage("/textures/player/spellcast.png");
         if (playerSpellcastSheet != null) {
             playerSpellcast = cropFramesFromArbitrarySheet(playerSpellcastSheet, PLAYER_FRAME_WIDTH, PLAYER_FRAME_HEIGHT, 4, 7, 0, 0);
-        } else {
-            System.err.println("EROARE: Nu s-a putut incarca /textures/player/spellcast.png");
         }
 
         BufferedImage playerShootSheet = ImageLoader.LoadImage("/textures/player/shoot.png");
         if (playerShootSheet != null) {
             playerShoot = cropFramesFromArbitrarySheet(playerShootSheet, PLAYER_FRAME_WIDTH, PLAYER_FRAME_HEIGHT, 4, 13, 0, 0);
-        } else {
-            System.err.println("EROARE: Nu s-a putut incarca /textures/player/shoot.png");
         }
 
         BufferedImage playerCombatIdleSheet = ImageLoader.LoadImage("/textures/player/combat_idle.png");
         if (playerCombatIdleSheet != null) {
             playerCombatIdle = cropFramesFromArbitrarySheet(playerCombatIdleSheet, PLAYER_FRAME_WIDTH, PLAYER_FRAME_HEIGHT, 4, 2, 0, 0);
-        } else {
-            System.err.println("EROARE: Nu s-a putut incarca /textures/player/combat_idle.png");
         }
 
         BufferedImage playerSlashSheet = ImageLoader.LoadImage("/textures/player/slash.png");
@@ -338,8 +326,6 @@ public class Assets {
             playerSlashLeft = cropFramesFromArbitrarySheet(playerSlashSheet, PLAYER_FRAME_WIDTH, PLAYER_FRAME_HEIGHT, 1, 6, 1, 0);
             playerSlashDown = cropFramesFromArbitrarySheet(playerSlashSheet, PLAYER_FRAME_WIDTH, PLAYER_FRAME_HEIGHT, 1, 6, 2, 0);
             playerSlashRight = cropFramesFromArbitrarySheet(playerSlashSheet, PLAYER_FRAME_WIDTH, PLAYER_FRAME_HEIGHT, 1, 6, 3, 0);
-        } else {
-            System.err.println("EROARE: Nu s-a putut incarca /textures/player/slash.png");
         }
 
         System.out.println("DEBUG ASSETS: Incarc fisierele de animatie pentru agent...");
@@ -368,14 +354,18 @@ public class Assets {
             agentRunRight = cropFramesFromArbitrarySheet(agentRunSheet, DEFAULT_AGENT_WIDTH, DEFAULT_AGENT_HEIGHT, 1, 8, 3, 0);
         }
 
+        // MODIFICARE NOUA: Adăugarea încărcării pentru animația hurt a agentului
+        BufferedImage agentHurtSheet = ImageLoader.LoadImage("/textures/agent/hurt.png");
+        if (agentHurtSheet != null) {
+            agentHurt = cropFramesFromArbitrarySheet(agentHurtSheet, DEFAULT_AGENT_WIDTH, DEFAULT_AGENT_HEIGHT, 1, 6, 0, 0);
+        }
+
         BufferedImage agentThrustSheet = ImageLoader.LoadImage("/textures/agent/thrust.png");
         if (agentThrustSheet != null) {
             agentThrustUp = cropFramesFromArbitrarySheet(agentThrustSheet, DEFAULT_AGENT_WIDTH, DEFAULT_AGENT_HEIGHT, 1, 8, 0, 0);
             agentThrustLeft = cropFramesFromArbitrarySheet(agentThrustSheet, DEFAULT_AGENT_WIDTH, DEFAULT_AGENT_HEIGHT, 1, 8, 1, 0);
             agentThrustDown = cropFramesFromArbitrarySheet(agentThrustSheet, DEFAULT_AGENT_WIDTH, DEFAULT_AGENT_HEIGHT, 1, 8, 2, 0);
             agentThrustRight = cropFramesFromArbitrarySheet(agentThrustSheet, DEFAULT_AGENT_WIDTH, DEFAULT_AGENT_HEIGHT, 1, 8, 3, 0);
-        } else {
-            System.err.println("EROARE: Nu s-a putut incarca /textures/agent/thrust.png");
         }
 
         BufferedImage agentSlashSheet = ImageLoader.LoadImage("/textures/agent/slash.png");
@@ -384,69 +374,32 @@ public class Assets {
             agentSlashLeft = cropFramesFromArbitrarySheet(agentSlashSheet, DEFAULT_AGENT_WIDTH, DEFAULT_AGENT_HEIGHT, 1, 6, 1, 0);
             agentSlashDown = cropFramesFromArbitrarySheet(agentSlashSheet, DEFAULT_AGENT_WIDTH, DEFAULT_AGENT_HEIGHT, 1, 6, 2, 0);
             agentSlashRight = cropFramesFromArbitrarySheet(agentSlashSheet, DEFAULT_AGENT_WIDTH, DEFAULT_AGENT_HEIGHT, 1, 6, 3, 0);
-        } else {
-            System.err.println("EROARE: Nu s-a putut incarca /textures/agent/slash.png");
         }
 
 
         System.out.println("DEBUG ASSETS: Incerc incarcare/decupare animale (fisiere separate)...");
         BufferedImage monkeySheet = ImageLoader.LoadImage("/textures/animals/monkey.png");
         if (monkeySheet != null) {
-            Rectangle[] monkeyFramesData = {
-                    new Rectangle(0, 0, 36, 52), new Rectangle(36, 0, 36, 52),
-                    new Rectangle(72, 0, 28, 52), new Rectangle(100, 0, 32, 52),
-                    new Rectangle(132, 0, 28, 52), new Rectangle(160, 0, 34, 52),
-                    new Rectangle(194, 0, 39, 52), new Rectangle(233, 0, 41, 52),
-                    new Rectangle(274, 0, 29, 52), new Rectangle(303, 0, 36, 52),
-                    new Rectangle(339, 0, 38, 52), new Rectangle(377, 0, 37, 52),
-
-                    new Rectangle(414, 0, 36, 52)
-            };
+            Rectangle[] monkeyFramesData = { new Rectangle(0, 0, 36, 52), new Rectangle(36, 0, 36, 52), new Rectangle(72, 0, 28, 52) };
             monkeyWalkAnim = cropFramesFromVariableRectangles(monkeySheet, monkeyFramesData);
-            if (monkeyWalkAnim == null) System.err.println("DEBUG ASSETS: Decupare monkeyWalkAnim a esuat.");
-        } else {
-            System.err.println("DEBUG ASSETS: Nu s-a putut incarca monkey.png.");
         }
 
         BufferedImage jaguarSheet = ImageLoader.LoadImage("/textures/animals/jaguar.png");
         if (jaguarSheet != null) {
-            Rectangle[] jaguarFramesData = {
-                    new Rectangle(0, 0, 76, 41), new Rectangle(76, 0, 73, 41),
-                    new Rectangle(149, 0, 75, 41), new Rectangle(224, 0, 71, 41),
-                    new Rectangle(295, 0, 70, 41), new Rectangle(365, 0, 66, 41),
-                    new Rectangle(431, 0, 63, 41), new Rectangle(494, 0, 75, 41)
-            };
+            Rectangle[] jaguarFramesData = { new Rectangle(0, 0, 76, 41), new Rectangle(76, 0, 73, 41), new Rectangle(149, 0, 75, 41) };
             jaguarWalkAnim = cropFramesFromVariableRectangles(jaguarSheet, jaguarFramesData);
-            if (jaguarWalkAnim == null) System.err.println("DEBUG ASSETS: Decupare jaguarWalkAnim a esuat.");
-        } else {
-            System.err.println("DEBUG ASSETS: Nu s-a putut incarca jaguar.png.");
         }
 
         BufferedImage batSheet = ImageLoader.LoadImage("/textures/animals/bat.png");
         if (batSheet != null) {
-            Rectangle[] batFramesData = {
-                    new Rectangle(0, 0, 18, 20), new Rectangle(18, 0, 21, 20),
-                    new Rectangle(39, 0, 17, 20), new Rectangle(56, 0, 22, 20)
-            };
+            Rectangle[] batFramesData = { new Rectangle(0, 0, 18, 20), new Rectangle(18, 0, 21, 20) };
             batAnim = cropFramesFromVariableRectangles(batSheet, batFramesData);
-            if (batAnim == null) System.err.println("DEBUG ASSETS: Decupare batAnim a esuat.");
-        } else {
-            System.err.println("DEBUG ASSETS: Nu s-a putut incarca bat.png.");
         }
-
 
         System.out.println("DEBUG ASSETS: Incerc incarcare/decupare capcane (fisiere separate)...");
         BufferedImage spikesSheet = ImageLoader.LoadImage("/textures/traps/spikes.png");
         if (spikesSheet != null) {
             spikeTrapImage = spikesSheet.getSubimage(0, 0, 39, 25);
-            if (spikeTrapImage == null) System.err.println("DEBUG ASSETS: Decupare spikeTrapImage a esuat.");
-        } else {
-            System.err.println("DEBUG ASSETS: Nu s-a putut incarca spikes.png.");
-            spikeTrapImage = new BufferedImage(Tile.TILE_WIDTH, Tile.TILE_HEIGHT, BufferedImage.TYPE_INT_ARGB);
-            Graphics gSpike = spikeTrapImage.getGraphics();
-            gSpike.setColor(Color.RED);
-            gSpike.fillRect(0, 0, Tile.TILE_WIDTH, Tile.TILE_HEIGHT);
-            gSpike.dispose();
         }
 
         if (level3TilesetImage != null) {
@@ -470,9 +423,6 @@ public class Assets {
         BufferedImage npcIdleSheet = ImageLoader.LoadImage("/textures/old_man.png");
         if (npcIdleSheet != null) {
             npcIdleAnim = cropFramesFromArbitrarySheet(npcIdleSheet, NPC_FRAME_WIDTH, NPC_FRAME_HEIGHT, 1, 6, 0, 0);
-            if (npcIdleAnim == null) System.err.println("DEBUG ASSETS: Decupare npcIdleAnim a esuat.");
-        } else {
-            System.err.println("DEBUG ASSETS: Nu s-a putut incarca old_man.png.");
         }
 
         System.out.println("DEBUG ASSETS: Toate incercarile de decupare au fost executate.");

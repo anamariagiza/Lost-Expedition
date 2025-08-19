@@ -46,6 +46,9 @@ public class Agent extends Entity {
     private long lastAttackTime = 0;
     private enum Direction { UP, DOWN, LEFT, RIGHT }
 
+    private Animation animHurt;
+    private boolean isDefeated = false;
+
     /*!
      * \fn public Agent(RefLinks refLink, float x, float y, float patrolStartX, float patrolEndX, boolean isPatrolling)
      * \brief Constructorul de initializare al clasei Agent.
@@ -62,34 +65,30 @@ public class Agent extends Entity {
         this.patrolStartX = patrolStartX;
         this.patrolEndX = patrolEndX;
         this.isPatrolling = isPatrolling;
-
         this.xMove = 0;
         this.yMove = 0;
-
         this.bounds = new Rectangle(0, 0, width, height);
+        this.health = maxHealth;
 
-        // Inițializarea animațiilor Agentului
-        animIdleDown = safeAnimation(Assets.agentIdleDown, 200);
-        animIdleUp = safeAnimation(Assets.agentIdleUp, 200);
-        animIdleLeft = safeAnimation(Assets.agentIdleLeft, 200);
-        animIdleRight = safeAnimation(Assets.agentIdleRight, 200);
-
-        animWalkDown = safeAnimation(Assets.agentDown, 150);
-        animWalkUp = safeAnimation(Assets.agentUp, 150);
-        animWalkLeft = safeAnimation(Assets.agentLeft, 150);
-        animWalkRight = safeAnimation(Assets.agentRight, 150);
-
-        animRunDown = safeAnimation(Assets.agentRunDown, 100);
-        animRunUp = safeAnimation(Assets.agentRunUp, 100);
-        animRunLeft = safeAnimation(Assets.agentRunLeft, 100);
-        animRunRight = safeAnimation(Assets.agentRunRight, 100);
-        animThrust = safeAnimation(Assets.agentThrust, 100);
-        animSlash = safeAnimation(Assets.agentSlash, 100);
+        // Inițializarea animațiilor
+        animIdleDown = new Animation(200, Assets.agentIdleDown);
+        animIdleUp = new Animation(200, Assets.agentIdleUp);
+        animIdleLeft = new Animation(200, Assets.agentIdleLeft);
+        animIdleRight = new Animation(200, Assets.agentIdleRight);
+        animWalkDown = new Animation(150, Assets.agentDown);
+        animWalkUp = new Animation(150, Assets.agentUp);
+        animWalkLeft = new Animation(150, Assets.agentLeft);
+        animWalkRight = new Animation(150, Assets.agentRight);
+        animRunDown = new Animation(100, Assets.agentRunDown);
+        animRunUp = new Animation(100, Assets.agentRunUp);
+        animRunLeft = new Animation(100, Assets.agentRunLeft);
+        animRunRight = new Animation(100, Assets.agentRunRight);
+        animThrust = new Animation(100, Assets.agentThrust);
+        animSlash = new Animation(100, Assets.agentSlash);
+        animHurt = new Animation(150, Assets.agentHurt, false); // Animație non-looping
 
         activeAnimation = animIdleDown;
         lastDirection = Direction.DOWN;
-
-        this.health = maxHealth;
     }
 
     /*!
@@ -98,24 +97,27 @@ public class Agent extends Entity {
      */
     @Override
     public void Update() {
-        if(health > 0) {
-            if (isAttacking) {
-                activeAnimation.Update();
-                if (activeAnimation.isFinished()) {
-                    isAttacking = false;
-                    lastAttackTime = System.currentTimeMillis();
-                }
-            } else if (isChasing) {
-                chasePlayer();
-            } else if (isPatrolling) {
-                moveAgent();
-            } else {
-                updateIdleAnimationBasedOnLastDirection();
-            }
+        if (isDefeated) {
             activeAnimation.Update();
-            checkPlayerCollision();
-            checkPlayerAttackCollision();
+            return;
         }
+
+        if (isAttacking) {
+            activeAnimation.Update();
+            if (activeAnimation.isFinished()) {
+                isAttacking = false;
+                lastAttackTime = System.currentTimeMillis();
+            }
+        } else if (isChasing) {
+            chasePlayer();
+        } else if (isPatrolling) {
+            moveAgent();
+        } else {
+            updateIdleAnimationBasedOnLastDirection();
+        }
+        activeAnimation.Update();
+        checkPlayerCollision();
+        checkPlayerAttackCollision();
     }
 
     private void updateIdleAnimationBasedOnLastDirection() {
@@ -266,11 +268,17 @@ public class Agent extends Entity {
     }
 
     public void takeDamage(int amount) {
+        if (isDefeated) return;
+
         health -= amount;
-        if (health < 0) {
-            health = 0;
-        }
         System.out.println("Agent a luat " + amount + " daune. Viata ramasa: " + health);
+
+        if (health <= 0) {
+            health = 0;
+            isDefeated = true;
+            activeAnimation = animHurt;
+            activeAnimation.reset();
+        }
     }
 
     public int getHealth() {
@@ -284,7 +292,6 @@ public class Agent extends Entity {
      */
     @Override
     public void Draw(Graphics g) {
-        if (health <= 0) return;
         int drawX = (int)(x - refLink.GetGameCamera().getxOffset());
         int drawY = (int)(y - refLink.GetGameCamera().getyOffset());
         BufferedImage currentFrame = activeAnimation.getCurrentFrame();
@@ -294,7 +301,10 @@ public class Agent extends Entity {
             g.setColor(Color.BLUE);
             g.fillRect(drawX, drawY, width, height);
         }
-        drawHealthBar(g);
+
+        if (!isDefeated) {
+            drawHealthBar(g);
+        }
     }
 
     private void drawHealthBar(Graphics g) {
