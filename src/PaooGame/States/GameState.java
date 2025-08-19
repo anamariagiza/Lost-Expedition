@@ -534,180 +534,152 @@ public class GameState extends State {
 
     @Override
     public void Draw(Graphics g) {
-        if (currentMap == null || player == null) return;
-
+        if (currentMap == null || player == null) return; 
         GameCamera camera = refLink.GetGameCamera();
         int xStart = (int) Math.max(0, camera.getxOffset() / Tile.TILE_WIDTH);
         int xEnd = (int) Math.min(currentMap.GetWidth(), (camera.getxOffset() + refLink.GetWidth()) / Tile.TILE_WIDTH + 1);
         int yStart = (int) Math.max(0, camera.getyOffset() / Tile.TILE_HEIGHT);
         int yEnd = (int) Math.min(currentMap.GetHeight(), (camera.getyOffset() + refLink.GetHeight()) / Tile.TILE_HEIGHT + 1);
 
-        // PRIMUL STRAT: Desenează tile-urile de fundal (toate exceptând ID 64)
-        for (int[][] layerGids : currentMap.getTilesGidsLayers()) {
-            for (int y = yStart; y < yEnd; y++) {
-                for (int x = xStart; x < xEnd; x++) {
-                    int gid = layerGids[x][y];
-                    if (gid == 0 || gid == 64) continue; // Sărim peste tile-urile goale și ID 64
-
-                    Tile.GetTile(gid).Draw(g,
-                            (int)((x * Tile.TILE_WIDTH - camera.getxOffset())),
-                            (int)((y * Tile.TILE_HEIGHT - camera.getyOffset())),
-                            Tile.TILE_WIDTH,
-                            Tile.TILE_HEIGHT,
-                            currentMap.getCurrentMapTilesetImage());
+        // PRIMUL STRAT: Desenează Ground (dale de fundal, inclusiv capcanele, dar nu și pereții)
+        for (int[][] layerGids : currentMap.getTilesGidsLayers()) { 
+            for (int y = yStart; y < yEnd; y++) { 
+                for (int x = xStart; x < xEnd; x++) { 
+                    int gid = layerGids[x][y]; 
+                    // Sarim peste dalele goale si de perete (ID 64)
+                    if (gid == 0 || gid == 64) continue; 
+                    Tile.GetTile(gid).Draw(g, 
+                    (int)((x * Tile.TILE_WIDTH - camera.getxOffset())), 
+                    (int)((y * Tile.TILE_HEIGHT - camera.getyOffset())), 
+                            Tile.TILE_WIDTH, 
+                            Tile.TILE_HEIGHT, 
+                            currentMap.getCurrentMapTilesetImage()); 
                 }
             }
         }
 
-        // Creează o listă unică de entități și sortează-le după adâncime
-        ArrayList<Entity> allEntities = new ArrayList<>();
+        // AL DOILEA STRAT: Desenează Entitățile (împărțit în două etape pentru ordinea corectă)
 
-        // Adaugă toate entitățile normale
-        if (entities != null) {
-            allEntities.addAll(entities);
-        }
-
-        // Adaugă player-ul
-        if (player != null) {
-            allEntities.add(player);
-        }
-
-        // Adaugă boss-ul dacă există și este viu
-        if (finalBoss != null && finalBoss.getHealth() > 0) {
-            allEntities.add(finalBoss);
-        }
-
-        // Adaugă capcanele din arena dacă suntem pe nivelul 2
-        if (currentLevelIndex == 2 && arenaTraps != null) {
-            allEntities.addAll(arenaTraps);
-        }
-
-        // Sortare pentru adâncimea vizuală
-        allEntities.sort((e1, e2) -> {
-            float bottomY1 = e1.GetY() + e1.GetHeight();
-            float bottomY2 = e2.GetY() + e2.GetHeight();
-            int result = Float.compare(bottomY1, bottomY2);
-
-            // În cazul în care entitățile au același Y, sortează după X pentru consistență
-            if (result == 0) {
-                result = Float.compare(e1.GetX(), e2.GetX());
-            }
-
-            return result;
-        });
-
-        // Desenează entitățile sortate
-        for (Entity entity : allEntities) {
-            if (entity != null) {
-                entity.Draw(g);
+        // Pasul 2.1: Desenează entitățile de fundal care trebuie să fie MEREU SUB JUCĂTOR
+        for (Entity e : entities) {
+            // Aici adaugi orice alt tip de entitate care trebuie să fie la nivelul solului
+            if (e instanceof Trap || e instanceof Chest || e instanceof Key || e instanceof Talisman || e instanceof PuzzleTrigger || e instanceof TrapTrigger) {
+                e.Draw(g);
             }
         }
 
-        // AL DOILEA STRAT: Desenează tile-urile cu ID 64 DEASUPRA entităților
-        for (int[][] layerGids : currentMap.getTilesGidsLayers()) {
-            for (int y = yStart; y < yEnd; y++) {
-                for (int x = xStart; x < xEnd; x++) {
-                    int gid = layerGids[x][y];
-                    if (gid == 64) { // Desenează doar tile-urile cu ID 64
-                        Tile.GetTile(gid).Draw(g,
-                                (int)((x * Tile.TILE_WIDTH - camera.getxOffset())),
-                                (int)((y * Tile.TILE_HEIGHT - camera.getyOffset())),
-                                Tile.TILE_WIDTH,
-                                Tile.TILE_HEIGHT,
-                                currentMap.getCurrentMapTilesetImage());
+        // Pasul 2.2: Pregătim o listă nouă cu entitățile dinamice (personaje) pentru sortare
+        ArrayList<Entity> dynamicEntities = new ArrayList<>();
+        dynamicEntities.add(player); // Adăugăm jucătorul
+
+        // Adăugăm și alte entități mobile sau interactive care trebuie sortate după axa Y
+        for (Entity e : entities) {
+            if (e instanceof Agent || e instanceof Animal || e instanceof NPC || e instanceof DecorativeObject || e instanceof Torch) {
+                dynamicEntities.add(e);
+            }
+        }
+
+        // Sortăm DOAR entitățile dinamice după axa Y pentru efectul de adâncime
+        dynamicEntities.sort((e1, e2) -> Float.compare(e1.GetY(), e2.GetY()));
+
+        // Pasul 2.3: Desenăm entitățile dinamice sortate deasupra celor de fundal
+        for (Entity e : dynamicEntities) {
+            e.Draw(g);
+        }
+
+        // AL TREILEA STRAT: Desenează Objects (dalele de perete) deasupra entităților.
+        for (int[][] layerGids : currentMap.getTilesGidsLayers()) { 
+            for (int y = yStart; y < yEnd; y++) { 
+                for (int x = xStart; x < xEnd; x++) { 
+                    int gid = layerGids[x][y]; 
+                    if (gid == 64) { 
+                        Tile.GetTile(gid).Draw(g, 
+                        (int)((x * Tile.TILE_WIDTH - camera.getxOffset())), 
+                        (int)((y * Tile.TILE_HEIGHT - camera.getyOffset())), 
+                                Tile.TILE_WIDTH, 
+                                Tile.TILE_HEIGHT, 
+                                currentMap.getCurrentMapTilesetImage()); 
                     }
                 }
             }
         }
 
-        // Desenează ușile speciale de pe nivelul 1, deasupra celorlalte entități
-        if (currentLevelIndex == 1) {
-            for (int[][] layerGids : currentMap.getTilesGidsLayers()) {
-                for (int y = yStart; y < yEnd; y++) {
-                    for (int x = xStart; x < xEnd; x++) {
-                        int gid = layerGids[x][y];
-                        if (gid != 0 && gid != 64 && isSpecialDoorTile(gid)) {
-                            Tile.GetTile(gid).Draw(g,
-                                    (int)((x * Tile.TILE_WIDTH - camera.getxOffset())),
-                                    (int)((y * Tile.TILE_HEIGHT - camera.getyOffset())),
-                                    Tile.TILE_WIDTH,
-                                    Tile.TILE_HEIGHT,
-                                    currentMap.getCurrentMapTilesetImage());
+        // Desenează ușile speciale de la nivelul 1 și alte elemente de UI.
+        if (currentLevelIndex == 1) { 
+            for (int[][] layerGids : currentMap.getTilesGidsLayers()) { 
+                for (int y = yStart; y < yEnd; y++) { 
+                    for (int x = xStart; x < xEnd; x++) { 
+                        int gid = layerGids[x][y]; 
+                        if (gid != 0 && gid != 64 && isSpecialDoorTile(gid)) { 
+                            Tile.GetTile(gid).Draw(g, 
+                            (int)((x * Tile.TILE_WIDTH - camera.getxOffset())), 
+                            (int)((y * Tile.TILE_HEIGHT - camera.getyOffset())), 
+                                    Tile.TILE_WIDTH, 
+                                    Tile.TILE_HEIGHT, 
+                                    currentMap.getCurrentMapTilesetImage()); 
                         }
                     }
                 }
             }
 
-            // Desenează pop-up-uri pentru ușile închise
-            if (puzzleDoorPositions != null) {
-                for (int i = 0; i < puzzleDoorPositions.length; i++) {
-                    if (puzzleDoorPositions[i] != null && puzzleDoorPositions[i].length >= 2) {
-                        if (!currentMap.GetTile(puzzleDoorPositions[i][0], puzzleDoorPositions[i][1]).IsSolid()) {
-                            continue;
+            for (int i = 0; i < puzzleDoorPositions.length; i++) { 
+                if (puzzleDoorPositions[i] != null && puzzleDoorPositions[i].length >= 2) { 
+                    if (!currentMap.GetTile(puzzleDoorPositions[i][0], puzzleDoorPositions[i][1]).IsSolid()) { 
+                        continue; 
+                    }
+                    int tileX = puzzleDoorPositions[i][0]; 
+                    int tileY = puzzleDoorPositions[i][1]; 
+
+                    Entity tempDoorEntity = new Entity(refLink, (float)tileX * Tile.TILE_WIDTH, (float)tileY * Tile.TILE_HEIGHT, Tile.TILE_WIDTH * 2, Tile.TILE_HEIGHT * 2) { 
+                        @Override
+                        public void Update() {}
+                        @Override
+                        public void Draw(Graphics g) { 
+                            drawInteractionPopup(g); 
                         }
-                        int tileX = puzzleDoorPositions[i][0];
-                        int tileY = puzzleDoorPositions[i][1];
-
-                        Entity tempDoorEntity = new Entity(refLink, (float)tileX * Tile.TILE_WIDTH, (float)tileY * Tile.TILE_HEIGHT, Tile.TILE_WIDTH * 2, Tile.TILE_HEIGHT * 2) {
-                            @Override
-                            public void Update() {}
-                            @Override
-                            public void Draw(Graphics g) {
-                                drawInteractionPopup(g);
-                            }
-                        };
-                        tempDoorEntity.Draw(g);
-                    }
+                    };
+                    tempDoorEntity.Draw(g); 
                 }
             }
         }
 
-        // Desenează ceața de război
-        if (fogOfWar != null) {
-            fogOfWar.render(g);
+        if (fogOfWar != null) { 
+            fogOfWar.render(g); 
         }
 
-        // Desenează mesajul de la panoul de lemn
-        if (isWoodSignMessageShowing()) {
-            int wndWidth = refLink.GetWidth();
-            int wndHeight = refLink.GetHeight();
+        if (isWoodSignMessageShowing()) { 
+            int wndWidth = refLink.GetWidth(); 
+            int wndHeight = refLink.GetHeight(); 
 
-            int boxWidth = 500;
-            int boxHeight = 150;
-            int boxX = wndWidth / 2 - boxWidth / 2;
-            int boxY = wndHeight / 2 - boxHeight / 2;
+            int boxWidth = 500; 
+            int boxHeight = 150; 
+            int boxX = wndWidth / 2 - boxWidth / 2; 
+            int boxY = wndHeight / 2 - boxHeight / 2; 
+            g.setColor(new Color(0, 0, 0, 180)); 
+            g.fillRoundRect(boxX, boxY, boxWidth, boxHeight, 20, 20); 
 
-            // Desenează fundalul semi-transparent
-            g.setColor(new Color(0, 0, 0, 180));
-            g.fillRoundRect(boxX, boxY, boxWidth, boxHeight, 20, 20);
-
-            // Desenează textul
-            g.setColor(Color.WHITE);
-            g.setFont(new Font("Arial", Font.BOLD, 18));
-            FontMetrics fm = g.getFontMetrics();
-
-            if (woodSignMessage != null) {
-                String[] lines = woodSignMessage.split("\n");
-                int lineHeight = fm.getHeight();
-                int startY = boxY + (boxHeight - lines.length * lineHeight) / 2 + fm.getAscent();
-
-                for (String line : lines) {
-                    if (line != null) {
-                        int textWidth = fm.stringWidth(line);
-                        g.drawString(line, wndWidth / 2 - textWidth / 2, startY);
-                        startY += lineHeight;
+            g.setColor(Color.WHITE); 
+            g.setFont(new Font("Arial", Font.BOLD, 18)); 
+            FontMetrics fm = g.getFontMetrics(); 
+            if (woodSignMessage != null) { 
+                String[] lines = woodSignMessage.split("\n"); 
+                int lineHeight = fm.getHeight(); 
+                int startY = boxY + (boxHeight - lines.length * lineHeight) / 2 + fm.getAscent(); 
+                for (String line : lines) { 
+                    if (line != null) { 
+                        int textWidth = fm.stringWidth(line); 
+                        g.drawString(line, wndWidth / 2 - textWidth / 2, startY); 
+                        startY += lineHeight; 
                     }
                 }
             }
 
-            // Desenează instrucțiunea
-            g.setFont(new Font("Arial", Font.PLAIN, 14));
-            String instruction = "Apasati 'E' pentru a inchide.";
-            int instructionWidth = g.getFontMetrics().stringWidth(instruction);
-            g.drawString(instruction, wndWidth / 2 - instructionWidth / 2, boxY + boxHeight - 20);
+            g.setFont(new Font("Arial", Font.PLAIN, 14)); 
+            String instruction = "Apasati 'E' pentru a inchide."; 
+            int instructionWidth = g.getFontMetrics().stringWidth(instruction); 
+            g.drawString(instruction, wndWidth / 2 - instructionWidth / 2, boxY + boxHeight - 20); 
         }
 
-        // Desenează celelalte elemente de UI
         drawUI(g);
     }
 
