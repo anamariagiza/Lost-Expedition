@@ -30,6 +30,9 @@ public class Assets {
     public static final int BAT_FRAME_WIDTH = 19;
     public static final int BAT_FRAME_HEIGHT = 20;
 
+    public static final int DEFAULT_AGENT_WIDTH = 64;
+    public static final int DEFAULT_AGENT_HEIGHT = 64;
+
     // PLAYER ANIMATIONS
     public static BufferedImage[] playerDown;
     public static BufferedImage[] playerUp;
@@ -71,6 +74,19 @@ public class Assets {
     public static BufferedImage[] playerWalk_right;
     public static BufferedImage[] playerWalk_up;
     public static BufferedImage[] playerWalk_down;
+    // Animații de atac pentru Player
+    public static BufferedImage[] playerThrustUp;
+    public static BufferedImage[] playerThrustDown;
+    public static BufferedImage[] playerThrustLeft;
+    public static BufferedImage[] playerThrustRight;
+    public static BufferedImage[] playerHalfslashUp;
+    public static BufferedImage[] playerHalfslashDown;
+    public static BufferedImage[] playerHalfslashLeft;
+    public static BufferedImage[] playerHalfslashRight;
+    public static BufferedImage[] playerSlashUp;
+    public static BufferedImage[] playerSlashDown;
+    public static BufferedImage[] playerSlashLeft;
+    public static BufferedImage[] playerSlashRight;
 
     // AGENT ANIMATIONS
     public static BufferedImage[] agentDown;
@@ -97,17 +113,23 @@ public class Assets {
     public static BufferedImage[] agentEmote;
     public static BufferedImage[] agentCombatIdle;
     public static BufferedImage[] agentThrust;
-    public static BufferedImage[] agentSit;
-    public static BufferedImage[] agentSpellcast;
     public static BufferedImage[] agentSlash;
     public static BufferedImage[] monkeyWalkAnim;
     public static BufferedImage[] jaguarWalkAnim;
     public static BufferedImage[] jaguarRunAnim;
     public static BufferedImage[] batAnim;
+    // Animații de atac pentru Agent
+    public static BufferedImage[] agentThrustUp;
+    public static BufferedImage[] agentThrustDown;
+    public static BufferedImage[] agentThrustLeft;
+    public static BufferedImage[] agentThrustRight;
+    public static BufferedImage[] agentSlashUp;
+    public static BufferedImage[] agentSlashDown;
+    public static BufferedImage[] agentSlashLeft;
+    public static BufferedImage[] agentSlashRight;
 
     public static BufferedImage[] npcIdleAnim;
     public static BufferedImage spikeTrapImage;
-
     public static BufferedImage keyImage;
     public static BufferedImage talismanImage;
     public static BufferedImage puzzleTableImage;
@@ -144,6 +166,10 @@ public class Assets {
      * \fn public static void LoadGameAssets()
      * \brief Încarcă toate asset-urile principale ale jocului.
      */
+    /*!
+     * \fn public static void LoadGameAssets()
+     * \brief Încarcă toate asset-urile principale ale jocului.
+     */
     public static void LoadGameAssets() {
         backgroundMenu = ImageLoader.LoadImage("/textures/menu_background.jpg");
         if (backgroundMenu == null) {
@@ -166,7 +192,6 @@ public class Assets {
             System.err.println("Eroare: Nu s-a putut incarca level_3.png! Verificati calea si numele fisierului.");
         }
 
-        // Aici se încarcă fișierele key.png, talisman.png, table.png și wood_sign.png.
         keyImage = ImageLoader.LoadImage("/textures/objects/key.png");
         if (keyImage == null) {
             System.err.println("Eroare: Nu s-a putut incarca key.png! Verificati calea.");
@@ -191,7 +216,6 @@ public class Assets {
         if (woodSignImage == null) {
             System.err.println("Eroare: Nu s-a putut incarca wood_sign.png! Verificati calea.");
         }
-
 
         System.out.println("DEBUG ASSETS: Incarc imagini pentru puzzle-uri...");
         puzzle1Sun = ImageLoader.LoadImage("/textures/puzzles/sun.png");
@@ -262,14 +286,20 @@ public class Assets {
 
         BufferedImage playerThrustSheet = ImageLoader.LoadImage("/textures/player/thrust.png");
         if (playerThrustSheet != null) {
-            playerThrust = cropFramesFromArbitrarySheet(playerThrustSheet, PLAYER_FRAME_WIDTH, PLAYER_FRAME_HEIGHT, 4, 8, 0, 0);
+            playerThrustUp = cropFramesFromArbitrarySheet(playerThrustSheet, PLAYER_FRAME_WIDTH, PLAYER_FRAME_HEIGHT, 1, 8, 0, 0);
+            playerThrustLeft = cropFramesFromArbitrarySheet(playerThrustSheet, PLAYER_FRAME_WIDTH, PLAYER_FRAME_HEIGHT, 1, 8, 1, 0);
+            playerThrustDown = cropFramesFromArbitrarySheet(playerThrustSheet, PLAYER_FRAME_WIDTH, PLAYER_FRAME_HEIGHT, 1, 8, 2, 0);
+            playerThrustRight = cropFramesFromArbitrarySheet(playerThrustSheet, PLAYER_FRAME_WIDTH, PLAYER_FRAME_HEIGHT, 1, 8, 3, 0);
         } else {
             System.err.println("EROARE: Nu s-a putut incarca /textures/player/thrust.png");
         }
 
         BufferedImage playerHalfslashSheet = ImageLoader.LoadImage("/textures/player/halfslash.png");
         if (playerHalfslashSheet != null) {
-            playerHalfslash = cropFramesFromArbitrarySheet(playerHalfslashSheet, PLAYER_FRAME_WIDTH, PLAYER_FRAME_HEIGHT, 4, 7, 0, 0);
+            playerHalfslashUp = cropFramesFromArbitrarySheet(playerHalfslashSheet, PLAYER_FRAME_WIDTH, PLAYER_FRAME_HEIGHT, 1, 7, 0, 0);
+            playerHalfslashLeft = cropFramesFromArbitrarySheet(playerHalfslashSheet, PLAYER_FRAME_WIDTH, PLAYER_FRAME_HEIGHT, 1, 7, 1, 0);
+            playerHalfslashDown = cropFramesFromArbitrarySheet(playerHalfslashSheet, PLAYER_FRAME_WIDTH, PLAYER_FRAME_HEIGHT, 1, 7, 2, 0);
+            playerHalfslashRight = cropFramesFromArbitrarySheet(playerHalfslashSheet, PLAYER_FRAME_WIDTH, PLAYER_FRAME_HEIGHT, 1, 7, 3, 0);
         } else {
             System.err.println("EROARE: Nu s-a putut incarca /textures/player/halfslash.png");
         }
@@ -304,10 +334,60 @@ public class Assets {
 
         BufferedImage playerSlashSheet = ImageLoader.LoadImage("/textures/player/slash.png");
         if (playerSlashSheet != null) {
-            playerSlash = cropFramesFromArbitrarySheet(playerSlashSheet, PLAYER_FRAME_WIDTH, PLAYER_FRAME_HEIGHT, 4, 6, 0, 0);
+            playerSlashUp = cropFramesFromArbitrarySheet(playerSlashSheet, PLAYER_FRAME_WIDTH, PLAYER_FRAME_HEIGHT, 1, 6, 0, 0);
+            playerSlashLeft = cropFramesFromArbitrarySheet(playerSlashSheet, PLAYER_FRAME_WIDTH, PLAYER_FRAME_HEIGHT, 1, 6, 1, 0);
+            playerSlashDown = cropFramesFromArbitrarySheet(playerSlashSheet, PLAYER_FRAME_WIDTH, PLAYER_FRAME_HEIGHT, 1, 6, 2, 0);
+            playerSlashRight = cropFramesFromArbitrarySheet(playerSlashSheet, PLAYER_FRAME_WIDTH, PLAYER_FRAME_HEIGHT, 1, 6, 3, 0);
         } else {
             System.err.println("EROARE: Nu s-a putut incarca /textures/player/slash.png");
         }
+
+        System.out.println("DEBUG ASSETS: Incarc fisierele de animatie pentru agent...");
+        // INCARCARE ANIMATII AGENT
+        BufferedImage agentIdleSheet = ImageLoader.LoadImage("/textures/agent/idle.png");
+        if(agentIdleSheet != null) {
+            agentIdleUp = cropFramesFromArbitrarySheet(agentIdleSheet, DEFAULT_AGENT_WIDTH, DEFAULT_AGENT_HEIGHT, 1, 2, 0, 0);
+            agentIdleLeft = cropFramesFromArbitrarySheet(agentIdleSheet, DEFAULT_AGENT_WIDTH, DEFAULT_AGENT_HEIGHT, 1, 2, 1, 0);
+            agentIdleDown = cropFramesFromArbitrarySheet(agentIdleSheet, DEFAULT_AGENT_WIDTH, DEFAULT_AGENT_HEIGHT, 1, 2, 2, 0);
+            agentIdleRight = cropFramesFromArbitrarySheet(agentIdleSheet, DEFAULT_AGENT_WIDTH, DEFAULT_AGENT_HEIGHT, 1, 2, 3, 0);
+        }
+
+        BufferedImage agentWalkSheet = ImageLoader.LoadImage("/textures/agent/walk.png");
+        if (agentWalkSheet != null) {
+            agentUp = cropFramesFromArbitrarySheet(agentWalkSheet, DEFAULT_AGENT_WIDTH, DEFAULT_AGENT_HEIGHT, 1, 9, 0, 0);
+            agentLeft = cropFramesFromArbitrarySheet(agentWalkSheet, DEFAULT_AGENT_WIDTH, DEFAULT_AGENT_HEIGHT, 1, 9, 1, 0);
+            agentDown = cropFramesFromArbitrarySheet(agentWalkSheet, DEFAULT_AGENT_WIDTH, DEFAULT_AGENT_HEIGHT, 1, 9, 2, 0);
+            agentRight = cropFramesFromArbitrarySheet(agentWalkSheet, DEFAULT_AGENT_WIDTH, DEFAULT_AGENT_HEIGHT, 1, 9, 3, 0);
+        }
+
+        BufferedImage agentRunSheet = ImageLoader.LoadImage("/textures/agent/run.png");
+        if (agentRunSheet != null) {
+            agentRunUp = cropFramesFromArbitrarySheet(agentRunSheet, DEFAULT_AGENT_WIDTH, DEFAULT_AGENT_HEIGHT, 1, 8, 0, 0);
+            agentRunLeft = cropFramesFromArbitrarySheet(agentRunSheet, DEFAULT_AGENT_WIDTH, DEFAULT_AGENT_HEIGHT, 1, 8, 1, 0);
+            agentRunDown = cropFramesFromArbitrarySheet(agentRunSheet, DEFAULT_AGENT_WIDTH, DEFAULT_AGENT_HEIGHT, 1, 8, 2, 0);
+            agentRunRight = cropFramesFromArbitrarySheet(agentRunSheet, DEFAULT_AGENT_WIDTH, DEFAULT_AGENT_HEIGHT, 1, 8, 3, 0);
+        }
+
+        BufferedImage agentThrustSheet = ImageLoader.LoadImage("/textures/agent/thrust.png");
+        if (agentThrustSheet != null) {
+            agentThrustUp = cropFramesFromArbitrarySheet(agentThrustSheet, DEFAULT_AGENT_WIDTH, DEFAULT_AGENT_HEIGHT, 1, 8, 0, 0);
+            agentThrustLeft = cropFramesFromArbitrarySheet(agentThrustSheet, DEFAULT_AGENT_WIDTH, DEFAULT_AGENT_HEIGHT, 1, 8, 1, 0);
+            agentThrustDown = cropFramesFromArbitrarySheet(agentThrustSheet, DEFAULT_AGENT_WIDTH, DEFAULT_AGENT_HEIGHT, 1, 8, 2, 0);
+            agentThrustRight = cropFramesFromArbitrarySheet(agentThrustSheet, DEFAULT_AGENT_WIDTH, DEFAULT_AGENT_HEIGHT, 1, 8, 3, 0);
+        } else {
+            System.err.println("EROARE: Nu s-a putut incarca /textures/agent/thrust.png");
+        }
+
+        BufferedImage agentSlashSheet = ImageLoader.LoadImage("/textures/agent/slash.png");
+        if (agentSlashSheet != null) {
+            agentSlashUp = cropFramesFromArbitrarySheet(agentSlashSheet, DEFAULT_AGENT_WIDTH, DEFAULT_AGENT_HEIGHT, 1, 6, 0, 0);
+            agentSlashLeft = cropFramesFromArbitrarySheet(agentSlashSheet, DEFAULT_AGENT_WIDTH, DEFAULT_AGENT_HEIGHT, 1, 6, 1, 0);
+            agentSlashDown = cropFramesFromArbitrarySheet(agentSlashSheet, DEFAULT_AGENT_WIDTH, DEFAULT_AGENT_HEIGHT, 1, 6, 2, 0);
+            agentSlashRight = cropFramesFromArbitrarySheet(agentSlashSheet, DEFAULT_AGENT_WIDTH, DEFAULT_AGENT_HEIGHT, 1, 6, 3, 0);
+        } else {
+            System.err.println("EROARE: Nu s-a putut incarca /textures/agent/slash.png");
+        }
+
 
         System.out.println("DEBUG ASSETS: Incerc incarcare/decupare animale (fisiere separate)...");
         BufferedImage monkeySheet = ImageLoader.LoadImage("/textures/animals/monkey.png");
@@ -319,6 +399,7 @@ public class Assets {
                     new Rectangle(194, 0, 39, 52), new Rectangle(233, 0, 41, 52),
                     new Rectangle(274, 0, 29, 52), new Rectangle(303, 0, 36, 52),
                     new Rectangle(339, 0, 38, 52), new Rectangle(377, 0, 37, 52),
+
                     new Rectangle(414, 0, 36, 52)
             };
             monkeyWalkAnim = cropFramesFromVariableRectangles(monkeySheet, monkeyFramesData);
@@ -368,7 +449,6 @@ public class Assets {
             gSpike.dispose();
         }
 
-
         if (level3TilesetImage != null) {
             System.out.println("DEBUG ASSETS: Incerc decupare animatii Nivel 3...");
             int[] torchGIDs = {423, 424, 425, 426, 427, 428, 429, 430};
@@ -396,14 +476,6 @@ public class Assets {
         }
 
         System.out.println("DEBUG ASSETS: Toate incercarile de decupare au fost executate.");
-    }
-
-    private static BufferedImage[] cropFramesFromSheet(BufferedImage sheet, int rows, int cols) {
-        return cropFramesFromArbitrarySheet(sheet, PLAYER_FRAME_WIDTH, PLAYER_FRAME_HEIGHT, rows, cols, 0, 0);
-    }
-
-    private static BufferedImage[] cropFramesFromSheet(BufferedImage sheet, int numRowsToCrop, int numColsToCrop, int startRow, int startCol) {
-        return cropFramesFromArbitrarySheet(sheet, PLAYER_FRAME_WIDTH, PLAYER_FRAME_HEIGHT, numRowsToCrop, numColsToCrop, startRow, startCol);
     }
 
     private static BufferedImage[] cropFramesFromArbitrarySheet(BufferedImage sheet, int frameWidth, int frameHeight, int numRowsToCrop, int numColsToCrop, int startRow, int startCol) {

@@ -34,6 +34,8 @@ public class Agent extends Entity {
     private boolean isAttacking = false;
     private Direction lastDirection = Direction.DOWN;
 
+    private float xMove, yMove; // Variabilele lipsa
+
     private int damage = 30;
 
     private int health;
@@ -61,6 +63,9 @@ public class Agent extends Entity {
         this.patrolStartX = patrolStartX;
         this.patrolEndX = patrolEndX;
         this.isPatrolling = isPatrolling;
+
+        this.xMove = 0; // Inițializare variabile lipsă
+        this.yMove = 0; // Inițializare variabile lipsă
 
         this.bounds = new Rectangle(0, 0, width, height);
         // Inițializarea animațiilor Agentului
@@ -115,12 +120,10 @@ public class Agent extends Entity {
 
     private void updateIdleAnimationBasedOnLastDirection() {
         switch(lastDirection) {
-            case UP:    activeAnimation = animIdleUp;
-                break;
+            case UP:    activeAnimation = animIdleUp; break;
             case DOWN:  activeAnimation = animIdleDown;  break;
             case LEFT:  activeAnimation = animIdleLeft;  break;
-            case RIGHT: activeAnimation = animIdleRight;
-                break;
+            case RIGHT: activeAnimation = animIdleRight; break;
             default:    activeAnimation = animIdleDown;  break;
         }
         activeAnimation.reset();
@@ -130,31 +133,28 @@ public class Agent extends Entity {
      * \fn private void moveAgent()
      * \brief Implementeaza logica de miscare a agentului (patrulare orizontala).
      */
+
     private void moveAgent() {
         if (movingRight) {
             if (x + width < patrolEndX) {
-                x += speed;
+                xMove = speed;
                 lastDirection = Direction.RIGHT;
-                activeAnimation = animWalkDown;
+                activeAnimation = animWalkRight;
             } else {
                 movingRight = false;
             }
         } else {
             if (x > patrolStartX) {
-                x -= speed;
+                xMove = -speed;
                 lastDirection = Direction.LEFT;
-                activeAnimation = animWalkDown;
+                activeAnimation = animWalkLeft;
             } else {
                 movingRight = true;
             }
         }
-        bounds.x = (int) x;
+        move(xMove, 0);
     }
 
-    /*!
-     * \fn private void chasePlayer()
-     * \brief Implementeaza logica de urmarire a jucatorului.
-     */
     private void chasePlayer() {
         Player player = refLink.GetPlayer();
         if (player == null) return;
@@ -167,29 +167,39 @@ public class Agent extends Entity {
         float dx = playerCenterX - agentCenterX;
         float dy = playerCenterY - agentCenterY;
         float distance = (float) Math.sqrt(dx * dx + dy * dy);
+
+        float currentSpeed = player.isRunning() ? CHASE_SPEED : DEFAULT_SPEED;
+
         if (distance > 10) {
-            x += (dx / distance) * CHASE_SPEED;
-            y += (dy / distance) * CHASE_SPEED;
+            xMove = (dx / distance) * currentSpeed;
+            yMove = (dy / distance) * currentSpeed;
 
             if (Math.abs(dx) > Math.abs(dy)) {
                 lastDirection = (dx > 0) ? Direction.RIGHT : Direction.LEFT;
             } else {
                 lastDirection = (dy > 0) ? Direction.DOWN : Direction.UP;
             }
-            activeAnimation = animRunDown;
+            switch (lastDirection) {
+                case UP: activeAnimation = (currentSpeed == CHASE_SPEED) ? animRunUp : animWalkUp; break;
+                case DOWN: activeAnimation = (currentSpeed == CHASE_SPEED) ? animRunDown : animWalkDown; break;
+                case LEFT: activeAnimation = (currentSpeed == CHASE_SPEED) ? animRunLeft : animWalkLeft; break;
+                case RIGHT: activeAnimation = (currentSpeed == CHASE_SPEED) ? animRunRight : animWalkRight; break;
+            }
+            move(xMove, yMove);
         } else {
-            activeAnimation = animIdleDown;
+            updateIdleAnimationBasedOnLastDirection();
         }
-
-        bounds.setLocation((int)x, (int)y);
     }
-
     /*!
      * \fn public void setChaseMode(boolean chasing)
      * \brief Seteaza modul de urmarire al agentului.
      */
     public void setChaseMode(boolean chasing) {
         this.isChasing = chasing;
+    }
+
+    public boolean isAttacking() {
+        return isAttacking;
     }
 
     /*!
@@ -200,11 +210,17 @@ public class Agent extends Entity {
         Player player = refLink.GetPlayer();
         if (player == null) return;
 
-        if (this.bounds.intersects(player.GetBounds()) && !isAttacking && System.currentTimeMillis() - lastAttackTime > ATTACK_COOLDOWN_MS) {
+        if (this.bounds.intersects(player.GetBounds()) && !isAttacking() && System.currentTimeMillis() - lastAttackTime > ATTACK_COOLDOWN_MS) {
             System.out.println("DEBUG Agent: Coliziune cu jucatorul!");
             player.takeDamage(damage);
             isAttacking = true;
-            activeAnimation = animThrust;
+            // Alege animația de atac corectă pe baza direcției
+            switch(lastDirection) {
+                case UP: activeAnimation = animThrust; break;
+                case DOWN: activeAnimation = animThrust; break;
+                case LEFT: activeAnimation = animThrust; break;
+                case RIGHT: activeAnimation = animThrust; break;
+            }
             activeAnimation.reset();
             lastAttackTime = System.currentTimeMillis();
         }
@@ -239,7 +255,6 @@ public class Agent extends Entity {
      * \brief Deseneaza agentul pe ecran.
      * \param g Contextul grafic.
      */
-    // Metoda Draw modificată (fără zoom)
     @Override
     public void Draw(Graphics g) {
         if (health <= 0) return;
@@ -247,12 +262,8 @@ public class Agent extends Entity {
         int drawY = (int)(y - refLink.GetGameCamera().getyOffset());
         BufferedImage currentFrame = activeAnimation.getCurrentFrame();
         if (currentFrame != null) {
-            boolean flip = lastDirection == Direction.LEFT;
-            if (flip) {
-                g.drawImage(currentFrame, drawX + width, drawY, -width, height, null);
-            } else {
-                g.drawImage(currentFrame, drawX, drawY, width, height, null);
-            }
+            // Nu mai folosesc flip, folosesc animatii dedicate
+            g.drawImage(currentFrame, drawX, drawY, width, height, null);
         } else {
             g.setColor(Color.BLUE);
             g.fillRect(drawX, drawY, width, height);
@@ -279,5 +290,71 @@ public class Agent extends Entity {
     private Animation safeAnimation(BufferedImage[] frames, int speed) {
         BufferedImage defaultFrame = new BufferedImage(DEFAULT_AGENT_WIDTH, DEFAULT_AGENT_HEIGHT, BufferedImage.TYPE_INT_ARGB);
         return (frames != null && frames.length > 0) ? new Animation(speed, frames) : new Animation(100, new BufferedImage[]{defaultFrame});
+    }
+
+    // Noua metoda de miscare a Agentului cu verificare de coliziune
+    private void move(float xAmt, float yAmt) {
+        if (xAmt != 0) {
+            float newX = x + xAmt;
+            Rectangle proposedBoundsX = new Rectangle((int) newX, (int) y, width, height);
+            boolean collision = false;
+            int tx = (int) ((xAmt > 0 ? newX + width - 1 : newX) / Tile.TILE_WIDTH);
+            int ty_top = (int) (y / Tile.TILE_HEIGHT);
+            int ty_bottom = (int) ((y + height - 1) / Tile.TILE_HEIGHT);
+
+            if (refLink.GetMap().GetTile(tx, ty_top).GetId() == 64 || refLink.GetMap().GetTile(tx, ty_bottom).GetId() == 64) {
+                collision = true;
+            }
+            if (!collision && (refLink.GetMap().GetTile(tx, ty_top).IsSolid() || refLink.GetMap().GetTile(tx, ty_bottom).IsSolid())) {
+                collision = true;
+            }
+
+            // Verificare coliziune cu entitati solide
+            if (!collision) {
+                for (Entity e : refLink.GetGameState().getEntities()) {
+                    if (e.equals(this)) continue;
+                    if (e instanceof DecorativeObject && ((DecorativeObject) e).isSolid() && proposedBoundsX.intersects(e.GetBounds())) {
+                        collision = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!collision) {
+                x = newX;
+            }
+        }
+
+        if (yAmt != 0) {
+            float newY = y + yAmt;
+            Rectangle proposedBoundsY = new Rectangle((int) x, (int) newY, width, height);
+            boolean collision = false;
+            int ty = (int) ((yAmt > 0 ? newY + height - 1 : newY) / Tile.TILE_HEIGHT);
+            int tx_left = (int) (x / Tile.TILE_WIDTH);
+            int tx_right = (int) ((x + width - 1) / Tile.TILE_WIDTH);
+
+            if (refLink.GetMap().GetTile(tx_left, ty).GetId() == 64 || refLink.GetMap().GetTile(tx_right, ty).GetId() == 64) {
+                collision = true;
+            }
+            if (!collision && (refLink.GetMap().GetTile(tx_left, ty).IsSolid() || refLink.GetMap().GetTile(tx_right, ty).IsSolid())) {
+                collision = true;
+            }
+
+            // Verificare coliziune cu entitati solide
+            if (!collision) {
+                for (Entity e : refLink.GetGameState().getEntities()) {
+                    if (e.equals(this)) continue;
+                    if (e instanceof DecorativeObject && ((DecorativeObject) e).isSolid() && proposedBoundsY.intersects(e.GetBounds())) {
+                        collision = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!collision) {
+                y = newY;
+            }
+        }
+        bounds.setLocation((int) x, (int) y);
     }
 }

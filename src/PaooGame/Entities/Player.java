@@ -26,15 +26,20 @@ public class Player extends Entity {
 
     private int health;
     private int maxHealth = 100;
+
+    // Animații de mișcare
     private Animation animDown, animUp, animLeft, animRight;
     private Animation animIdleDown, animIdleUp, animIdleLeft, animIdleRight;
     private Animation animRunDown, animRunUp, animRunLeft, animRunRight;
     private Animation animJumpDown, animJumpUp, animJumpLeft, animJumpRight;
     private Animation animHurt;
     private Animation animCombatIdle;
-    private Animation animThrust;
-    private Animation animHalfslash;
-    private Animation animSlash;
+
+    // Animații de atac pentru fiecare direcție
+    private Animation animThrustUp, animThrustDown, animThrustLeft, animThrustRight;
+    private Animation animHalfslashUp, animHalfslashDown, animHalfslashLeft, animHalfslashRight;
+    private Animation animSlashUp, animSlashDown, animSlashLeft, animSlashRight;
+
     public Animation activeAnimation;
 
     private boolean isMoving;
@@ -46,6 +51,7 @@ public class Player extends Entity {
     private boolean isThrusting;
     private boolean isHalfslashing;
     private boolean isSlashing;
+
     private enum Direction { UP, DOWN, LEFT, RIGHT }
     private Direction lastDirection = Direction.DOWN;
     private int attackDamage = 25;
@@ -64,6 +70,7 @@ public class Player extends Entity {
         int hurtAnimationSpeed = 150;
         int idleCombatSpeed = 200;
 
+        // Animații de mișcare
         animDown = safeAnimation(Assets.playerDown, animationSpeed);
         animUp = safeAnimation(Assets.playerUp, animationSpeed);
         animLeft = safeAnimation(Assets.playerLeft, animationSpeed);
@@ -81,17 +88,35 @@ public class Player extends Entity {
         animJumpLeft = safeAnimation(Assets.playerJumpLeft, jumpAnimationSpeed);
         animJumpRight = safeAnimation(Assets.playerJumpRight, jumpAnimationSpeed);
         animHurt = safeAnimation(Assets.playerHurt, hurtAnimationSpeed);
-        animHalfslash = safeAnimation(Assets.playerHalfslash, attackAnimationSpeed);
         animCombatIdle = safeAnimation(Assets.playerCombatIdle, idleCombatSpeed);
-        animThrust = safeAnimation(Assets.playerThrust, attackAnimationSpeed);
-        animSlash = safeAnimation(Assets.playerSlash, attackAnimationSpeed);
+
+        // Animații de atac pe direcții - dacă nu există în Assets, se vor folosi frame-uri default
+        animThrustUp = safeAnimation(Assets.playerThrustUp != null ? Assets.playerThrustUp : Assets.playerThrust, attackAnimationSpeed);
+        animThrustDown = safeAnimation(Assets.playerThrustDown != null ? Assets.playerThrustDown : Assets.playerThrust, attackAnimationSpeed);
+        animThrustLeft = safeAnimation(Assets.playerThrustLeft != null ? Assets.playerThrustLeft : Assets.playerThrust, attackAnimationSpeed);
+        animThrustRight = safeAnimation(Assets.playerThrustRight != null ? Assets.playerThrustRight : Assets.playerThrust, attackAnimationSpeed);
+
+        animHalfslashUp = safeAnimation(Assets.playerHalfslashUp != null ? Assets.playerHalfslashUp : Assets.playerHalfslash, attackAnimationSpeed);
+        animHalfslashDown = safeAnimation(Assets.playerHalfslashDown != null ? Assets.playerHalfslashDown : Assets.playerHalfslash, attackAnimationSpeed);
+        animHalfslashLeft = safeAnimation(Assets.playerHalfslashLeft != null ? Assets.playerHalfslashLeft : Assets.playerHalfslash, attackAnimationSpeed);
+        animHalfslashRight = safeAnimation(Assets.playerHalfslashRight != null ? Assets.playerHalfslashRight : Assets.playerHalfslash, attackAnimationSpeed);
+
+        animSlashUp = safeAnimation(Assets.playerSlashUp != null ? Assets.playerSlashUp : Assets.playerSlash, attackAnimationSpeed);
+        animSlashDown = safeAnimation(Assets.playerSlashDown != null ? Assets.playerSlashDown : Assets.playerSlash, attackAnimationSpeed);
+        animSlashLeft = safeAnimation(Assets.playerSlashLeft != null ? Assets.playerSlashLeft : Assets.playerSlash, attackAnimationSpeed);
+        animSlashRight = safeAnimation(Assets.playerSlashRight != null ? Assets.playerSlashRight : Assets.playerSlash, attackAnimationSpeed);
 
         activeAnimation = animIdleDown;
         lastDirection = Direction.DOWN;
-        isMoving = false; isRunning = false; isJumping = false; isAttacking = false;
-        isHurt = false; isCombatIdle = false;
+        isMoving = false;
+        isRunning = false;
+        isJumping = false;
+        isAttacking = false;
+        isHurt = false;
+        isCombatIdle = false;
         isThrusting = false;
-        isHalfslashing = false; isSlashing = false;
+        isHalfslashing = false;
+        isSlashing = false;
 
         this.bounds = new Rectangle((int)x, (int)y, width, height);
     }
@@ -101,6 +126,10 @@ public class Player extends Entity {
         if (game == null || game.GetKeyManager() == null) return;
         if (isHurt) {
             activeAnimation.Update();
+            if (activeAnimation.isFinished()) {
+                isHurt = false;
+                updateIdleAnimationBasedOnLastDirection();
+            }
             return;
         }
 
@@ -114,9 +143,12 @@ public class Player extends Entity {
             activeAnimation.Update();
             if (activeAnimation.isFinished()) {
                 isAttacking = false;
-                isHurt = false; isJumping = false;
-                isCombatIdle = false; isThrusting = false;
-                isHalfslashing = false; isSlashing = false;
+                isHurt = false;
+                isJumping = false;
+                isCombatIdle = false;
+                isThrusting = false;
+                isHalfslashing = false;
+                isSlashing = false;
                 updateIdleAnimationBasedOnLastDirection();
             }
         }
@@ -129,6 +161,19 @@ public class Player extends Entity {
         if (playerFrame != null) {
             int drawX = (int)(x - camera.getxOffset());
             int drawY = (int)(y - camera.getyOffset());
+
+            // Dacă folosești aceleași sprite-uri pentru LEFT și RIGHT și vrei să aplici flip
+            // (comentează această secțiune dacă ai sprite-uri separate pentru fiecare direcție)
+            /*
+            if (lastDirection == Direction.LEFT && (isMoving || isAttacking)) {
+                // Desenăm cu flip pe orizontală pentru stânga
+                g.drawImage(playerFrame, drawX + width, drawY, -width, height, null);
+            } else {
+                g.drawImage(playerFrame, drawX, drawY, width, height, null);
+            }
+            */
+
+            // Desenare normală (folosește această linie dacă ai sprite-uri separate)
             g.drawImage(playerFrame, drawX, drawY, width, height, null);
         }
     }
@@ -162,22 +207,32 @@ public class Player extends Entity {
             if (game.GetKeyManager().isKeyJustPressed(KeyEvent.VK_SPACE)) {
                 isJumping = true;
                 switch(lastDirection) {
-                    case UP: activeAnimation = animJumpUp;
-                        break;
+                    case UP: activeAnimation = animJumpUp; break;
                     case DOWN: activeAnimation = animJumpDown; break;
                     case LEFT: activeAnimation = animJumpLeft; break;
                     case RIGHT: activeAnimation = animJumpRight; break;
                 }
                 activeAnimation.reset();
-            } else if (game.GetKeyManager().isKeyJustPressed(KeyEvent.VK_J)) {
-                isAttacking = true;
-                isThrusting = true; activeAnimation = animThrust; activeAnimation.reset();
             } else if (game.GetKeyManager().isKeyJustPressed(KeyEvent.VK_K)) {
                 isAttacking = true;
-                isHalfslashing = true; activeAnimation = animHalfslash; activeAnimation.reset();
+                isHalfslashing = true;
+                switch(lastDirection) {
+                    case UP: activeAnimation = animHalfslashUp; break;
+                    case DOWN: activeAnimation = animHalfslashDown; break;
+                    case LEFT: activeAnimation = animHalfslashLeft; break;
+                    case RIGHT: activeAnimation = animHalfslashRight; break;
+                }
+                activeAnimation.reset();
             } else if (game.GetKeyManager().isKeyJustPressed(KeyEvent.VK_SLASH)) {
                 isAttacking = true;
-                isSlashing = true; activeAnimation = animSlash; activeAnimation.reset();
+                isSlashing = true;
+                switch(lastDirection) {
+                    case UP: activeAnimation = animSlashUp; break;
+                    case DOWN: activeAnimation = animSlashDown; break;
+                    case LEFT: activeAnimation = animSlashLeft; break;
+                    case RIGHT: activeAnimation = animSlashRight; break;
+                }
+                activeAnimation.reset();
             }
         }
         move(xMove, yMove);
@@ -187,16 +242,14 @@ public class Player extends Entity {
         if (isMoving) {
             if (isRunning) {
                 switch(lastDirection) {
-                    case UP: activeAnimation = animRunUp;
-                        break;
+                    case UP: activeAnimation = animRunUp; break;
                     case DOWN: activeAnimation = animRunDown; break;
                     case LEFT: activeAnimation = animRunLeft; break;
                     case RIGHT: activeAnimation = animRunRight; break;
                 }
             } else {
                 switch(lastDirection) {
-                    case UP: activeAnimation = animUp;
-                        break;
+                    case UP: activeAnimation = animUp; break;
                     case DOWN: activeAnimation = animDown; break;
                     case LEFT: activeAnimation = animLeft; break;
                     case RIGHT: activeAnimation = animRight; break;
@@ -210,12 +263,10 @@ public class Player extends Entity {
 
     private void updateIdleAnimationBasedOnLastDirection() {
         switch(lastDirection) {
-            case UP:    activeAnimation = animIdleUp;
-                break;
+            case UP:    activeAnimation = animIdleUp; break;
             case DOWN:  activeAnimation = animIdleDown;  break;
             case LEFT:  activeAnimation = animIdleLeft;  break;
-            case RIGHT: activeAnimation = animIdleRight;
-                break;
+            case RIGHT: activeAnimation = animIdleRight; break;
             default:    activeAnimation = animIdleDown;  break;
         }
         activeAnimation.reset();
@@ -243,7 +294,6 @@ public class Player extends Entity {
                 collision = true;
             }
 
-
             // 2. Verificare coliziune cu entitati solide (ex: mese)
             if (!collision) {
                 State currentState = State.GetState();
@@ -261,7 +311,6 @@ public class Player extends Entity {
                         }
                     }
                 }
-
             }
 
             if (!collision) {
@@ -287,7 +336,6 @@ public class Player extends Entity {
                 collision = true;
             }
 
-
             // 2. Verificare coliziune cu entitati solide (ex: mese)
             if (!collision) {
                 State currentState = State.GetState();
@@ -305,7 +353,6 @@ public class Player extends Entity {
                         }
                     }
                 }
-
             }
 
             if (!collision) {
@@ -336,16 +383,19 @@ public class Player extends Entity {
         return isHurt;
     }
 
-    @Override public float GetX() { return x;
+    public boolean isRunning() {
+        return isRunning;
     }
-    @Override public float GetY() { return y;
+
+    public Direction getLastDirection() {
+        return lastDirection;
     }
-    @Override public int GetWidth() { return width;
-    }
-    @Override public int GetHeight() { return height;
-    }
-    @Override public Rectangle GetBounds() { return bounds;
-    }
+
+    @Override public float GetX() { return x; }
+    @Override public float GetY() { return y; }
+    @Override public int GetWidth() { return width; }
+    @Override public int GetHeight() { return height; }
+    @Override public Rectangle GetBounds() { return bounds; }
 
     @Override
     public void SetPosition(float x, float y) {
@@ -359,6 +409,7 @@ public class Player extends Entity {
 
     public int getHealth() { return health; }
     public int getMaxHealth() { return maxHealth; }
+
     public void takeDamage(int amount) {
         health -= amount;
         if (health < 0) { health = 0; }
@@ -369,6 +420,7 @@ public class Player extends Entity {
             activeAnimation.reset();
         }
     }
+
     public void setHealth(int health) {
         this.health = health;
         if (this.health < 0) { this.health = 0; }
@@ -397,11 +449,9 @@ public class Player extends Entity {
             int attackY = (int) y + height / 2;
 
             switch (lastDirection) {
-                case UP:    attackY -= (height / 2 + attackHeight);
-                    break;
+                case UP:    attackY -= (height / 2 + attackHeight); break;
                 case DOWN:  attackY += height / 2; break;
-                case LEFT:  attackX -= (width / 2 + attackWidth);
-                    break;
+                case LEFT:  attackX -= (width / 2 + attackWidth); break;
                 case RIGHT: attackX += width / 2; break;
             }
             return new Rectangle(attackX, attackY, attackWidth, attackHeight);
@@ -409,10 +459,10 @@ public class Player extends Entity {
         return null;
     }
 
-    /*!
-     * \fn public void updateBoundingBox()
-     * \brief Actualizeaza bounding box-ul jucatorului.
-     */
+    public boolean isAttacking() {
+        return isAttacking;
+    }
+
     public void updateBoundingBox() {
         this.bounds.setLocation((int) x, (int) y);
     }

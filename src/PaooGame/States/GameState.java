@@ -82,6 +82,17 @@ public class GameState extends State {
     };
     private final int[][] puzzleDoorPositions = {{19, 24, 20, 24, 19, 25, 20, 25},{36, 18, 37, 18, 36, 19, 37, 19},{53, 24, 54, 24, 53, 25, 54, 25},{70, 15, 71, 15, 70, 16, 71, 16},{87, 24, 88, 24, 87, 25, 88, 25},{110, 15, 111, 15, 110, 16, 111, 16}};
 
+    private long lastAgentTrapDamageTime = 0;
+
+    private long lastPlayerPunchTime = 0;
+    private long lastAgentPunchTime = 0;
+    private final long PUNCH_COOLDOWN_MS = 3000;
+    private final int PUNCH_DAMAGE = 10;
+    private final int COLLISION_RANGE = 5;
+
+    private long lastAgentAttackTime = 0;
+    private final long ATTACK_COOLDOWN_MS = 3000;
+
     public GameState(RefLinks refLink) {
         super(refLink);
         this.currentLevelIndex = 0;
@@ -139,8 +150,10 @@ public class GameState extends State {
     private void updateObjective() {
         if (currentLevelIndex == 1) {
             currentObjective = "Rezolva puzzle-urile si ajungi in ultima camera.";
+        } else if (currentLevelIndex == 2) {
+            currentObjective = "Invinge agentul, aduna ultima cheie si ia comoara.";
         } else {
-            currentObjective = "Afla ce se afla in spatele usii blocate.";
+            currentObjective = "Aduna cheia si talismanul apoi intra in pestera.";
         }
     }
 
@@ -193,8 +206,8 @@ public class GameState extends State {
                 playerStartX = 2 * Tile.TILE_WIDTH;
                 playerStartY = 26 * Tile.TILE_HEIGHT;
             } else if (currentLevelIndex == 2) {
-                playerStartX = 29 * Tile.TILE_WIDTH;
-                playerStartY = 38 * Tile.TILE_HEIGHT;
+                playerStartX = 37 * Tile.TILE_WIDTH;
+                playerStartY = 57 * Tile.TILE_HEIGHT;
             }
         }
 
@@ -323,7 +336,6 @@ public class GameState extends State {
         }
     }
 
-    @Override
     public void Update() {
         if (collectionMessage != null && System.currentTimeMillis() - collectionMessageTime > MESSAGE_DURATION_MS) {
             collectionMessage = null;
@@ -405,17 +417,13 @@ public class GameState extends State {
             }
         }
 
-        // Ușa de la nivelul 1 se deschide cu tasta E.
         if (currentLevelIndex == 1 && refLink.GetKeyManager().isKeyJustPressed(KeyEvent.VK_E)) {
             checkAndOpenDoor();
         }
 
-        // NOU: Acum, trecerea la nivelul 3 este automată dacă jucătorul trece prin ușă, după ce aceasta a fost deschisă.
-        // A fost eliminată condiția de a apăsa tasta E pentru această acțiune.
         if (currentLevelIndex == 1) {
-            // Verifică dacă ușa finală (110, 15) este deschisă (nu mai este solidă)
-            if (!currentMap.GetTile(110, 15).IsSolid() &&
-                    player.GetBounds().intersects(new Rectangle(110 * Tile.TILE_WIDTH, 14 * Tile.TILE_HEIGHT, Tile.TILE_WIDTH * 2, Tile.TILE_HEIGHT))) {
+            if (!currentMap.GetTile(puzzleDoorPositions[5][0], puzzleDoorPositions[5][1]).IsSolid() &&
+                    player.GetBounds().intersects(new Rectangle(puzzleDoorPositions[5][0] * Tile.TILE_WIDTH, puzzleDoorPositions[5][1] * Tile.TILE_HEIGHT, Tile.TILE_WIDTH * 2, Tile.TILE_HEIGHT))) {
                 passToLevel3();
                 return;
             }
@@ -439,6 +447,19 @@ public class GameState extends State {
                     System.out.println("DEBUG GameState: Agentul a fost invins!");
                     bossDefeated = true;
                     finalChest.setCanInteract(true);
+                }
+
+                // Logica de lupta - Jucator vs Agent
+                if (player.isAttacking() && player.GetBounds().intersects(finalBoss.GetBounds()) &&
+                        System.currentTimeMillis() - lastAgentAttackTime > ATTACK_COOLDOWN_MS) {
+                    finalBoss.takeDamage(PUNCH_DAMAGE);
+                    lastAgentAttackTime = System.currentTimeMillis();
+                }
+
+                if (finalBoss.isAttacking() && finalBoss.GetBounds().intersects(player.GetBounds()) &&
+                        System.currentTimeMillis() - lastAgentAttackTime > ATTACK_COOLDOWN_MS) {
+                    player.takeDamage(PUNCH_DAMAGE);
+                    lastAgentAttackTime = System.currentTimeMillis();
                 }
             }
         }
@@ -471,10 +492,21 @@ public class GameState extends State {
                 }
             }
             if (e instanceof Trap) {
-                if (player.GetBounds().intersects(e.GetBounds()) && ((Trap) e).isActive()) {
-                    if (System.currentTimeMillis() - lastTrapDamageTime >= TRAP_DAMAGE_COOLDOWN_MS) {
-                        player.takeDamage(((Trap) e).getDamage());
-                        lastTrapDamageTime = System.currentTimeMillis();
+                Trap trap = (Trap) e;
+                if (trap.isActive()) {
+                    // Logica de daune pentru jucator
+                    if (player.GetBounds().intersects(trap.GetBounds())) {
+                        if (System.currentTimeMillis() - lastTrapDamageTime >= TRAP_DAMAGE_COOLDOWN_MS) {
+                            player.takeDamage(trap.getDamage());
+                            lastTrapDamageTime = System.currentTimeMillis();
+                        }
+                    }
+                    // Logica de daune pentru agent
+                    if (finalBoss != null && finalBoss.GetBounds().intersects(trap.GetBounds())) {
+                        if (System.currentTimeMillis() - lastAgentTrapDamageTime >= TRAP_DAMAGE_COOLDOWN_MS) {
+                            finalBoss.takeDamage(trap.getDamage());
+                            lastAgentTrapDamageTime = System.currentTimeMillis();
+                        }
                     }
                 }
             }
@@ -500,7 +532,6 @@ public class GameState extends State {
         }
     }
 
-
     @Override
     public void Draw(Graphics g) {
         if (currentMap == null || player == null) return;
@@ -509,6 +540,7 @@ public class GameState extends State {
         int xEnd = (int) Math.min(currentMap.GetWidth(), (camera.getxOffset() + refLink.GetWidth()) / Tile.TILE_WIDTH + 1);
         int yStart = (int) Math.max(0, camera.getyOffset() / Tile.TILE_HEIGHT);
         int yEnd = (int) Math.min(currentMap.GetHeight(), (camera.getyOffset() + refLink.GetHeight()) / Tile.TILE_HEIGHT + 1);
+
         // Desenează straturile de bază ale hărții
         for (int[][] layerGids : currentMap.getTilesGidsLayers()) {
             for (int y = yStart; y < yEnd; y++) {
@@ -527,12 +559,24 @@ public class GameState extends State {
             }
         }
 
-        // Desenează entitățile
-        for (Entity e : entities) {
-            e.Draw(g);
+        // Crează o listă de entități pentru a le desena în ordinea corectă (depth-sorting)
+        ArrayList<Entity> allEntities = new ArrayList<>(entities);
+        allEntities.add(player);
+        if (finalBoss != null && finalBoss.getHealth() > 0) {
+            allEntities.add(finalBoss);
         }
-        if (player != null) {
-            player.Draw(g);
+
+        // Adăugăm și capcanele din arena pentru a fi sortate și desenate corect
+        if (currentLevelIndex == 2 && arenaTraps != null) {
+            allEntities.addAll(arenaTraps);
+        }
+
+        // Sortează toate entitățile după poziția Y
+        allEntities.sort((e1, e2) -> Float.compare(e1.GetY(), e2.GetY()));
+
+        // Desenează entitățile sortate
+        for (Entity e : allEntities) {
+            e.Draw(g);
         }
 
         // Desenează ușile speciale de pe nivelul 1, deasupra celorlalte entități
@@ -552,18 +596,15 @@ public class GameState extends State {
                     }
                 }
             }
-            // NOU: Desenează pop-up-uri pentru ușile închise
-            // Note: Am folosit o logică mai simplă pentru a itera prin uși
+
+            // Desenează pop-up-uri pentru ușile închise
             for (int i = 0; i < puzzleDoorPositions.length; i++) {
-                // Dacă ușa este deschisă (nu mai este solidă), nu mai desena pop-up-ul
                 if (!currentMap.GetTile(puzzleDoorPositions[i][0], puzzleDoorPositions[i][1]).IsSolid()) {
                     continue;
                 }
-                // Coordonatele ușii din informațiile salvate
                 int tileX = puzzleDoorPositions[i][0];
                 int tileY = puzzleDoorPositions[i][1];
 
-                // Creăm un obiect temporar pentru a folosi metoda drawInteractionPopup
                 Entity tempDoorEntity = new Entity(refLink, (float)tileX * Tile.TILE_WIDTH, (float)tileY * Tile.TILE_HEIGHT, Tile.TILE_WIDTH * 2, Tile.TILE_HEIGHT * 2) {
                     @Override
                     public void Update() {}
@@ -581,7 +622,7 @@ public class GameState extends State {
             fogOfWar.render(g);
         }
 
-        // Desenează mesajul de la panoul de lemn (rămâne centrat)
+        // Desenează mesajul de la panoul de lemn
         if (isWoodSignMessageShowing()) {
             int wndWidth = refLink.GetWidth();
             int wndHeight = refLink.GetHeight();
@@ -610,7 +651,8 @@ public class GameState extends State {
             int instructionWidth = g.getFontMetrics().stringWidth(instruction);
             g.drawString(instruction, wndWidth / 2 - instructionWidth / 2, boxY + boxHeight - 20);
         }
-        // Desenează celelalte elemente de UI (HP, mini-map, obiective, mesaje colectare)
+
+        // Desenează celelalte elemente de UI
         drawUI(g);
     }
 

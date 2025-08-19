@@ -176,4 +176,12 @@ public class RefLinks
     public GameState GetLevel1State() {
         return level1State;
     }
+
+    public GameState GetGameState() {
+        State currentState = State.GetState();
+        if (currentState instanceof GameState) {
+            return (GameState) currentState;
+        }
+        return null;
+    }
 }

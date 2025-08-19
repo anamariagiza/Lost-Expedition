@@ -2,6 +2,7 @@ package PaooGame;
 
 import PaooGame.GameWindow.GameWindow;
 import PaooGame.Graphics.Assets;
+import PaooGame.States.MenuState;
 import PaooGame.Tiles.Tile;
 import PaooGame.States.State;
 import PaooGame.States.LoadingScreenState;
@@ -9,7 +10,7 @@ import PaooGame.Input.KeyManager;
 import PaooGame.Input.MouseManager;
 import PaooGame.Entities.Player;
 import PaooGame.Camera.GameCamera;
-
+import PaooGame.States.GameState;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferStrategy;
@@ -23,11 +24,11 @@ import java.awt.image.BufferStrategy;
  */
 public class Game implements Runnable
 {
-    private GameWindow      wnd;
-    private boolean         runState;
-    private Thread          gameThread;
-    private BufferStrategy  bs;
-    private Graphics        g;
+    private GameWindow wnd;
+    private boolean runState;
+    private Thread gameThread;
+    private BufferStrategy bs;
+    private Graphics g;
 
     private State currentState;
 
@@ -38,6 +39,8 @@ public class Game implements Runnable
     private boolean fullScreenMode = false;
     private Player player;
     private GameCamera gameCamera;
+
+    private int startLevel = 0;
 
     /*!
      * \fn public Game(String title, int width, int height)
@@ -54,6 +57,23 @@ public class Game implements Runnable
         mouseManager = new MouseManager();
         gameCamera = new GameCamera(this, 0, 0);
         refLink = new RefLinks(this);
+        Assets.Init(); // Apelăm Assets.Init() aici
+        Assets.LoadGameAssets(); // Apelăm Assets.LoadGameAssets() aici
+        Tile.InitTiles(); // Apelăm Tile.InitTiles() aici
+    }
+
+    public Game(String title, int width, int height, int startLevel)
+    {
+        wnd = new GameWindow(title, width, height);
+        runState = false;
+        keyManager = new KeyManager();
+        mouseManager = new MouseManager();
+        gameCamera = new GameCamera(this, 0, 0);
+        refLink = new RefLinks(this);
+        this.startLevel = startLevel;
+        Assets.Init(); // Apelăm Assets.Init() aici
+        Assets.LoadGameAssets(); // Apelăm Assets.LoadGameAssets() aici
+        Tile.InitTiles(); // Apelăm Tile.InitTiles() aici
     }
 
     /*!
@@ -69,9 +89,12 @@ public class Game implements Runnable
         wnd.GetCanvas().setFocusable(true);
         wnd.GetCanvas().requestFocusInWindow();
 
-        Assets.Init();
-
-        refLink.SetState(new LoadingScreenState(refLink));
+        // Se inițializează starea jocului.
+        if (startLevel > 0) {
+            refLink.SetState(new GameState(refLink, startLevel - 1));
+        } else {
+            refLink.SetState(new MenuState(refLink)); // Trecem direct la meniu după ce asset-urile sunt încărcate.
+        }
     }
 
     /*!
@@ -84,8 +107,8 @@ public class Game implements Runnable
         long oldTime = System.nanoTime();
         long currentTime;
 
-        final int framesPerSecond   = 60;
-        final double timeFrame      = 1000000000 / framesPerSecond;
+        final int framesPerSecond = 60;
+        final double timeFrame = 1000000000 / framesPerSecond;
         while (runState == true)
         {
             currentTime = System.nanoTime();
