@@ -34,7 +34,7 @@ public class Agent extends Entity {
     private boolean isAttacking = false;
     private Direction lastDirection = Direction.DOWN;
 
-    private float xMove, yMove; // Variabilele lipsa
+    private float xMove, yMove;
 
     private int damage = 30;
 
@@ -45,7 +45,6 @@ public class Agent extends Entity {
     private final long ATTACK_COOLDOWN_MS = 1000;
     private long lastAttackTime = 0;
     private enum Direction { UP, DOWN, LEFT, RIGHT }
-
 
     /*!
      * \fn public Agent(RefLinks refLink, float x, float y, float patrolStartX, float patrolEndX, boolean isPatrolling)
@@ -64,10 +63,11 @@ public class Agent extends Entity {
         this.patrolEndX = patrolEndX;
         this.isPatrolling = isPatrolling;
 
-        this.xMove = 0; // Inițializare variabile lipsă
-        this.yMove = 0; // Inițializare variabile lipsă
+        this.xMove = 0;
+        this.yMove = 0;
 
         this.bounds = new Rectangle(0, 0, width, height);
+
         // Inițializarea animațiilor Agentului
         animIdleDown = safeAnimation(Assets.agentIdleDown, 200);
         animIdleUp = safeAnimation(Assets.agentIdleUp, 200);
@@ -133,8 +133,10 @@ public class Agent extends Entity {
      * \fn private void moveAgent()
      * \brief Implementeaza logica de miscare a agentului (patrulare orizontala).
      */
-
     private void moveAgent() {
+        // Resetare xMove la început pentru a evita comportamentele residuale
+        xMove = 0;
+
         if (movingRight) {
             if (x + width < patrolEndX) {
                 xMove = speed;
@@ -142,6 +144,7 @@ public class Agent extends Entity {
                 activeAnimation = animWalkRight;
             } else {
                 movingRight = false;
+                updateIdleAnimationBasedOnLastDirection();
             }
         } else {
             if (x > patrolStartX) {
@@ -150,9 +153,14 @@ public class Agent extends Entity {
                 activeAnimation = animWalkLeft;
             } else {
                 movingRight = true;
+                updateIdleAnimationBasedOnLastDirection();
             }
         }
-        move(xMove, 0);
+
+        // Mișcare doar dacă xMove nu este 0
+        if (xMove != 0) {
+            move(xMove, 0);
+        }
     }
 
     private void chasePlayer() {
@@ -171,25 +179,45 @@ public class Agent extends Entity {
         float currentSpeed = player.isRunning() ? CHASE_SPEED : DEFAULT_SPEED;
 
         if (distance > 10) {
+            // Resetare variabile de mișcare pentru a evita comportamentele residuale
+            xMove = 0;
+            yMove = 0;
+
             xMove = (dx / distance) * currentSpeed;
             yMove = (dy / distance) * currentSpeed;
 
+            // Determinare direcție principală pentru animație
             if (Math.abs(dx) > Math.abs(dy)) {
                 lastDirection = (dx > 0) ? Direction.RIGHT : Direction.LEFT;
             } else {
                 lastDirection = (dy > 0) ? Direction.DOWN : Direction.UP;
             }
+
+            // Setare animație corectă
             switch (lastDirection) {
-                case UP: activeAnimation = (currentSpeed == CHASE_SPEED) ? animRunUp : animWalkUp; break;
-                case DOWN: activeAnimation = (currentSpeed == CHASE_SPEED) ? animRunDown : animWalkDown; break;
-                case LEFT: activeAnimation = (currentSpeed == CHASE_SPEED) ? animRunLeft : animWalkLeft; break;
-                case RIGHT: activeAnimation = (currentSpeed == CHASE_SPEED) ? animRunRight : animWalkRight; break;
+                case UP:
+                    activeAnimation = (currentSpeed == CHASE_SPEED) ? animRunUp : animWalkUp;
+                    break;
+                case DOWN:
+                    activeAnimation = (currentSpeed == CHASE_SPEED) ? animRunDown : animWalkDown;
+                    break;
+                case LEFT:
+                    activeAnimation = (currentSpeed == CHASE_SPEED) ? animRunLeft : animWalkLeft;
+                    break;
+                case RIGHT:
+                    activeAnimation = (currentSpeed == CHASE_SPEED) ? animRunRight : animWalkRight;
+                    break;
             }
+
             move(xMove, yMove);
         } else {
+            // Resetare mișcare când este aproape de jucător
+            xMove = 0;
+            yMove = 0;
             updateIdleAnimationBasedOnLastDirection();
         }
     }
+
     /*!
      * \fn public void setChaseMode(boolean chasing)
      * \brief Seteaza modul de urmarire al agentului.
@@ -249,7 +277,6 @@ public class Agent extends Entity {
         return health;
     }
 
-
     /*!
      * \fn public void Draw(Graphics g)
      * \brief Deseneaza agentul pe ecran.
@@ -262,7 +289,6 @@ public class Agent extends Entity {
         int drawY = (int)(y - refLink.GetGameCamera().getyOffset());
         BufferedImage currentFrame = activeAnimation.getCurrentFrame();
         if (currentFrame != null) {
-            // Nu mai folosesc flip, folosesc animatii dedicate
             g.drawImage(currentFrame, drawX, drawY, width, height, null);
         } else {
             g.setColor(Color.BLUE);
@@ -292,7 +318,7 @@ public class Agent extends Entity {
         return (frames != null && frames.length > 0) ? new Animation(speed, frames) : new Animation(100, new BufferedImage[]{defaultFrame});
     }
 
-    // Noua metoda de miscare a Agentului cu verificare de coliziune
+    // Metoda de miscare a Agentului cu verificare de coliziune
     private void move(float xAmt, float yAmt) {
         if (xAmt != 0) {
             float newX = x + xAmt;

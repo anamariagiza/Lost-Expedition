@@ -535,19 +535,80 @@ public class GameState extends State {
     @Override
     public void Draw(Graphics g) {
         if (currentMap == null || player == null) return;
+
         GameCamera camera = refLink.GetGameCamera();
         int xStart = (int) Math.max(0, camera.getxOffset() / Tile.TILE_WIDTH);
         int xEnd = (int) Math.min(currentMap.GetWidth(), (camera.getxOffset() + refLink.GetWidth()) / Tile.TILE_WIDTH + 1);
         int yStart = (int) Math.max(0, camera.getyOffset() / Tile.TILE_HEIGHT);
         int yEnd = (int) Math.min(currentMap.GetHeight(), (camera.getyOffset() + refLink.GetHeight()) / Tile.TILE_HEIGHT + 1);
 
-        // Desenează straturile de bază ale hărții
+        // PRIMUL STRAT: Desenează tile-urile de fundal (toate exceptând ID 64)
         for (int[][] layerGids : currentMap.getTilesGidsLayers()) {
             for (int y = yStart; y < yEnd; y++) {
                 for (int x = xStart; x < xEnd; x++) {
                     int gid = layerGids[x][y];
-                    if (gid == 0) continue;
-                    if (currentLevelIndex != 1 || !isSpecialDoorTile(gid)) {
+                    if (gid == 0 || gid == 64) continue; // Sărim peste tile-urile goale și ID 64
+
+                    Tile.GetTile(gid).Draw(g,
+                            (int)((x * Tile.TILE_WIDTH - camera.getxOffset())),
+                            (int)((y * Tile.TILE_HEIGHT - camera.getyOffset())),
+                            Tile.TILE_WIDTH,
+                            Tile.TILE_HEIGHT,
+                            currentMap.getCurrentMapTilesetImage());
+                }
+            }
+        }
+
+        // Creează o listă unică de entități și sortează-le după adâncime
+        ArrayList<Entity> allEntities = new ArrayList<>();
+
+        // Adaugă toate entitățile normale
+        if (entities != null) {
+            allEntities.addAll(entities);
+        }
+
+        // Adaugă player-ul
+        if (player != null) {
+            allEntities.add(player);
+        }
+
+        // Adaugă boss-ul dacă există și este viu
+        if (finalBoss != null && finalBoss.getHealth() > 0) {
+            allEntities.add(finalBoss);
+        }
+
+        // Adaugă capcanele din arena dacă suntem pe nivelul 2
+        if (currentLevelIndex == 2 && arenaTraps != null) {
+            allEntities.addAll(arenaTraps);
+        }
+
+        // Sortare pentru adâncimea vizuală
+        allEntities.sort((e1, e2) -> {
+            float bottomY1 = e1.GetY() + e1.GetHeight();
+            float bottomY2 = e2.GetY() + e2.GetHeight();
+            int result = Float.compare(bottomY1, bottomY2);
+
+            // În cazul în care entitățile au același Y, sortează după X pentru consistență
+            if (result == 0) {
+                result = Float.compare(e1.GetX(), e2.GetX());
+            }
+
+            return result;
+        });
+
+        // Desenează entitățile sortate
+        for (Entity entity : allEntities) {
+            if (entity != null) {
+                entity.Draw(g);
+            }
+        }
+
+        // AL DOILEA STRAT: Desenează tile-urile cu ID 64 DEASUPRA entităților
+        for (int[][] layerGids : currentMap.getTilesGidsLayers()) {
+            for (int y = yStart; y < yEnd; y++) {
+                for (int x = xStart; x < xEnd; x++) {
+                    int gid = layerGids[x][y];
+                    if (gid == 64) { // Desenează doar tile-urile cu ID 64
                         Tile.GetTile(gid).Draw(g,
                                 (int)((x * Tile.TILE_WIDTH - camera.getxOffset())),
                                 (int)((y * Tile.TILE_HEIGHT - camera.getyOffset())),
@@ -559,33 +620,13 @@ public class GameState extends State {
             }
         }
 
-        // Crează o listă de entități pentru a le desena în ordinea corectă (depth-sorting)
-        ArrayList<Entity> allEntities = new ArrayList<>(entities);
-        allEntities.add(player);
-        if (finalBoss != null && finalBoss.getHealth() > 0) {
-            allEntities.add(finalBoss);
-        }
-
-        // Adăugăm și capcanele din arena pentru a fi sortate și desenate corect
-        if (currentLevelIndex == 2 && arenaTraps != null) {
-            allEntities.addAll(arenaTraps);
-        }
-
-        // Sortează toate entitățile după poziția Y
-        allEntities.sort((e1, e2) -> Float.compare(e1.GetY(), e2.GetY()));
-
-        // Desenează entitățile sortate
-        for (Entity e : allEntities) {
-            e.Draw(g);
-        }
-
         // Desenează ușile speciale de pe nivelul 1, deasupra celorlalte entități
         if (currentLevelIndex == 1) {
             for (int[][] layerGids : currentMap.getTilesGidsLayers()) {
                 for (int y = yStart; y < yEnd; y++) {
                     for (int x = xStart; x < xEnd; x++) {
                         int gid = layerGids[x][y];
-                        if (gid != 0 && isSpecialDoorTile(gid)) {
+                        if (gid != 0 && gid != 64 && isSpecialDoorTile(gid)) {
                             Tile.GetTile(gid).Draw(g,
                                     (int)((x * Tile.TILE_WIDTH - camera.getxOffset())),
                                     (int)((y * Tile.TILE_HEIGHT - camera.getyOffset())),
@@ -598,22 +639,26 @@ public class GameState extends State {
             }
 
             // Desenează pop-up-uri pentru ușile închise
-            for (int i = 0; i < puzzleDoorPositions.length; i++) {
-                if (!currentMap.GetTile(puzzleDoorPositions[i][0], puzzleDoorPositions[i][1]).IsSolid()) {
-                    continue;
-                }
-                int tileX = puzzleDoorPositions[i][0];
-                int tileY = puzzleDoorPositions[i][1];
+            if (puzzleDoorPositions != null) {
+                for (int i = 0; i < puzzleDoorPositions.length; i++) {
+                    if (puzzleDoorPositions[i] != null && puzzleDoorPositions[i].length >= 2) {
+                        if (!currentMap.GetTile(puzzleDoorPositions[i][0], puzzleDoorPositions[i][1]).IsSolid()) {
+                            continue;
+                        }
+                        int tileX = puzzleDoorPositions[i][0];
+                        int tileY = puzzleDoorPositions[i][1];
 
-                Entity tempDoorEntity = new Entity(refLink, (float)tileX * Tile.TILE_WIDTH, (float)tileY * Tile.TILE_HEIGHT, Tile.TILE_WIDTH * 2, Tile.TILE_HEIGHT * 2) {
-                    @Override
-                    public void Update() {}
-                    @Override
-                    public void Draw(Graphics g) {
-                        drawInteractionPopup(g);
+                        Entity tempDoorEntity = new Entity(refLink, (float)tileX * Tile.TILE_WIDTH, (float)tileY * Tile.TILE_HEIGHT, Tile.TILE_WIDTH * 2, Tile.TILE_HEIGHT * 2) {
+                            @Override
+                            public void Update() {}
+                            @Override
+                            public void Draw(Graphics g) {
+                                drawInteractionPopup(g);
+                            }
+                        };
+                        tempDoorEntity.Draw(g);
                     }
-                };
-                tempDoorEntity.Draw(g);
+                }
             }
         }
 
@@ -631,21 +676,31 @@ public class GameState extends State {
             int boxHeight = 150;
             int boxX = wndWidth / 2 - boxWidth / 2;
             int boxY = wndHeight / 2 - boxHeight / 2;
+
+            // Desenează fundalul semi-transparent
             g.setColor(new Color(0, 0, 0, 180));
             g.fillRoundRect(boxX, boxY, boxWidth, boxHeight, 20, 20);
 
+            // Desenează textul
             g.setColor(Color.WHITE);
             g.setFont(new Font("Arial", Font.BOLD, 18));
             FontMetrics fm = g.getFontMetrics();
-            String[] lines = woodSignMessage.split("\n");
-            int lineHeight = fm.getHeight();
-            int startY = boxY + (boxHeight - lines.length * lineHeight) / 2 + fm.getAscent();
-            for (String line : lines) {
-                int textWidth = fm.stringWidth(line);
-                g.drawString(line, wndWidth / 2 - textWidth / 2, startY);
-                startY += lineHeight;
+
+            if (woodSignMessage != null) {
+                String[] lines = woodSignMessage.split("\n");
+                int lineHeight = fm.getHeight();
+                int startY = boxY + (boxHeight - lines.length * lineHeight) / 2 + fm.getAscent();
+
+                for (String line : lines) {
+                    if (line != null) {
+                        int textWidth = fm.stringWidth(line);
+                        g.drawString(line, wndWidth / 2 - textWidth / 2, startY);
+                        startY += lineHeight;
+                    }
+                }
             }
 
+            // Desenează instrucțiunea
             g.setFont(new Font("Arial", Font.PLAIN, 14));
             String instruction = "Apasati 'E' pentru a inchide.";
             int instructionWidth = g.getFontMetrics().stringWidth(instruction);
