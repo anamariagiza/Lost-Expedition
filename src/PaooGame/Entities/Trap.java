@@ -75,6 +75,8 @@ public class Trap extends Entity {
 
     @Override
     public void Draw(Graphics g) {
+        System.out.println("DEBUG: Se desenează capcana la poziția (" + x + ", " + y + ")");
+
         BufferedImage imageToDraw;
         if (active || isAnimating) {
             imageToDraw = (activeAnimation != null) ? activeAnimation.getCurrentFrame() : stillImage;

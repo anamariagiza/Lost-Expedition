@@ -541,109 +541,102 @@ public class GameState extends State {
         int yStart = (int) Math.max(0, camera.getyOffset() / Tile.TILE_HEIGHT);
         int yEnd = (int) Math.min(currentMap.GetHeight(), (camera.getyOffset() + refLink.GetHeight()) / Tile.TILE_HEIGHT + 1);
 
-        // --- LOGICA DE DESENARE ---
+        // STRAT 1: Fundalul (Ground) - FĂRĂ capcane și fără ușile deschise
+        for (int[][] layerGids : currentMap.getTilesGidsLayers()) {
+            for (int y = yStart; y < yEnd; y++) {
+                for (int x = xStart; x < xEnd; x++) {
+                    int gid = layerGids[x][y];
+                    if (gid == 0 || gid == 64) continue; // Skip empty tiles și pereții
+                    if (isSpecialDoorTile(gid)) continue; // Skip ușile deschise - se desenează mai târziu
+                    if (isTrapTile(gid)) continue; // Skip capcanele - se desenează prin entități
 
-        if (currentLevelIndex == 2) {
-            // ########## MOD DE DESENARE SPECIAL PENTRU NIVELUL 3 ##########
+                    // Desenează doar tile-urile normale (fără capcane, fără uși deschise)
+                    Tile.GetTile(gid).Draw(g,
+                            (int)((x * Tile.TILE_WIDTH - camera.getxOffset())),
+                            (int)((y * Tile.TILE_HEIGHT - camera.getyOffset())),
+                            Tile.TILE_WIDTH,
+                            Tile.TILE_HEIGHT,
+                            currentMap.getCurrentMapTilesetImage());
+                }
+            }
+        }
 
-            // STRATUL 1 (L3): Desenează fundalul
-            for (int[][] layerGids : currentMap.getTilesGidsLayers()) {
-                for (int y = yStart; y < yEnd; y++) {
-                    for (int x = xStart; x < xEnd; x++) {
-                        int gid = layerGids[x][y];
-                        if (gid == 0 || gid == 64) continue;
-                        Tile.GetTile(gid).Draw(g, (int)((x * Tile.TILE_WIDTH - camera.getxOffset())), (int)((y * Tile.TILE_HEIGHT - camera.getyOffset())), Tile.TILE_WIDTH, Tile.TILE_HEIGHT, currentMap.getCurrentMapTilesetImage());
+        // STRAT 2A: Capcanele (desenate SUB entități) - DECOMENTEZ
+        if (currentLevelIndex == 2 && arenaTraps != null) {
+            for (Trap trap : arenaTraps) {
+                trap.Draw(g);
+            }
+        }
+
+        // STRAT 2B: Entitățile (player + inamici etc.) - FĂRĂ capcane
+        ArrayList<Entity> allEntities = new ArrayList<>(entities);
+        allEntities.add(player);
+        if (finalBoss != null && finalBoss.getHealth() > 0) {
+            allEntities.add(finalBoss);
+        }
+        // EXCLUDEM EXPLICIT CAPCANELE din entities!
+        allEntities.removeIf(e -> e instanceof Trap);
+
+        allEntities.sort((e1, e2) -> Float.compare(e1.GetY(), e2.GetY()));
+        for (Entity e : allEntities) {
+            e.Draw(g);
+        }
+
+        // STRAT 3: Pereții deasupra entităților
+        for (int[][] layerGids : currentMap.getTilesGidsLayers()) {
+            for (int y = yStart; y < yEnd; y++) {
+                for (int x = xStart; x < xEnd; x++) {
+                    int gid = layerGids[x][y];
+                    if (gid == 64) {
+                        Tile.GetTile(gid).Draw(g,
+                                (int)((x * Tile.TILE_WIDTH - camera.getxOffset())),
+                                (int)((y * Tile.TILE_HEIGHT - camera.getyOffset())),
+                                Tile.TILE_WIDTH,
+                                Tile.TILE_HEIGHT,
+                                currentMap.getCurrentMapTilesetImage());
                     }
                 }
             }
+        }
 
-            // STRATUL 2 (L3): Desenează entitățile pe straturi separate
-            // Pas 2.1: Desenează entitățile de la sol (CAPCANE, cufere, etc.)
-            for (Entity e : entities) {
-                if (e instanceof Trap || e instanceof Chest || e instanceof Key) {
-                    e.Draw(g);
-                }
-            }
-            if (arenaTraps != null) {
-                for(Trap trap : arenaTraps) {
-                    trap.Draw(g);
-                }
-            }
-
-            // Pas 2.2: Desenează personajele deasupra capcanelor
-            ArrayList<Entity> dynamicEntities = new ArrayList<>();
-            dynamicEntities.add(player);
-            if (finalBoss != null) dynamicEntities.add(finalBoss);
-            for (Entity e : entities) {
-                if (e instanceof Animal || e instanceof NPC || e instanceof DecorativeObject || e instanceof Torch) {
-                    dynamicEntities.add(e);
-                }
-            }
-            dynamicEntities.sort((e1, e2) -> Float.compare(e1.GetY(), e2.GetY()));
-            for (Entity e : dynamicEntities) {
-                e.Draw(g);
-            }
-
-            // STRATUL 3 (L3): Desenează pereții
+        // STRAT 4: DOAR UȘILE DESCHISE (Nivel 2 și Nivel 3) desenate PESTE ENTITĂȚI
+        // EXCLUDEM EXPLICIT CAPCANELE din acest strat!
+        if (currentLevelIndex == 1 || currentLevelIndex == 2) {
             for (int[][] layerGids : currentMap.getTilesGidsLayers()) {
                 for (int y = yStart; y < yEnd; y++) {
                     for (int x = xStart; x < xEnd; x++) {
                         int gid = layerGids[x][y];
-                        if (gid == 64) {
-                            Tile.GetTile(gid).Draw(g, (int)((x * Tile.TILE_WIDTH - camera.getxOffset())), (int)((y * Tile.TILE_HEIGHT - camera.getyOffset())), Tile.TILE_WIDTH, Tile.TILE_HEIGHT, currentMap.getCurrentMapTilesetImage());
-                        }
-                    }
-                }
-            }
-
-        } else {
-            // ########## MOD DE DESENARE ORIGINAL PENTRU NIVELUL 1 și 2 ##########
-            // Aceasta este logica ta originală, care va rula nemodificată pentru Nivelul 1 și 2.
-
-            for (int[][] layerGids : currentMap.getTilesGidsLayers()) {
-                for (int y = yStart; y < yEnd; y++) {
-                    for (int x = xStart; x < xEnd; x++) {
-                        int gid = layerGids[x][y];
-                        if (gid == 0 || gid == 64) continue;
-                        Tile.GetTile(gid).Draw(g, (int)((x * Tile.TILE_WIDTH - camera.getxOffset())), (int)((y * Tile.TILE_HEIGHT - camera.getyOffset())), Tile.TILE_WIDTH, Tile.TILE_HEIGHT, currentMap.getCurrentMapTilesetImage());
-                    }
-                }
-            }
-
-            ArrayList<Entity> allEntities = new ArrayList<>(entities);
-            allEntities.add(player);
-            allEntities.sort((e1, e2) -> Float.compare(e1.GetY(), e2.GetY()));
-            for (Entity e : allEntities) {
-                e.Draw(g);
-            }
-
-            for (int[][] layerGids : currentMap.getTilesGidsLayers()) {
-                for (int y = yStart; y < yEnd; y++) {
-                    for (int x = xStart; x < xEnd; x++) {
-                        int gid = layerGids[x][y];
-                        if (gid == 64) {
-                            Tile.GetTile(gid).Draw(g, (int)((x * Tile.TILE_WIDTH - camera.getxOffset())), (int)((y * Tile.TILE_HEIGHT - camera.getyOffset())), Tile.TILE_WIDTH, Tile.TILE_HEIGHT, currentMap.getCurrentMapTilesetImage());
+                        // Desenează DOAR ușile deschise, NU capcanele!
+                        if (isSpecialDoorTile(gid) && !isTrapTile(gid)) {
+                            Tile.GetTile(gid).Draw(g,
+                                    (int)((x * Tile.TILE_WIDTH - camera.getxOffset())),
+                                    (int)((y * Tile.TILE_HEIGHT - camera.getyOffset())),
+                                    Tile.TILE_WIDTH,
+                                    Tile.TILE_HEIGHT,
+                                    currentMap.getCurrentMapTilesetImage());
                         }
                     }
                 }
             }
         }
 
-        // --- PARTEA COMUNĂ (UI, pop-up-uri, etc.) ---
+        // Pop-up pentru ușile ÎNCHISE (Nivel 2)
         if (currentLevelIndex == 1) {
             for (int i = 0; i < puzzleDoorPositions.length; i++) {
                 if (puzzleDoorPositions[i] != null && puzzleDoorPositions[i].length >= 2) {
-                    if (currentMap.GetTile(puzzleDoorPositions[i][0], puzzleDoorPositions[i][1]).IsSolid()) {
-                        Entity tempDoorEntity = new Entity(refLink, (float)puzzleDoorPositions[i][0] * Tile.TILE_WIDTH, (float)puzzleDoorPositions[i][1] * Tile.TILE_HEIGHT, Tile.TILE_WIDTH * 2, Tile.TILE_HEIGHT * 2) {
-                            @Override public void Update() {}
-                            @Override public void Draw(Graphics g) { drawInteractionPopup(g); }
-                        };
-                        tempDoorEntity.Draw(g);
+                    if (!currentMap.GetTile(puzzleDoorPositions[i][0], puzzleDoorPositions[i][1]).IsSolid()) {
+                        continue;
                     }
+                    Entity tempDoorEntity = new Entity(refLink, (float)puzzleDoorPositions[i][0] * Tile.TILE_WIDTH, (float)puzzleDoorPositions[i][1] * Tile.TILE_HEIGHT, Tile.TILE_WIDTH * 2, Tile.TILE_HEIGHT * 2) {
+                        @Override public void Update() {}
+                        @Override public void Draw(Graphics g) { drawInteractionPopup(g); }
+                    };
+                    tempDoorEntity.Draw(g);
                 }
             }
         }
 
+        // Fog of War și UI
         if (fogOfWar != null) {
             fogOfWar.render(g);
         }
@@ -685,6 +678,23 @@ public class GameState extends State {
         }
 
         drawUI(g);
+    }
+
+    // Funcția pentru identificarea ușilor deschise
+    private boolean isSpecialDoorTile(int gid) {
+        // Uși deschise Nivel 2
+        if (gid == 60 || gid == 61 || gid == 92 || gid == 93) return true;
+
+        // Uși deschise Nivel 3
+        if (gid == 74 || gid == 75 || gid == 120 || gid == 121) return true;
+
+        return false;
+    }
+
+    // Funcția pentru identificarea capcanelor
+    private boolean isTrapTile(int gid) {
+        // Capcane: 43, 44, 45 (inactivă), 46
+        return gid == 43 || gid == 44 || gid == 45 || gid == 46;
     }
 
     // Această funcție este necesară pentru a desena mini-harta, HP-ul, mesajele de colectare și obiectivele
@@ -975,13 +985,6 @@ public class GameState extends State {
                 }
             }
         }
-    }
-
-    private boolean isSpecialDoorTile(int gid) {
-        return gid == Tile.DOOR_OPEN_TOP_LEFT_GID ||
-                gid == Tile.DOOR_OPEN_TOP_RIGHT_GID ||
-                gid == Tile.DOOR_OPEN_BOTTOM_LEFT_GID ||
-                gid == Tile.DOOR_OPEN_BOTTOM_RIGHT_GID;
     }
 
     /*!
