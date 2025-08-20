@@ -1,6 +1,7 @@
 package PaooGame.States;
 
 import PaooGame.Entities.Key;
+import PaooGame.Entities.Player;
 import PaooGame.Graphics.Assets;
 import PaooGame.RefLinks;
 import PaooGame.Tiles.Tile;
@@ -11,47 +12,55 @@ import java.util.Collections;
 import java.util.List;
 
 public class WordPuzzleState extends State {
+    // --- Variabile Puzzle ---
+    private final String HINT_TEXT = "Aventură cu hărți vechi.";
     private final String TARGET_WORD_DISPLAY = "LOST EXPEDITION";
     private final String TARGET_WORD_LOGIC = "LOSTEXPEDITION";
     private StringBuilder currentInput = new StringBuilder();
     private boolean solved = false;
-    private long lastClickTime = 0;
-    private final long CLICK_COOLDOWN = 200; // Previne click-uri duble accidentale
 
-    private class Letter {
+    // --- Variabile Cronometru & Penalizare ---
+    private long puzzleStartTime;
+    private final long TIME_LIMIT_MS = 100000; // 100 secunde
+    private final int DAMAGE_PENALTY = 20;
+
+    // --- Variabile Interacțiune ---
+    private long lastClickTime = 0;
+    private final long CLICK_COOLDOWN = 200;
+
+    private static class Letter {
         char character;
         Rectangle bounds;
         boolean isVisible;
 
-        Letter(char c, int x, int y) {
+        Letter(char c) {
             this.character = c;
-            this.bounds = new Rectangle(x, y, 40, 40);
+            this.bounds = new Rectangle(0, 0, 40, 40); // Coordonatele vor fi calculate dinamic
             this.isVisible = true;
         }
     }
 
     private List<Letter> letters;
 
+    private final float[][] relativePositions = {
+            {0.15f, 0.30f}, {0.23f, 0.50f}, {0.31f, 0.28f}, {0.39f, 0.48f}, {0.47f, 0.26f},
+            {0.55f, 0.51f}, {0.63f, 0.31f}, {0.71f, 0.52f}, {0.79f, 0.29f}, {0.87f, 0.49f},
+            {0.28f, 0.65f}, {0.43f, 0.66f}, {0.58f, 0.64f}, {0.73f, 0.65f}
+    };
+
     public WordPuzzleState(RefLinks refLink) {
         super(refLink);
+        this.puzzleStartTime = System.currentTimeMillis();
         letters = new ArrayList<>();
 
-        // Amestecăm literele pentru a le afișa random
         List<Character> charsToPlace = new ArrayList<>();
         for (char c : TARGET_WORD_LOGIC.toCharArray()) {
             charsToPlace.add(c);
         }
         Collections.shuffle(charsToPlace);
 
-        // Poziții predefinite pe ecran
-        int[][] positions = {
-                {150, 200}, {220, 300}, {290, 180}, {360, 280}, {430, 160},
-                {500, 310}, {570, 210}, {640, 320}, {710, 190}, {780, 290},
-                {320, 380}, {470, 390}, {620, 150}, {850, 250}
-        };
-
-        for (int i = 0; i < charsToPlace.size(); i++) {
-            letters.add(new Letter(charsToPlace.get(i), positions[i][0], positions[i][1]));
+        for (char c : charsToPlace) {
+            letters.add(new Letter(c));
         }
     }
 
@@ -59,6 +68,22 @@ public class WordPuzzleState extends State {
     public void Update() {
         if (solved) return;
 
+        // Verifică dacă timpul a expirat
+        if (System.currentTimeMillis() - puzzleStartTime > TIME_LIMIT_MS) {
+            System.out.println("Timpul a expirat! Puzzle eșuat.");
+
+            // Aplică penalizarea direct prin RefLinks
+            Player player = refLink.GetPlayer();
+            if (player != null) {
+                player.takeDamage(DAMAGE_PENALTY);
+            }
+
+            // Revine la joc
+            refLink.SetState(refLink.GetPreviousState());
+            return;
+        }
+
+        // Logica de click pe litere
         if (refLink.GetMouseManager().isMouseJustClicked() && (System.currentTimeMillis() - lastClickTime > CLICK_COOLDOWN)) {
             lastClickTime = System.currentTimeMillis();
             int mouseX = refLink.GetMouseManager().getMouseX();
@@ -67,9 +92,8 @@ public class WordPuzzleState extends State {
             for (Letter l : letters) {
                 if (l.isVisible && l.bounds.contains(mouseX, mouseY)) {
                     currentInput.append(l.character);
-                    l.isVisible = false; // Litera dispare după click
+                    l.isVisible = false;
 
-                    // Adăugăm spațiu automat după "LOST"
                     if (currentInput.toString().equals("LOST")) {
                         currentInput.append(" ");
                     }
@@ -78,58 +102,84 @@ public class WordPuzzleState extends State {
             }
         }
 
-        // Verifică dacă am greșit
+        // Logica de verificare si resetare a cuvântului
         if (!TARGET_WORD_DISPLAY.startsWith(currentInput.toString())) {
-            // Reset
             currentInput.setLength(0);
             for (Letter l : letters) {
                 l.isVisible = true;
             }
         }
 
-        // Verifică dacă am rezolvat
+        // Logica de finalizare cu succes
         if (currentInput.toString().equals(TARGET_WORD_DISPLAY)) {
             solved = true;
-            GameState gameState = refLink.GetGameState();
-            if (gameState != null) {
-                // Adăugăm cheia pe hartă
+            State prevState = refLink.GetPreviousState();
+            if (prevState instanceof GameState) {
+                GameState gameState = (GameState) prevState;
                 Key finalKey = new Key(refLink, 77 * Tile.TILE_WIDTH, 31 * Tile.TILE_HEIGHT, Assets.keyImage, 6);
                 gameState.addEntity(finalKey);
             }
-            // Revine la joc
             refLink.SetState(refLink.GetPreviousState());
         }
     }
 
     @Override
     public void Draw(Graphics g) {
-        // Desenează starea de joc din spate pentru un efect de overlay
+        int screenWidth = refLink.GetWidth();
+        int screenHeight = refLink.GetHeight();
+
         if (refLink.GetPreviousState() != null) {
             refLink.GetPreviousState().Draw(g);
         }
 
-        // Adaugă un strat semi-transparent
         g.setColor(new Color(0, 0, 0, 200));
-        g.fillRect(0, 0, refLink.GetWidth(), refLink.GetHeight());
+        g.fillRect(0, 0, screenWidth, screenHeight);
 
-        // Desenează UI-ul puzzle-ului
+        // Desenează indiciul
         g.setColor(Color.WHITE);
         g.setFont(new Font("Arial", Font.BOLD, 32));
-        g.drawString("Formează cuvântul: LOST EXPEDITION", 100, 100);
+        FontMetrics fmTitle = g.getFontMetrics();
+        int titleWidth = fmTitle.stringWidth(HINT_TEXT);
+        g.drawString(HINT_TEXT, (screenWidth - titleWidth) / 2, screenHeight / 10);
 
-        // Chenar pentru progres
-        g.drawRect(100, 500, 800, 60);
+        // Desenează cronometrul
+        long timeLeftMs = TIME_LIMIT_MS - (System.currentTimeMillis() - puzzleStartTime);
+        if (timeLeftMs < 0) timeLeftMs = 0;
+        String timerStr = String.format("Timp Rămas: %.1f", timeLeftMs / 1000.0);
+        g.setColor(Color.RED);
+        g.setFont(new Font("Arial", Font.BOLD, 24));
+        FontMetrics fmTimer = g.getFontMetrics();
+        int timerWidth = fmTimer.stringWidth(timerStr);
+        g.drawString(timerStr, screenWidth - timerWidth - 20, 40);
+
+        // Desenează chenarul de progres
+        int boxWidth = (int)(screenWidth * 0.6);
+        int boxHeight = 60;
+        int boxX = (screenWidth - boxWidth) / 2;
+        int boxY = (int)(screenHeight * 0.8);
+        g.drawRect(boxX, boxY, boxWidth, boxHeight);
+
+        g.setColor(Color.WHITE);
         g.setFont(new Font("Arial", Font.BOLD, 48));
-        g.drawString(currentInput.toString(), 120, 550);
+        FontMetrics fmInput = g.getFontMetrics();
+        int inputWidth = fmInput.stringWidth(currentInput.toString());
+        g.drawString(currentInput.toString(), boxX + (boxWidth - inputWidth) / 2, boxY + fmInput.getAscent() + 5);
 
-        // Desenează literele
+        // Calculează dinamic pozițiile literelor și le desenează
         g.setFont(new Font("Arial", Font.BOLD, 28));
-        for (Letter l : letters) {
+        FontMetrics fmLetter = g.getFontMetrics();
+        for (int i = 0; i < letters.size(); i++) {
+            Letter l = letters.get(i);
             if (l.isVisible) {
+                l.bounds.x = (int)(screenWidth * relativePositions[i][0]);
+                l.bounds.y = (int)(screenHeight * relativePositions[i][1]);
+
                 g.setColor(Color.YELLOW);
                 g.fillRect(l.bounds.x, l.bounds.y, l.bounds.width, l.bounds.height);
                 g.setColor(Color.BLACK);
-                g.drawString(String.valueOf(l.character), l.bounds.x + 12, l.bounds.y + 30);
+                String charStr = String.valueOf(l.character);
+                int charWidth = fmLetter.stringWidth(charStr);
+                g.drawString(charStr, l.bounds.x + (l.bounds.width - charWidth) / 2, l.bounds.y + fmLetter.getAscent() + 5);
             }
         }
     }

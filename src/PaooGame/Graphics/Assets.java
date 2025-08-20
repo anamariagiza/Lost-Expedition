@@ -38,8 +38,8 @@ public class Assets {
     public static BufferedImage[] playerIdleDown, playerIdleUp, playerIdleLeft, playerIdleRight;
     public static BufferedImage[] playerRunDown, playerRunUp, playerRunLeft, playerRunRight;
     public static BufferedImage[] playerJumpDown, playerJumpUp, playerJumpLeft, playerJumpRight;
-    public static BufferedImage[] playerHurt, playerClimb, playerShoot, playerBackslash, playerHalfslash;
-    public static BufferedImage[] playerEmote, playerCombatIdle, playerThrust, playerSlash, playerSit, playerSpellcast;
+    public static BufferedImage[] playerHurt, playerClimb, playerShoot, playerBackslash;
+    public static BufferedImage[] playerEmote, playerCombatIdle, playerSit, playerSpellcast;
     public static BufferedImage[] playerThrustUp, playerThrustDown, playerThrustLeft, playerThrustRight;
     public static BufferedImage[] playerHalfslashUp, playerHalfslashDown, playerHalfslashLeft, playerHalfslashRight;
     public static BufferedImage[] playerSlashUp, playerSlashDown, playerSlashLeft, playerSlashRight;

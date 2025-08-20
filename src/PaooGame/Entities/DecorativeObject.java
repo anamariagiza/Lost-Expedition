@@ -41,17 +41,17 @@ public class DecorativeObject extends Entity {
 
         // Verifică dacă jucătorul este în zona de interacțiune
         if (this.bounds.intersects(refLink.GetPlayer().GetBounds())) {
-            // Verifică dacă a fost apăsată tasta 'E'
+            // Verifică dacă a fost apăsată tasta 'E' și dacă obiectul are un mesaj
             if (refLink.GetKeyManager().isKeyJustPressed(KeyEvent.VK_E) && dialogueMessage != null) {
 
                 GameState gameState = refLink.GetGameState();
                 if (gameState != null) {
-                    // Dacă mesajul acestui panou este deja afișat, închide-l și arată obiectivul
+                    // Dacă mesajul acestui panou este deja afișat, închide-l
                     if (gameState.isWoodSignMessageShowing() && gameState.getWoodSignMessage().equals(this.dialogueMessage)) {
                         gameState.showWoodSignMessage(null);
                         gameState.setObjectiveDisplayed(true);
                     }
-                    // Altfel, dacă niciun alt mesaj nu este afișat, deschide-l pe acesta și ascunde obiectivul
+                    // Altfel, dacă niciun alt mesaj nu este afișat, deschide-l pe acesta
                     else if (!gameState.isWoodSignMessageShowing()) {
                         gameState.showWoodSignMessage(dialogueMessage);
                         gameState.setObjectiveDisplayed(false);

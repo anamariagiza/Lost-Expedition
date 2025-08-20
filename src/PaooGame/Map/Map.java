@@ -163,27 +163,23 @@ public class Map {
      * \param y Numarul dalei in ordine verticala.
      */
     public Tile GetTile(int x, int y) {
-        if (tilesGidsLayers == null || tilesGidsLayers.isEmpty()) {
-            return Tile.GetDefaultTile();
+        // Verificăm dacă coordonatele sunt în afara hărții
+        if (x < 0 || x >= width || y < 0 || y >= height) {
+            return Tile.GetTile(Tile.WALL_TILE_GID_SOLID); // Returnează un perete solid pentru zonele din afara hărții
         }
 
-        // Parcurgem toate straturile de la cel mai de sus in jos
+        // Căutăm dala de pe stratul cel mai de sus (de la ultimul la primul)
         for (int i = tilesGidsLayers.size() - 1; i >= 0; i--) {
-            int[][] currentLayerGids = tilesGidsLayers.get(i);
-            if (x >= 0 && y >= 0 && x < width && y < height) {
-                int gid = currentLayerGids[x][y];
-                Tile tile = Tile.GetTile(gid);
-                if (tile != null && tile.IsSolid()) {
-                    return tile;
-                }
-            } else {
-                // Returnam o dala solida implicita daca suntem in afara hartii
-                return Tile.GetTile(Tile.GRASS_TILE_GID_SOLID);
+            int gid = tilesGidsLayers.get(i)[x][y];
+
+            // Dacă găsim o dală care nu este goală (transparentă), o returnăm imediat
+            if (gid != 0) {
+                return Tile.GetTile(gid);
             }
         }
 
-        // Daca nu se gaseste nicio dala solida, se returneaza dala de pe primul strat
-        return Tile.GetTile(tilesGidsLayers.get(0)[x][y]);
+        // Dacă toate straturile la aceste coordonate sunt goale, returnăm o dală goală, nesolidă
+        return Tile.GetDefaultTile();
     }
 
     /*!

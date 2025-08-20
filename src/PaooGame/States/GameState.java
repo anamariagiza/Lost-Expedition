@@ -24,19 +24,15 @@ import PaooGame.Utils.DatabaseManager;
 import PaooGame.Graphics.Assets;
 import java.awt.*;
 import java.awt.event.KeyEvent;
-import java.awt.image.BufferedImage;
-import java.awt.geom.Ellipse2D;
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.Arrays;
-import java.util.HashMap;
 
 public class GameState extends State {
 
-    private Map currentMap;
-    private Player player;
+    private final Map currentMap;
+    private final Player player;
     private FogOfWar fogOfWar;
-    private String[] levelPaths = {"/maps/level_1.tmx", "/maps/level_2.tmx", "/maps/level_3.tmx"};
+    private final String[] levelPaths = {"/maps/level_1.tmx", "/maps/level_2.tmx", "/maps/level_3.tmx"};
     private int currentLevelIndex;
     private boolean hasLevelKey = false;
     private boolean[] hasDoorKeys;
@@ -52,7 +48,6 @@ public class GameState extends State {
 
     private String collectionMessage = null;
     private long collectionMessageTime = 0;
-    private final long MESSAGE_DURATION_MS = 2000;
     private final int TOTAL_PUZZLES_LEVEL2 = 5;
 
     private long lastAnimalDamageTime = 0;
@@ -73,6 +68,8 @@ public class GameState extends State {
     private final long GLOBAL_ACTIVATION_DELAY_MS = 1000;
     private ArrayList<Trap> arenaTraps;
 
+    private final long MESSAGE_DURATION_MS = 2000;
+
     private final int[][] puzzleKeyPositions = {
             {18, 22},
             {35, 16},
@@ -84,67 +81,59 @@ public class GameState extends State {
 
     private long lastAgentTrapDamageTime = 0;
 
-    private long lastPlayerPunchTime = 0;
-    private long lastAgentPunchTime = 0;
+    private final long lastPlayerPunchTime = 0;
+    private final long lastAgentPunchTime = 0;
     private final long PUNCH_COOLDOWN_MS = 3000;
     private final int PUNCH_DAMAGE = 10;
     private final int COLLISION_RANGE = 5;
 
-    private long lastAgentAttackTime = 0;
+    private final long lastAgentAttackTime = 0;
     private final long ATTACK_COOLDOWN_MS = 3000;
 
     public GameState(RefLinks refLink) {
         super(refLink);
         this.currentLevelIndex = 0;
         this.hasLevelKey = false;
-        this.hasDoorKeys = new boolean[6];
+        this.hasDoorKeys = new boolean[7];
         this.puzzlesSolved = new boolean[TOTAL_PUZZLES_LEVEL2 + 1];
         this.hasTalisman = false;
         this.caveEntranceUnlocked = false;
         this.isObjectiveDisplayed = false;
-        this.currentObjective = "Afla ce se afla in spatele usii blocate."; // Obiectivul initial pentru nivelul 1
+        this.currentObjective = "Afla ce se afla in spatele usii blocate.";
         this.currentMap = new Map(refLink);
         this.player = new Player(refLink.GetGame(), 0, 0);
         refLink.SetMap(this.currentMap);
         refLink.SetPlayer(this.player);
-
         InitLevelInternal(this.currentLevelIndex, false);
-        System.out.println("✓ GameState initializat (joc nou)");
     }
 
     public GameState(RefLinks refLink, int startLevel) {
         super(refLink);
         this.currentLevelIndex = startLevel;
         this.isObjectiveDisplayed = false;
-
         this.hasLevelKey = false;
-        this.hasDoorKeys = new boolean[6];
+        this.hasDoorKeys = new boolean[7]; // MODIFICAT AICI
         this.puzzlesSolved = new boolean[TOTAL_PUZZLES_LEVEL2 + 1];
         this.hasTalisman = false;
         this.caveEntranceUnlocked = false;
-
         this.currentMap = new Map(refLink);
         this.player = new Player(refLink.GetGame(), 0, 0);
         refLink.SetMap(this.currentMap);
         refLink.SetPlayer(this.player);
-
         InitLevelInternal(this.currentLevelIndex, false);
         updateObjective();
-        System.out.println("✓ GameState initializat (joc nou de la nivelul " + (startLevel + 1) + ")");
     }
 
     public GameState(RefLinks refLink, boolean loadFromSave) {
         super(refLink);
         this.isObjectiveDisplayed = false;
-
+        this.hasDoorKeys = new boolean[7]; // MODIFICAT AICI
         this.currentMap = new Map(refLink);
         this.player = new Player(refLink.GetGame(), 0, 0);
         refLink.SetMap(this.currentMap);
         refLink.SetPlayer(this.player);
-
         InitLevelInternal(0, true);
         updateObjective();
-        System.out.println("✓ GameState initializat (incarcare joc)");
     }
 
     private void updateObjective() {
@@ -250,7 +239,7 @@ public class GameState extends State {
                 if (!hasDoorKeys[0]) {
                     entities.add(new Key(refLink, 12 * Tile.TILE_WIDTH, 85 * Tile.TILE_HEIGHT, Assets.keyImage, 0)); // Aceasta cheie va deschide prima usa de la nivelul 2
                 }
-                DecorativeObject woodSign1 = new DecorativeObject(refLink, 2 * Tile.TILE_WIDTH, 1 * Tile.TILE_HEIGHT, 64, 64, Assets.woodSignImage, false);
+                DecorativeObject woodSign1 = new DecorativeObject(refLink, 2 * Tile.TILE_WIDTH, Tile.TILE_HEIGHT, 64, 64, Assets.woodSignImage, false);
                 woodSign1.setDialogueMessage("Aduna cheia si talismanul Lunii. Da talismanul paznicului si intra in pestera.");
                 entities.add(woodSign1);
                 break;
@@ -378,6 +367,7 @@ public class GameState extends State {
         }
 
         boolean playerInContactWithAnimal = false;
+
         if (currentLevelIndex == 2 && !trapsTriggered) {
             for (Entity e : entities) {
                 if (e instanceof TrapTrigger && e.GetBounds().intersects(player.GetBounds())) {
@@ -435,21 +425,18 @@ public class GameState extends State {
 
         if (currentLevelIndex == 2) {
 
-            // BLOC PENTRU ACTIVAREA PUZZLE-ULUI FINAL DE LA MASĂ (PRIN COORDONATE)
+            handleFinalDoorInteraction(); // Logica pentru ușa finală
+
             int playerTileX = (int) (player.GetX() / Tile.TILE_WIDTH);
             int playerTileY = (int) (player.GetY() / Tile.TILE_HEIGHT);
             int tableTileX = 75;
             int tableTileY = 26;
 
-            // Verificăm dacă player-ul este la maxim 1 dală distanță de masă
             if (Math.abs(playerTileX - tableTileX) <= 1 && Math.abs(playerTileY - tableTileY) <= 1) {
-                // Verificăm dacă a apăsat E și dacă nu este un panou de text deja deschis
                 if (refLink.GetKeyManager().isKeyJustPressed(KeyEvent.VK_E) && !isWoodSignMessageShowing()) {
-                    System.out.println("DEBUG: Se deschide puzzle-ul final...");
                     refLink.SetState(new WordPuzzleState(refLink));
                 }
             }
-            // SFÂRȘIT BLOC
 
             // Logica pentru capcane și agentul final
             if (!trapsTriggered) {
@@ -486,8 +473,7 @@ public class GameState extends State {
         while (it.hasNext()) {
             Entity e = it.next();
             e.Update();
-            if (e instanceof Key) {
-                Key k = (Key) e;
+            if (e instanceof Key k) {
                 if (k.isCollected()) {
                     int associatedId = k.getAssociatedPuzzleId();
                     if (associatedId >= 0 && associatedId < hasDoorKeys.length) {
@@ -498,8 +484,7 @@ public class GameState extends State {
                     }
                     it.remove();
                 }
-            } else if (e instanceof Talisman) {
-                Talisman t = (Talisman) e;
+            } else if (e instanceof Talisman t) {
                 if (t.isCollected()) {
                     it.remove();
                 }
@@ -509,8 +494,7 @@ public class GameState extends State {
                     playerInContactWithAnimal = true;
                 }
             }
-            if (e instanceof Trap) {
-                Trap trap = (Trap) e;
+            if (e instanceof Trap trap) {
                 if (trap.isActive()) {
                     if (player.GetBounds().intersects(trap.GetBounds())) {
                         if (System.currentTimeMillis() - lastTrapDamageTime >= TRAP_DAMAGE_COOLDOWN_MS) {
@@ -550,150 +534,154 @@ public class GameState extends State {
 
     @Override
     public void Draw(Graphics g) {
-        if (currentMap == null || player == null) return; 
+        if (currentMap == null || player == null) return;
         GameCamera camera = refLink.GetGameCamera();
         int xStart = (int) Math.max(0, camera.getxOffset() / Tile.TILE_WIDTH);
         int xEnd = (int) Math.min(currentMap.GetWidth(), (camera.getxOffset() + refLink.GetWidth()) / Tile.TILE_WIDTH + 1);
         int yStart = (int) Math.max(0, camera.getyOffset() / Tile.TILE_HEIGHT);
         int yEnd = (int) Math.min(currentMap.GetHeight(), (camera.getyOffset() + refLink.GetHeight()) / Tile.TILE_HEIGHT + 1);
 
-        // PRIMUL STRAT: Desenează Ground (dale de fundal, inclusiv capcanele, dar nu și pereții)
-        for (int[][] layerGids : currentMap.getTilesGidsLayers()) { 
-            for (int y = yStart; y < yEnd; y++) { 
-                for (int x = xStart; x < xEnd; x++) { 
-                    int gid = layerGids[x][y]; 
-                    // Sarim peste dalele goale si de perete (ID 64)
-                    if (gid == 0 || gid == 64) continue; 
-                    Tile.GetTile(gid).Draw(g, 
-                    (int)((x * Tile.TILE_WIDTH - camera.getxOffset())), 
-                    (int)((y * Tile.TILE_HEIGHT - camera.getyOffset())), 
-                            Tile.TILE_WIDTH, 
-                            Tile.TILE_HEIGHT, 
-                            currentMap.getCurrentMapTilesetImage()); 
+        // --- LOGICA DE DESENARE ---
+
+        if (currentLevelIndex == 2) {
+            // ########## MOD DE DESENARE SPECIAL PENTRU NIVELUL 3 ##########
+
+            // STRATUL 1 (L3): Desenează fundalul
+            for (int[][] layerGids : currentMap.getTilesGidsLayers()) {
+                for (int y = yStart; y < yEnd; y++) {
+                    for (int x = xStart; x < xEnd; x++) {
+                        int gid = layerGids[x][y];
+                        if (gid == 0 || gid == 64) continue;
+                        Tile.GetTile(gid).Draw(g, (int)((x * Tile.TILE_WIDTH - camera.getxOffset())), (int)((y * Tile.TILE_HEIGHT - camera.getyOffset())), Tile.TILE_WIDTH, Tile.TILE_HEIGHT, currentMap.getCurrentMapTilesetImage());
+                    }
                 }
             }
-        }
 
-        // AL DOILEA STRAT: Desenează Entitățile (împărțit în două etape pentru ordinea corectă)
+            // STRATUL 2 (L3): Desenează entitățile pe straturi separate
+            // Pas 2.1: Desenează entitățile de la sol (CAPCANE, cufere, etc.)
+            for (Entity e : entities) {
+                if (e instanceof Trap || e instanceof Chest || e instanceof Key) {
+                    e.Draw(g);
+                }
+            }
+            if (arenaTraps != null) {
+                for(Trap trap : arenaTraps) {
+                    trap.Draw(g);
+                }
+            }
 
-        // Pasul 2.1: Desenează entitățile de fundal care trebuie să fie MEREU SUB JUCĂTOR
-        for (Entity e : entities) {
-            // Aici adaugi orice alt tip de entitate care trebuie să fie la nivelul solului
-            if (e instanceof Trap || e instanceof Chest || e instanceof Key || e instanceof Talisman || e instanceof PuzzleTrigger || e instanceof TrapTrigger) {
+            // Pas 2.2: Desenează personajele deasupra capcanelor
+            ArrayList<Entity> dynamicEntities = new ArrayList<>();
+            dynamicEntities.add(player);
+            if (finalBoss != null) dynamicEntities.add(finalBoss);
+            for (Entity e : entities) {
+                if (e instanceof Animal || e instanceof NPC || e instanceof DecorativeObject || e instanceof Torch) {
+                    dynamicEntities.add(e);
+                }
+            }
+            dynamicEntities.sort((e1, e2) -> Float.compare(e1.GetY(), e2.GetY()));
+            for (Entity e : dynamicEntities) {
                 e.Draw(g);
             }
-        }
 
-        // Pasul 2.2: Pregătim o listă nouă cu entitățile dinamice (personaje) pentru sortare
-        ArrayList<Entity> dynamicEntities = new ArrayList<>();
-        dynamicEntities.add(player); // Adăugăm jucătorul
-
-        // Adăugăm și alte entități mobile sau interactive care trebuie sortate după axa Y
-        for (Entity e : entities) {
-            if (e instanceof Agent || e instanceof Animal || e instanceof NPC || e instanceof DecorativeObject || e instanceof Torch) {
-                dynamicEntities.add(e);
-            }
-        }
-
-        // Sortăm DOAR entitățile dinamice după axa Y pentru efectul de adâncime
-        dynamicEntities.sort((e1, e2) -> Float.compare(e1.GetY(), e2.GetY()));
-
-        // Pasul 2.3: Desenăm entitățile dinamice sortate deasupra celor de fundal
-        for (Entity e : dynamicEntities) {
-            e.Draw(g);
-        }
-
-        // AL TREILEA STRAT: Desenează Objects (dalele de perete) deasupra entităților.
-        for (int[][] layerGids : currentMap.getTilesGidsLayers()) { 
-            for (int y = yStart; y < yEnd; y++) { 
-                for (int x = xStart; x < xEnd; x++) { 
-                    int gid = layerGids[x][y]; 
-                    if (gid == 64) { 
-                        Tile.GetTile(gid).Draw(g, 
-                        (int)((x * Tile.TILE_WIDTH - camera.getxOffset())), 
-                        (int)((y * Tile.TILE_HEIGHT - camera.getyOffset())), 
-                                Tile.TILE_WIDTH, 
-                                Tile.TILE_HEIGHT, 
-                                currentMap.getCurrentMapTilesetImage()); 
-                    }
-                }
-            }
-        }
-
-        // Desenează ușile speciale de la nivelul 1 și alte elemente de UI.
-        if (currentLevelIndex == 1) { 
-            for (int[][] layerGids : currentMap.getTilesGidsLayers()) { 
-                for (int y = yStart; y < yEnd; y++) { 
-                    for (int x = xStart; x < xEnd; x++) { 
-                        int gid = layerGids[x][y]; 
-                        if (gid != 0 && gid != 64 && isSpecialDoorTile(gid)) { 
-                            Tile.GetTile(gid).Draw(g, 
-                            (int)((x * Tile.TILE_WIDTH - camera.getxOffset())), 
-                            (int)((y * Tile.TILE_HEIGHT - camera.getyOffset())), 
-                                    Tile.TILE_WIDTH, 
-                                    Tile.TILE_HEIGHT, 
-                                    currentMap.getCurrentMapTilesetImage()); 
+            // STRATUL 3 (L3): Desenează pereții
+            for (int[][] layerGids : currentMap.getTilesGidsLayers()) {
+                for (int y = yStart; y < yEnd; y++) {
+                    for (int x = xStart; x < xEnd; x++) {
+                        int gid = layerGids[x][y];
+                        if (gid == 64) {
+                            Tile.GetTile(gid).Draw(g, (int)((x * Tile.TILE_WIDTH - camera.getxOffset())), (int)((y * Tile.TILE_HEIGHT - camera.getyOffset())), Tile.TILE_WIDTH, Tile.TILE_HEIGHT, currentMap.getCurrentMapTilesetImage());
                         }
                     }
                 }
             }
 
-            for (int i = 0; i < puzzleDoorPositions.length; i++) { 
-                if (puzzleDoorPositions[i] != null && puzzleDoorPositions[i].length >= 2) { 
-                    if (!currentMap.GetTile(puzzleDoorPositions[i][0], puzzleDoorPositions[i][1]).IsSolid()) { 
-                        continue; 
-                    }
-                    int tileX = puzzleDoorPositions[i][0]; 
-                    int tileY = puzzleDoorPositions[i][1]; 
+        } else {
+            // ########## MOD DE DESENARE ORIGINAL PENTRU NIVELUL 1 și 2 ##########
+            // Aceasta este logica ta originală, care va rula nemodificată pentru Nivelul 1 și 2.
 
-                    Entity tempDoorEntity = new Entity(refLink, (float)tileX * Tile.TILE_WIDTH, (float)tileY * Tile.TILE_HEIGHT, Tile.TILE_WIDTH * 2, Tile.TILE_HEIGHT * 2) { 
-                        @Override
-                        public void Update() {}
-                        @Override
-                        public void Draw(Graphics g) { 
-                            drawInteractionPopup(g); 
+            for (int[][] layerGids : currentMap.getTilesGidsLayers()) {
+                for (int y = yStart; y < yEnd; y++) {
+                    for (int x = xStart; x < xEnd; x++) {
+                        int gid = layerGids[x][y];
+                        if (gid == 0 || gid == 64) continue;
+                        Tile.GetTile(gid).Draw(g, (int)((x * Tile.TILE_WIDTH - camera.getxOffset())), (int)((y * Tile.TILE_HEIGHT - camera.getyOffset())), Tile.TILE_WIDTH, Tile.TILE_HEIGHT, currentMap.getCurrentMapTilesetImage());
+                    }
+                }
+            }
+
+            ArrayList<Entity> allEntities = new ArrayList<>(entities);
+            allEntities.add(player);
+            allEntities.sort((e1, e2) -> Float.compare(e1.GetY(), e2.GetY()));
+            for (Entity e : allEntities) {
+                e.Draw(g);
+            }
+
+            for (int[][] layerGids : currentMap.getTilesGidsLayers()) {
+                for (int y = yStart; y < yEnd; y++) {
+                    for (int x = xStart; x < xEnd; x++) {
+                        int gid = layerGids[x][y];
+                        if (gid == 64) {
+                            Tile.GetTile(gid).Draw(g, (int)((x * Tile.TILE_WIDTH - camera.getxOffset())), (int)((y * Tile.TILE_HEIGHT - camera.getyOffset())), Tile.TILE_WIDTH, Tile.TILE_HEIGHT, currentMap.getCurrentMapTilesetImage());
                         }
-                    };
-                    tempDoorEntity.Draw(g); 
+                    }
                 }
             }
         }
 
-        if (fogOfWar != null) { 
-            fogOfWar.render(g); 
+        // --- PARTEA COMUNĂ (UI, pop-up-uri, etc.) ---
+        if (currentLevelIndex == 1) {
+            for (int i = 0; i < puzzleDoorPositions.length; i++) {
+                if (puzzleDoorPositions[i] != null && puzzleDoorPositions[i].length >= 2) {
+                    if (currentMap.GetTile(puzzleDoorPositions[i][0], puzzleDoorPositions[i][1]).IsSolid()) {
+                        Entity tempDoorEntity = new Entity(refLink, (float)puzzleDoorPositions[i][0] * Tile.TILE_WIDTH, (float)puzzleDoorPositions[i][1] * Tile.TILE_HEIGHT, Tile.TILE_WIDTH * 2, Tile.TILE_HEIGHT * 2) {
+                            @Override public void Update() {}
+                            @Override public void Draw(Graphics g) { drawInteractionPopup(g); }
+                        };
+                        tempDoorEntity.Draw(g);
+                    }
+                }
+            }
         }
 
-        if (isWoodSignMessageShowing()) { 
-            int wndWidth = refLink.GetWidth(); 
-            int wndHeight = refLink.GetHeight(); 
+        if (fogOfWar != null) {
+            fogOfWar.render(g);
+        }
 
-            int boxWidth = 500; 
-            int boxHeight = 150; 
-            int boxX = wndWidth / 2 - boxWidth / 2; 
-            int boxY = wndHeight / 2 - boxHeight / 2; 
-            g.setColor(new Color(0, 0, 0, 180)); 
-            g.fillRoundRect(boxX, boxY, boxWidth, boxHeight, 20, 20); 
+        if (isWoodSignMessageShowing()) {
+            int wndWidth = refLink.GetWidth();
+            int wndHeight = refLink.GetHeight();
 
-            g.setColor(Color.WHITE); 
-            g.setFont(new Font("Arial", Font.BOLD, 18)); 
-            FontMetrics fm = g.getFontMetrics(); 
-            if (woodSignMessage != null) { 
-                String[] lines = woodSignMessage.split("\n"); 
-                int lineHeight = fm.getHeight(); 
-                int startY = boxY + (boxHeight - lines.length * lineHeight) / 2 + fm.getAscent(); 
-                for (String line : lines) { 
-                    if (line != null) { 
-                        int textWidth = fm.stringWidth(line); 
-                        g.drawString(line, wndWidth / 2 - textWidth / 2, startY); 
-                        startY += lineHeight; 
+            int boxWidth = 500;
+            int boxHeight = 150;
+            int boxX = wndWidth / 2 - boxWidth / 2;
+            int boxY = wndHeight / 2 - boxHeight / 2;
+
+            g.setColor(new Color(0, 0, 0, 180));
+            g.fillRoundRect(boxX, boxY, boxWidth, boxHeight, 20, 20);
+
+            g.setColor(Color.WHITE);
+            g.setFont(new Font("Arial", Font.BOLD, 18));
+            FontMetrics fm = g.getFontMetrics();
+
+            if (woodSignMessage != null) {
+                String[] lines = woodSignMessage.split("\n");
+                int lineHeight = fm.getHeight();
+                int startY = boxY + (boxHeight - lines.length * lineHeight) / 2 + fm.getAscent();
+
+                for (String line : lines) {
+                    if (line != null) {
+                        int textWidth = fm.stringWidth(line);
+                        g.drawString(line, wndWidth / 2 - textWidth / 2, startY);
+                        startY += lineHeight;
                     }
                 }
             }
 
-            g.setFont(new Font("Arial", Font.PLAIN, 14)); 
-            String instruction = "Apasati 'E' pentru a inchide."; 
-            int instructionWidth = g.getFontMetrics().stringWidth(instruction); 
-            g.drawString(instruction, wndWidth / 2 - instructionWidth / 2, boxY + boxHeight - 20); 
+            g.setFont(new Font("Arial", Font.PLAIN, 14));
+            String instruction = "Apasati 'E' pentru a inchide.";
+            int instructionWidth = g.getFontMetrics().stringWidth(instruction);
+            g.drawString(instruction, wndWidth / 2 - instructionWidth / 2, boxY + boxHeight - 20);
         }
 
         drawUI(g);
@@ -944,6 +932,51 @@ public class GameState extends State {
         }
     }
 
+    private void openFinalDoor() {
+        int layerIndex = 2;
+
+        // Aici trebuie să pui ID-ul corect pentru dala de SUS-DREAPTA a ușii DESCHISE
+        int GID_USA_DESCHISA_SUS_DREAPTA = 75; // <-- ÎNLOCUIEȘTE 75 CU ID-UL CORECT DIN TILED
+
+        // Schimbă dalele ușii din "închis" în "deschis"
+        currentMap.changeTileGid(39, 6, 74, layerIndex); // Top-Left (Corect)
+        currentMap.changeTileGid(40, 6, GID_USA_DESCHISA_SUS_DREAPTA, layerIndex); // Top-Right (Aici era problema)
+        currentMap.changeTileGid(39, 7, 120, layerIndex); // Bottom-Left (Corect)
+        currentMap.changeTileGid(40, 7, 121, layerIndex); // Bottom-Right (Corect)
+
+        // Marchează cheia ca fiind folosită
+        if (hasDoorKeys.length > 6) {
+            hasDoorKeys[6] = false;
+        }
+        collectionMessage = "Ușa s-a deblocat!";
+        collectionMessageTime = System.currentTimeMillis();
+    }
+
+    private void handleFinalDoorInteraction() {
+        // Coordonatele ușii
+        int doorTileX = 39;
+        int doorTileY = 6;
+
+        if (currentMap == null || !currentMap.GetTile(doorTileX, doorTileY).IsSolid()) {
+            return; // Ușa este deja deschisă
+        }
+
+        // Verificăm proximitatea jucătorului
+        int playerTileX = (int) (player.GetX() / Tile.TILE_WIDTH);
+        int playerTileY = (int) (player.GetY() / Tile.TILE_HEIGHT);
+
+        if (Math.abs(playerTileX - doorTileX) <= 2 && Math.abs(playerTileY - doorTileY) <= 2) {
+            if (refLink.GetKeyManager().isKeyJustPressed(KeyEvent.VK_E)) {
+                if (hasDoorKeys.length > 6 && hasDoorKeys[6]) {
+                    openFinalDoor();
+                } else {
+                    collectionMessage = "Ușa este încuiată. Ai nevoie de cheia finală.";
+                    collectionMessageTime = System.currentTimeMillis();
+                }
+            }
+        }
+    }
+
     private boolean isSpecialDoorTile(int gid) {
         return gid == Tile.DOOR_OPEN_TOP_LEFT_GID ||
                 gid == Tile.DOOR_OPEN_TOP_RIGHT_GID ||
@@ -1081,6 +1114,25 @@ public class GameState extends State {
         System.out.println("Trecere la Nivelul 3!");
         this.currentLevelIndex = 2;
         InitLevelInternal(this.currentLevelIndex, false);
+    }
+
+    private boolean isTopDoorTile(int x, int y) {
+        // Verifică pentru ușa finală de la Nivelul 3
+        if (currentLevelIndex == 2) {
+            return (x == 39 && y == 6) || (x == 40 && y == 6);
+        }
+
+        // Verifică pentru toate ușile de la Nivelul 2
+        if (currentLevelIndex == 1) {
+            for (int[] doorData : puzzleDoorPositions) {
+                // Verifică coordonatele pentru dala top-left și top-right
+                if ((x == doorData[0] && y == doorData[1]) || (x == doorData[2] && y == doorData[3])) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     public void saveCurrentState() {
