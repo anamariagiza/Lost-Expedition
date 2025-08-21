@@ -20,7 +20,7 @@ public class PauseState extends State {
     private final Font titleFont = new Font("Papyrus", Font.BOLD, 36);
     private final Font buttonFont = new Font("Papyrus", Font.BOLD, 24);
 
-    private String[] menuOptions = {"RESUME", "SETTINGS", "HELP", "RETURN TO MAIN MENU", "QUIT"};
+    private String[] menuOptions = {"RESUME", "SETTINGS", "HELP", "RETURN TO MAIN MENU", "SAVE AND QUIT"};
     private Rectangle[] buttonBounds;
     private int selectedOption = 0;
     private boolean enterPressed = false;
@@ -29,6 +29,7 @@ public class PauseState extends State {
     private boolean escapePressed = false;
 
     private int lastWidth, lastHeight;
+    private State gameToBeResumed;
 
 
     /*!
@@ -140,7 +141,8 @@ public class PauseState extends State {
     private void executeSelectedOption() {
         switch (selectedOption) {
             case 0: // RESUME
-                refLink.SetState(refLink.GetPreviousState());
+                // Folosim metoda corectă pentru a relua jocul
+                refLink.SetState(refLink.getPersistedGameState());
                 break;
             case 1: // SETTINGS
                 refLink.SetState(new SettingsState(refLink));
@@ -151,7 +153,15 @@ public class PauseState extends State {
             case 3: // RETURN TO MAIN MENU
                 refLink.SetState(new MenuState(refLink));
                 break;
-            case 4: // QUIT
+            case 4: // SAVE AND QUIT
+                // Folosim metoda corectă pentru a obține starea jocului ce trebuie salvată
+                GameState gameStateToSave = refLink.getPersistedGameState();
+                if (gameStateToSave != null) {
+                    gameStateToSave.saveCurrentState();
+                    System.out.println("Progresul jocului a fost salvat. Se închide aplicația...");
+                } else {
+                    System.out.println("Eroare critică: Nu s-a putut găsi starea jocului pentru a o salva.");
+                }
                 System.exit(0);
                 break;
         }

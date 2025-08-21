@@ -174,7 +174,7 @@ public class PuzzleState extends State {
                 }
                 break;
             case 5:
-                currentPuzzleTitle = "Găsește perechea";
+                currentPuzzleTitle = "Gaseste perechea";
                 currentObjective = "Gaseste toate perechile de carti inainte de a expira timpul.";
 
                 List<Integer> tempCardIds = new ArrayList<>();

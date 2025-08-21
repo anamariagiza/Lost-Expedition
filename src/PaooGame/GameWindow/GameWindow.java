@@ -59,7 +59,7 @@ public class GameWindow
         wndFrame = new JFrame(wndTitle);
         wndFrame.setSize(wndWidth, wndHeight);
         wndFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        wndFrame.setResizable(true);
+        wndFrame.setResizable(false);
         wndFrame.setLocationRelativeTo(null);
         wndFrame.setVisible(true);
         canvas = new Canvas();

@@ -69,11 +69,11 @@ public class Agent extends Entity {
         this.bounds = new Rectangle(0, 0, width, height);
         this.health = maxHealth;
 
-        // Inițializarea tuturor animațiilor, similar cu Player
+        // Initializarea tuturor animatiilor, similar cu Player
         int animSpeed = 150;
         int attackSpeed = 100;
 
-        // Animații care rulează în buclă
+        // Animatii care ruleaza an bucla
         animIdleDown = new Animation(animSpeed * 2, Assets.agentIdleDown);
         animIdleUp = new Animation(animSpeed * 2, Assets.agentIdleUp);
         animIdleLeft = new Animation(animSpeed * 2, Assets.agentIdleLeft);
@@ -86,31 +86,13 @@ public class Agent extends Entity {
         animRunUp = new Animation(100, Assets.agentRunUp);
         animRunLeft = new Animation(100, Assets.agentRunLeft);
         animRunRight = new Animation(100, Assets.agentRunRight);
-        animCombatIdle = new Animation(animSpeed * 2, Assets.agentCombatIdle);
 
-        // Animații de acțiune care rulează o singură dată
-        animHurt = new Animation(animSpeed, Assets.agentHurt, false);
-        animJumpDown = new Animation(animSpeed, Assets.agentJumpDown, false);
-        animJumpUp = new Animation(animSpeed, Assets.agentJumpUp, false);
-        animJumpLeft = new Animation(animSpeed, Assets.agentJumpLeft, false);
-        animJumpRight = new Animation(animSpeed, Assets.agentJumpRight, false);
-
-        animThrust = new Animation(attackSpeed, Assets.agentThrust, false);
-        animThrustUp = new Animation(attackSpeed, Assets.agentThrustUp, false);
-        animThrustDown = new Animation(attackSpeed, Assets.agentThrustDown, false);
-        animThrustLeft = new Animation(attackSpeed, Assets.agentThrustLeft, false);
-        animThrustRight = new Animation(attackSpeed, Assets.agentThrustRight, false);
-
-        animSlash = new Animation(attackSpeed, Assets.agentSlash, false);
-        animSlashUp = new Animation(attackSpeed, Assets.agentSlashUp, false);
-        animSlashDown = new Animation(attackSpeed, Assets.agentSlashDown, false);
-        animSlashLeft = new Animation(attackSpeed, Assets.agentSlashLeft, false);
-        animSlashRight = new Animation(attackSpeed, Assets.agentSlashRight, false);
 
         animHalfslashUp = new Animation(attackSpeed, Assets.agentHalfslashUp, false);
         animHalfslashDown = new Animation(attackSpeed, Assets.agentHalfslashDown, false);
         animHalfslashLeft = new Animation(attackSpeed, Assets.agentHalfslashLeft, false);
         animHalfslashRight = new Animation(attackSpeed, Assets.agentHalfslashRight, false);
+        animHurt = new Animation(animSpeed, Assets.agentHurt, false);
 
         activeAnimation = animIdleDown;
         lastDirection = Direction.DOWN;
@@ -118,7 +100,7 @@ public class Agent extends Entity {
 
     /*!
      * \fn public void Update()
-     * \brief Actualizeaza starea agentului (miscarea, interacțiunea).
+     * \brief Actualizeaza starea agentului (miscarea, interactiunea).
      */
     @Override
     public void Update() {
@@ -161,7 +143,7 @@ public class Agent extends Entity {
      * \brief Implementeaza logica de miscare a agentului (patrulare orizontala).
      */
     private void moveAgent() {
-        // Resetare xMove la început pentru a evita comportamentele residuale
+        // Resetare xMove la anceput pentru a evita comportamentele residuale
         xMove = 0;
 
         if (movingRight) {
@@ -184,7 +166,7 @@ public class Agent extends Entity {
             }
         }
 
-        // Mișcare doar dacă xMove nu este 0
+        // Miscare doar daca xMove nu este 0
         if (xMove != 0) {
             move(xMove, 0);
         }
@@ -206,21 +188,21 @@ public class Agent extends Entity {
         float currentSpeed = player.isRunning() ? CHASE_SPEED : DEFAULT_SPEED;
 
         if (distance > 10) {
-            // Resetare variabile de mișcare pentru a evita comportamentele residuale
+            // Resetare variabile de miscare pentru a evita comportamentele residuale
             xMove = 0;
             yMove = 0;
 
             xMove = (dx / distance) * currentSpeed;
             yMove = (dy / distance) * currentSpeed;
 
-            // Determinare direcție principală pentru animație
+            // Determinare directie principala pentru animatie
             if (Math.abs(dx) > Math.abs(dy)) {
                 lastDirection = (dx > 0) ? Direction.RIGHT : Direction.LEFT;
             } else {
                 lastDirection = (dy > 0) ? Direction.DOWN : Direction.UP;
             }
 
-            // Setare animație corectă
+            // Setare animatie corecta
             switch (lastDirection) {
                 case UP:
                     activeAnimation = (currentSpeed == CHASE_SPEED) ? animRunUp : animWalkUp;
@@ -238,7 +220,7 @@ public class Agent extends Entity {
 
             move(xMove, yMove);
         } else {
-            // Resetare mișcare când este aproape de jucător
+            // Resetare miscare cand este aproape de jucator
             xMove = 0;
             yMove = 0;
             updateIdleAnimationBasedOnLastDirection();
@@ -269,7 +251,7 @@ public class Agent extends Entity {
             player.takeDamage(damage);
             isAttacking = true;
 
-            // MODIFICARE: Folosim animația halfslash în funcție de direcție
+            // MODIFICARE: Folosim animatia halfslash an functie de directie
             switch(lastDirection) {
                 case UP: activeAnimation = animHalfslashUp; break;
                 case DOWN: activeAnimation = animHalfslashDown; break;
@@ -298,15 +280,16 @@ public class Agent extends Entity {
 
     public void takeDamage(int amount) {
         if (isDefeated) return;
-
         health -= amount;
         System.out.println("Agent a luat " + amount + " daune. Viata ramasa: " + health);
-
         if (health <= 0) {
             health = 0;
             isDefeated = true;
             activeAnimation = animHurt;
-            activeAnimation.reset();
+            // Adăugăm o verificare pentru a preveni eroarea NullPointerException
+            if (activeAnimation != null) {
+                activeAnimation.reset();
+            }
         }
     }
 

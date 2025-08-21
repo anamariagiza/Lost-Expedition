@@ -84,10 +84,10 @@ public class HelpState extends State {
                 "Alergare: Shift",
                 "Săritură: Space",
                 "Interacţiune: E",
-                "Atac: J, K, /",
+                "Atac: K",
                 "Meniu Pauză: P",
                 "",
-                "Obiectivele misiunii: Rezolvaţi puzzle-uri străvechi, navigaţi prin ruine",
+                "Obiectivele misiunii: Rezolvaţi puzzle-uri stravechi, navigaţi prin ruine",
                 "periculoase şi luptaţi împotriva mercenarilor pentru a găsi El Dorado."
         };
 

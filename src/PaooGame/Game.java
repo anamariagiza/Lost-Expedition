@@ -89,12 +89,7 @@ public class Game implements Runnable
         wnd.GetCanvas().setFocusable(true);
         wnd.GetCanvas().requestFocusInWindow();
 
-        // Se inițializează starea jocului.
-        if (startLevel > 0) {
-            refLink.SetState(new GameState(refLink, startLevel - 1));
-        } else {
-            refLink.SetState(new MenuState(refLink)); // Trecem direct la meniu după ce asset-urile sunt încărcate.
-        }
+        refLink.SetState(new LoadingScreenState(refLink));
     }
 
     /*!

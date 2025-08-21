@@ -12,7 +12,7 @@ public class Tile
     public static final Map<Integer, Tile> tiles = new HashMap<>();
     public static final int NO_TILE_GID = 0;
 
-    public static final int GRASS_TILE_GID_SOLID = 81;
+    public static final int GRASS_TILE_GID_SOLID = 82;
     public static final int WALL_TILE_GID_SOLID = 33;
     public static final int[] ROCK_TILE_GIDS = {216, 97, 232, 217, 233, 249, 234, 235, 236, 221};
 
@@ -68,7 +68,7 @@ public class Tile
         if (tile == null) {
             if (gid == GRASS_TILE_GID_SOLID) {
                 tile = new GrassTile(gid);
-            } else if (gid == WALL_TILE_GID_SOLID) {
+            } else if (gid == WALL_TILE_GID_SOLID || gid == 64) {
                 tile = new WallTile(gid);
             } else if (gid == DOOR_CLOSED_TOP_LEFT_GID || gid == DOOR_CLOSED_TOP_RIGHT_GID ||
                     gid == DOOR_CLOSED_BOTTOM_LEFT_GID || gid == DOOR_CLOSED_BOTTOM_RIGHT_GID) {

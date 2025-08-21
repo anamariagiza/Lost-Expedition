@@ -13,7 +13,7 @@ import java.util.List;
 
 public class WordPuzzleState extends State {
     // --- Variabile Puzzle ---
-    private final String HINT_TEXT = "Aventură cu hărți vechi.";
+    private final String HINT_TEXT = "Calatorie neasteptata.";
     private final String TARGET_WORD_DISPLAY = "LOST EXPEDITION";
     private final String TARGET_WORD_LOGIC = "LOSTEXPEDITION";
     private StringBuilder currentInput = new StringBuilder();

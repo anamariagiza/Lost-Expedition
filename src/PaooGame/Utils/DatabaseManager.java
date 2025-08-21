@@ -235,7 +235,7 @@ public class DatabaseManager {
                 int playerHealth = rs.getInt("player_health");
                 boolean hasKey = rs.getBoolean("has_key");
                 String hasDoorKeysStr = rs.getString("has_door_keys");
-                boolean[] hasDoorKeys = new boolean[6];
+                boolean[] hasDoorKeys = new boolean[7];
                 if (hasDoorKeysStr != null && !hasDoorKeysStr.isEmpty()) {
                     String[] keys = hasDoorKeysStr.split(",");
                     for (int i = 0; i < keys.length; i++) {

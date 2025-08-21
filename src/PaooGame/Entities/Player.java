@@ -27,7 +27,6 @@ public class Player extends Entity {
 
     private int health;
     private int maxHealth = 100;
-
     // Animații de mișcare
     private Animation animDown, animUp, animLeft, animRight;
     private Animation animIdleDown, animIdleUp, animIdleLeft, animIdleRight;
@@ -35,7 +34,6 @@ public class Player extends Entity {
     private Animation animJumpDown, animJumpUp, animJumpLeft, animJumpRight;
     private Animation animHurt;
     private Animation animCombatIdle;
-
     // Animații de atac pentru fiecare direcție
     private Animation animThrustUp, animThrustDown, animThrustLeft, animThrustRight;
     private Animation animHalfslashUp, animHalfslashDown, animHalfslashLeft, animHalfslashRight;
@@ -69,7 +67,6 @@ public class Player extends Entity {
         int attackAnimationSpeed = 80;
         int hurtAnimationSpeed = 150;
         int idleCombatSpeed = 200;
-
         // Animații care trebuie să ruleze în buclă (loops = true)
         animDown = new Animation(animationSpeed, Assets.playerDown);
         animUp = new Animation(animationSpeed, Assets.playerUp);
@@ -83,8 +80,6 @@ public class Player extends Entity {
         animRunUp = new Animation(runAnimationSpeed, Assets.playerRunUp);
         animRunLeft = new Animation(runAnimationSpeed, Assets.playerRunLeft);
         animRunRight = new Animation(runAnimationSpeed, Assets.playerRunRight);
-        animCombatIdle = new Animation(idleCombatSpeed, Assets.playerCombatIdle);
-
         // Animații de acțiune care rulează o singură dată (loops = false)
         animHurt = new Animation(hurtAnimationSpeed, Assets.playerHurt, false);
         animJumpDown = new Animation(jumpAnimationSpeed, Assets.playerJumpDown, false);
@@ -92,20 +87,10 @@ public class Player extends Entity {
         animJumpLeft = new Animation(jumpAnimationSpeed, Assets.playerJumpLeft, false);
         animJumpRight = new Animation(jumpAnimationSpeed, Assets.playerJumpRight, false);
 
-        animThrustUp = new Animation(attackAnimationSpeed, Assets.playerThrustUp, false);
-        animThrustDown = new Animation(attackAnimationSpeed, Assets.playerThrustDown, false);
-        animThrustLeft = new Animation(attackAnimationSpeed, Assets.playerThrustLeft, false);
-        animThrustRight = new Animation(attackAnimationSpeed, Assets.playerThrustRight, false);
-
         animHalfslashUp = new Animation(attackAnimationSpeed, Assets.playerHalfslashUp, false);
         animHalfslashDown = new Animation(attackAnimationSpeed, Assets.playerHalfslashDown, false);
         animHalfslashLeft = new Animation(attackAnimationSpeed, Assets.playerHalfslashLeft, false);
         animHalfslashRight = new Animation(attackAnimationSpeed, Assets.playerHalfslashRight, false);
-
-        animSlashUp = new Animation(attackAnimationSpeed, Assets.playerSlashUp, false);
-        animSlashDown = new Animation(attackAnimationSpeed, Assets.playerSlashDown, false);
-        animSlashLeft = new Animation(attackAnimationSpeed, Assets.playerSlashLeft, false);
-        animSlashRight = new Animation(attackAnimationSpeed, Assets.playerSlashRight, false);
 
         // Setări inițiale
         activeAnimation = animIdleDown;
@@ -125,18 +110,20 @@ public class Player extends Entity {
     @Override
     public void Update() {
         if (game == null || game.GetKeyManager() == null) return;
-
         if (isHurt) {
             activeAnimation.Update();
             if (activeAnimation.isFinished()) {
-                refLink.SetState(new GameOverState(refLink));
+                isHurt = false; // Revino la starea normală după terminarea animației
+                if (health <= 0) {
+                    // Dacă viața este 0, acum intră în starea de Game Over
+                    refLink.SetState(new GameOverState(refLink));
+                }
             }
-            return;
+            return; // Oprește orice altă acțiune (mișcare, atac) cât timp ești lovit
         }
 
         GetInput();
         game.GetRefLinks().GetGameCamera().centerOnEntity(this);
-
         if (!isAttacking && !isJumping && !isCombatIdle &&
                 !isThrusting && !isHalfslashing && !isSlashing) {
             updateMovementAnimation();
@@ -161,19 +148,6 @@ public class Player extends Entity {
         if (playerFrame != null) {
             int drawX = (int)(x - camera.getxOffset());
             int drawY = (int)(y - camera.getyOffset());
-
-            // Dacă folosești aceleași sprite-uri pentru LEFT și RIGHT și vrei să aplici flip
-            // (comentează această secțiune dacă ai sprite-uri separate pentru fiecare direcție)
-            /*
-            if (lastDirection == Direction.LEFT && (isMoving || isAttacking)) {
-                // Desenăm cu flip pe orizontală pentru stânga
-                g.drawImage(playerFrame, drawX + width, drawY, -width, height, null);
-            } else {
-                g.drawImage(playerFrame, drawX, drawY, width, height, null);
-            }
-            */
-
-            // Desenare normală (folosește această linie dacă ai sprite-uri separate)
             g.drawImage(playerFrame, drawX, drawY, width, height, null);
         }
     }
@@ -223,16 +197,6 @@ public class Player extends Entity {
                     case RIGHT: activeAnimation = animHalfslashRight; break;
                 }
                 activeAnimation.reset();
-            } else if (game.GetKeyManager().isKeyJustPressed(KeyEvent.VK_SLASH)) {
-                isAttacking = true;
-                isSlashing = true;
-                switch(lastDirection) {
-                    case UP: activeAnimation = animSlashUp; break;
-                    case DOWN: activeAnimation = animSlashDown; break;
-                    case LEFT: activeAnimation = animSlashLeft; break;
-                    case RIGHT: activeAnimation = animSlashRight; break;
-                }
-                activeAnimation.reset();
             }
         }
         move(xMove, yMove);
@@ -276,41 +240,55 @@ public class Player extends Entity {
         Map currentMap = game.GetRefLinks().GetMap();
         if (currentMap == null) return;
 
+        int levelIndex = -1;
+        if (refLink.GetGameState() != null) {
+            levelIndex = refLink.GetGameState().getCurrentLevelIndex();
+        }
+
         // --- Verificare coliziune pe axa X ---
         if (xAmt != 0) {
             float newX = x + xAmt;
             Rectangle proposedBoundsX = new Rectangle((int) newX, (int) y, width, height);
-
             boolean collision = false;
-            // 1. Verificare coliziune cu dale solide
+
             int tx = (int) ((xAmt > 0 ? newX + width - 1 : newX) / Tile.TILE_WIDTH);
             int ty_top = (int) (y / Tile.TILE_HEIGHT);
             int ty_bottom = (int) ((y + height - 1) / Tile.TILE_HEIGHT);
-            // Verificare coliziune cu dala ID 64
-            if (currentMap.GetTile(tx, ty_top).GetId() == 64 || currentMap.GetTile(tx, ty_bottom).GetId() == 64) {
-                collision = true;
+
+            Tile tileTop = currentMap.GetTile(tx, ty_top);
+            Tile tileBottom = currentMap.GetTile(tx, ty_bottom);
+            boolean isSolid = false;
+
+            if (levelIndex == 0) {
+                // REGULA DOAR PENTRU NIVELUL 1
+                isSolid = (tileTop.GetId() == Tile.GRASS_TILE_GID_SOLID || tileBottom.GetId() == Tile.GRASS_TILE_GID_SOLID);
+            } else if (levelIndex == 1) {
+                // REGULA DOAR PENTRU NIVELUL 2
+                int topGid = tileTop.GetId();
+                int bottomGid = tileBottom.GetId();
+                isSolid = (topGid == Tile.WALL_TILE_GID_SOLID || bottomGid == Tile.WALL_TILE_GID_SOLID ||
+                        topGid == Tile.DOOR_CLOSED_TOP_LEFT_GID || bottomGid == Tile.DOOR_CLOSED_TOP_LEFT_GID ||
+                        topGid == Tile.DOOR_CLOSED_TOP_RIGHT_GID || bottomGid == Tile.DOOR_CLOSED_TOP_RIGHT_GID ||
+                        topGid == Tile.DOOR_CLOSED_BOTTOM_LEFT_GID || bottomGid == Tile.DOOR_CLOSED_BOTTOM_LEFT_GID ||
+                        topGid == Tile.DOOR_CLOSED_BOTTOM_RIGHT_GID || bottomGid == Tile.DOOR_CLOSED_BOTTOM_RIGHT_GID);
+                // ...
+            } else if (levelIndex == 2) {
+                int objectGidTop = currentMap.getTilesGidsLayers().get(2)[tx][ty_top];
+                int objectGidBottom = currentMap.getTilesGidsLayers().get(2)[tx][ty_bottom];
+
+                // Un obiect este solid dacă există (!= 0) ȘI NU este o ușă deschisă
+                boolean isObjectTopSolid = (objectGidTop != 0 && objectGidTop != 74 && objectGidTop != 75 && objectGidTop != 120 && objectGidTop != 121);
+                boolean isObjectBottomSolid = (objectGidBottom != 0 && objectGidBottom != 74 && objectGidBottom != 75 && objectGidBottom != 120 && objectGidBottom != 121);
+
+                isSolid = (tileTop.GetId() == 64 || tileBottom.GetId() == 64 || isObjectTopSolid || isObjectBottomSolid);
             }
-            if (currentMap.GetTile(tx, ty_top).IsSolid() || currentMap.GetTile(tx, ty_bottom).IsSolid()) {
-                collision = true;
+            else {
+                // REGULA DEFAULT PENTRU ORICE ALT NIVEL
+                isSolid = tileTop.IsSolid() || tileBottom.IsSolid();
             }
 
-            // 2. Verificare coliziune cu entitati solide (ex: mese)
-            if (!collision) {
-                State currentState = State.GetState();
-                if (currentState instanceof GameState) {
-                    ArrayList<Entity> entities = ((GameState)currentState).getEntities();
-                    if (entities != null) {
-                        for (Entity e : entities) {
-                            if (e.equals(this)) continue;
-                            if (e instanceof DecorativeObject) {
-                                if (((DecorativeObject) e).isSolid() && proposedBoundsX.intersects(e.GetBounds())) {
-                                    collision = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
+            if (isSolid) {
+                collision = true;
             }
 
             if (!collision) {
@@ -322,37 +300,46 @@ public class Player extends Entity {
         if (yAmt != 0) {
             float newY = y + yAmt;
             Rectangle proposedBoundsY = new Rectangle((int) x, (int) newY, width, height);
-
             boolean collision = false;
-            // 1. Verificare coliziune cu dale solide
+
             int ty = (int) ((yAmt > 0 ? newY + height - 1 : newY) / Tile.TILE_HEIGHT);
             int tx_left = (int) (x / Tile.TILE_WIDTH);
             int tx_right = (int) ((x + width - 1) / Tile.TILE_WIDTH);
-            // Verificare coliziune cu dala ID 64
-            if (currentMap.GetTile(tx_left, ty).GetId() == 64 || currentMap.GetTile(tx_right, ty).GetId() == 64) {
-                collision = true;
+
+            Tile tileLeft = currentMap.GetTile(tx_left, ty);
+            Tile tileRight = currentMap.GetTile(tx_right, ty);
+            boolean isSolid = false;
+
+            if (levelIndex == 0) {
+                // REGULA DOAR PENTRU NIVELUL 1
+                isSolid = (tileLeft.GetId() == Tile.GRASS_TILE_GID_SOLID || tileRight.GetId() == Tile.GRASS_TILE_GID_SOLID);
+            } else if (levelIndex == 1) {
+                // REGULA DOAR PENTRU NIVELUL 2
+                int leftGid = tileLeft.GetId();
+                int rightGid = tileRight.GetId();
+                isSolid = (leftGid == Tile.WALL_TILE_GID_SOLID || rightGid == Tile.WALL_TILE_GID_SOLID ||
+                        leftGid == Tile.DOOR_CLOSED_TOP_LEFT_GID || rightGid == Tile.DOOR_CLOSED_TOP_LEFT_GID ||
+                        leftGid == Tile.DOOR_CLOSED_TOP_RIGHT_GID || rightGid == Tile.DOOR_CLOSED_TOP_RIGHT_GID ||
+                        leftGid == Tile.DOOR_CLOSED_BOTTOM_LEFT_GID || rightGid == Tile.DOOR_CLOSED_BOTTOM_LEFT_GID ||
+                        leftGid == Tile.DOOR_CLOSED_BOTTOM_RIGHT_GID || rightGid == Tile.DOOR_CLOSED_BOTTOM_RIGHT_GID);
+                // ...
+            } else if (levelIndex == 2) {
+                int objectGidLeft = currentMap.getTilesGidsLayers().get(2)[tx_left][ty];
+                int objectGidRight = currentMap.getTilesGidsLayers().get(2)[tx_right][ty];
+
+                // Un obiect este solid dacă există (!= 0) ȘI NU este o ușă deschisă
+                boolean isObjectLeftSolid = (objectGidLeft != 0 && objectGidLeft != 74 && objectGidLeft != 75 && objectGidLeft != 120 && objectGidLeft != 121);
+                boolean isObjectRightSolid = (objectGidRight != 0 && objectGidRight != 74 && objectGidRight != 75 && objectGidRight != 120 && objectGidRight != 121);
+
+                isSolid = (tileLeft.GetId() == 64 || tileRight.GetId() == 64 || isObjectLeftSolid || isObjectRightSolid);
             }
-            if (currentMap.GetTile(tx_left, ty).IsSolid() || currentMap.GetTile(tx_right, ty).IsSolid()) {
-                collision = true;
+            else {
+                // REGULA DEFAULT PENTRU ORICE ALT NIVEL
+                isSolid = tileLeft.IsSolid() || tileRight.IsSolid();
             }
 
-            // 2. Verificare coliziune cu entitati solide (ex: mese)
-            if (!collision) {
-                State currentState = State.GetState();
-                if (currentState instanceof GameState) {
-                    ArrayList<Entity> entities = ((GameState)currentState).getEntities();
-                    if (entities != null) {
-                        for (Entity e : entities) {
-                            if (e.equals(this)) continue;
-                            if (e instanceof DecorativeObject) {
-                                if (((DecorativeObject) e).isSolid() && proposedBoundsY.intersects(e.GetBounds())) {
-                                    collision = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
+            if (isSolid) {
+                collision = true;
             }
 
             if (!collision) {
@@ -411,16 +398,21 @@ public class Player extends Entity {
     public int getMaxHealth() { return maxHealth; }
 
     public void takeDamage(int amount) {
-        if(isHurt) return;
+        if(isHurt) return; // Nu permite daune dacă animația de moarte deja rulează
 
         health -= amount;
-        if (health < 0) { health = 0; }
+        if (health < 0) {
+            health = 0;
+        }
         System.out.println("DEBUG: James a luat " + amount + " daune. Viata ramasa: " + health);
 
+        // Logica de "hurt" se activează DOAR dacă viața ajunge la 0
         if (health <= 0) {
             isHurt = true;
             activeAnimation = animHurt;
-            activeAnimation.reset();
+            if (activeAnimation != null) {
+                activeAnimation.reset();
+            }
         }
     }
 

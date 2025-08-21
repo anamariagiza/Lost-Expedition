@@ -12,7 +12,6 @@ import PaooGame.Entities.CaveEntrance;
 import PaooGame.Entities.PuzzleTrigger;
 import PaooGame.Entities.DecorativeObject;
 import PaooGame.Entities.LevelExit;
-import PaooGame.Entities.Torch;
 import PaooGame.Entities.Chest;
 import PaooGame.Entities.TrapTrigger;
 import PaooGame.Map.Map;
@@ -99,7 +98,7 @@ public class GameState extends State {
         this.hasTalisman = false;
         this.caveEntranceUnlocked = false;
         this.isObjectiveDisplayed = false;
-        this.currentObjective = "Afla ce se afla in spatele usii blocate.";
+        this.currentObjective = "Aduna cheia si talismanul Lunii. Da talismanul paznicului si intra in pestera.";
         this.currentMap = new Map(refLink);
         this.player = new Player(refLink.GetGame(), 0, 0);
         refLink.SetMap(this.currentMap);
@@ -239,7 +238,7 @@ public class GameState extends State {
                 if (!hasDoorKeys[0]) {
                     entities.add(new Key(refLink, 12 * Tile.TILE_WIDTH, 85 * Tile.TILE_HEIGHT, Assets.keyImage, 0)); // Aceasta cheie va deschide prima usa de la nivelul 2
                 }
-                DecorativeObject woodSign1 = new DecorativeObject(refLink, 2 * Tile.TILE_WIDTH, Tile.TILE_HEIGHT, 64, 64, Assets.woodSignImage, false);
+                DecorativeObject woodSign1 = new DecorativeObject(refLink, 2 * Tile.TILE_WIDTH, Tile.TILE_HEIGHT, 64, 64, Assets.woodSignImage, true);
                 woodSign1.setDialogueMessage("Aduna cheia si talismanul Lunii. Da talismanul paznicului si intra in pestera.");
                 entities.add(woodSign1);
                 break;
@@ -266,24 +265,24 @@ public class GameState extends State {
                         entities.add(new Key(refLink, (float)keyTileX * Tile.TILE_WIDTH, (float)keyTileY * Tile.TILE_HEIGHT, Assets.keyImage, i));
                     }
                 }
-                DecorativeObject woodSign2 = new DecorativeObject(refLink, 3 * Tile.TILE_WIDTH, 25 * Tile.TILE_HEIGHT, 64, 64, Assets.woodSignImage, false);
+                DecorativeObject woodSign2 = new DecorativeObject(refLink, 3 * Tile.TILE_WIDTH, 25 * Tile.TILE_HEIGHT, 64, 64, Assets.woodSignImage, true);
                 woodSign2.setDialogueMessage("Rezolva puzzle-urile si mergi spre camera finala.");
                 entities.add(woodSign2);
                 break;
             case 2:
                 arenaTraps = new ArrayList<>();
-                int[][] torchPositions = {
-                        {38, 54}, {41, 54}, {24, 27}, {24, 30}, {55, 27}, {55, 30}, {38, 17}, {41, 17}
-                };
-                for (int[] pos : torchPositions) {
-                    entities.add(new Torch(refLink, (float)pos[0] * Tile.TILE_WIDTH, (float)pos[1] * Tile.TILE_HEIGHT));
-                }
+
+                // PASUL 1: Adaugă înapoi obiectul vizual al mesei (care este și solid)
+                entities.add(new DecorativeObject(refLink, 75 * Tile.TILE_WIDTH, 26 * Tile.TILE_HEIGHT, Tile.TILE_WIDTH, Tile.TILE_HEIGHT, Assets.puzzleTableImage, true));
+
+                // PASUL 2: Păstrează trigger-ul invizibil pentru interacțiune și pop-up
+                entities.add(new PuzzleTrigger(refLink, 75 * Tile.TILE_WIDTH, 26 * Tile.TILE_HEIGHT, Tile.TILE_WIDTH, Tile.TILE_HEIGHT, 99));
 
                 finalChest = new Chest(refLink, 37 * Tile.TILE_WIDTH, 3 * Tile.TILE_HEIGHT, Tile.TILE_WIDTH, Tile.TILE_HEIGHT);
                 finalChest.setCanInteract(false);
                 entities.add(finalChest);
 
-                entities.add(new DecorativeObject(refLink, 75 * Tile.TILE_WIDTH, 26 * Tile.TILE_HEIGHT, Tile.TILE_WIDTH, Tile.TILE_HEIGHT, Assets.puzzleTableImage, true));
+                entities.add(new PuzzleTrigger(refLink, 75 * Tile.TILE_WIDTH, 26 * Tile.TILE_HEIGHT, Tile.TILE_WIDTH, Tile.TILE_HEIGHT, 99));
                 int[][] trapTiles = {
                         {29,22}, {30,22}, {31,22}, {32,22}, {29,23}, {30,23}, {31,23}, {32,23},
                         {29,36}, {30,36}, {31,36}, {32,36}, {29,37}, {30,37}, {31,37}, {32,37},
@@ -316,12 +315,13 @@ public class GameState extends State {
                 finalBoss = new Agent(refLink, 36 * Tile.TILE_WIDTH, 22 * Tile.TILE_HEIGHT, 36 * Tile.TILE_WIDTH, 43 * Tile.TILE_WIDTH, true);
                 entities.add(finalBoss);
 
-                DecorativeObject woodSign3 = new DecorativeObject(refLink, 37 * Tile.TILE_WIDTH, 56 * Tile.TILE_HEIGHT, 64, 64, Assets.woodSignImage, false);
+                DecorativeObject woodSign3 = new DecorativeObject(refLink, 37 * Tile.TILE_WIDTH, 56 * Tile.TILE_HEIGHT, 64, 64, Assets.woodSignImage, true);
                 woodSign3.setDialogueMessage("Invinge inamicul, aduna ultima cheie si gaseste comoara.");
                 entities.add(woodSign3);
 
                 break;
         }
+        updateObjective();
     }
 
     public void addEntity(Entity e) {
@@ -478,7 +478,7 @@ public class GameState extends State {
                     int associatedId = k.getAssociatedPuzzleId();
                     if (associatedId >= 0 && associatedId < hasDoorKeys.length) {
                         hasDoorKeys[associatedId] = true;
-                        collectionMessage = "Cheia colectata pentru usa " + (associatedId + 1) + "!";
+                        collectionMessage = "Cheia a fost colectata!";
                         collectionMessageTime = System.currentTimeMillis();
                         System.out.println("DEBUG GameState: Cheia pentru usa " + (associatedId + 1) + " a fost colectata.");
                     }
@@ -492,6 +492,35 @@ public class GameState extends State {
             if (e instanceof Animal) {
                 if (player.GetBounds().intersects(e.GetBounds())) {
                     playerInContactWithAnimal = true;
+                }
+            }
+            if (e instanceof Trap trap) {
+                // MODIFICARE: Adăugăm logica pentru capcanele statice de la Nivelul 1
+                if (currentLevelIndex == 0) {
+                    // Verificăm coliziunea dintre jucător și capcană
+                    if (player.GetBounds().intersects(trap.GetBounds())) {
+                        // Verificăm cooldown-ul pentru a nu aplica daune la fiecare cadru
+                        if (System.currentTimeMillis() - lastTrapDamageTime >= TRAP_DAMAGE_COOLDOWN_MS) {
+                            player.takeDamage(30); // Aplicăm 30 daune, cum ai cerut
+                            lastTrapDamageTime = System.currentTimeMillis(); // Resetăm cronometrul
+                        }
+                    }
+                }
+
+                // Logica existentă pentru capcanele active (Nivelul 3) rămâne neschimbată
+                if (trap.isActive()) {
+                    if (player.GetBounds().intersects(trap.GetBounds())) {
+                        if (System.currentTimeMillis() - lastTrapDamageTime >= TRAP_DAMAGE_COOLDOWN_MS) {
+                            player.takeDamage(trap.getDamage());
+                            lastTrapDamageTime = System.currentTimeMillis();
+                        }
+                    }
+                    if (finalBoss != null && finalBoss.GetBounds().intersects(trap.GetBounds())) {
+                        if (System.currentTimeMillis() - lastAgentTrapDamageTime >= TRAP_DAMAGE_COOLDOWN_MS) {
+                            finalBoss.takeDamage(trap.getDamage());
+                            lastAgentTrapDamageTime = System.currentTimeMillis();
+                        }
+                    }
                 }
             }
             if (e instanceof Trap trap) {
@@ -530,6 +559,14 @@ public class GameState extends State {
                 }
             }
         }
+    }
+
+    /*!
+     * \fn public int getCurrentLevelIndex()
+     * \brief Returneaza indexul nivelului curent (0 pentru Nivelul 1, 1 pentru Nivelul 2, etc.).
+     */
+    public int getCurrentLevelIndex() {
+        return currentLevelIndex;
     }
 
     @Override
@@ -575,9 +612,13 @@ public class GameState extends State {
             allEntities.add(finalBoss);
         }
         // EXCLUDEM EXPLICIT CAPCANELE din entities!
-        allEntities.removeIf(e -> e instanceof Trap);
-
+        // ...
+// Excludem capcanele din randarea generală, CU EXCEPȚIA celor de la Nivelul 1
+        if (currentLevelIndex != 0) {
+            allEntities.removeIf(e -> e instanceof Trap);
+        }
         allEntities.sort((e1, e2) -> Float.compare(e1.GetY(), e2.GetY()));
+// ...
         for (Entity e : allEntities) {
             e.Draw(g);
         }
@@ -633,6 +674,21 @@ public class GameState extends State {
                     };
                     tempDoorEntity.Draw(g);
                 }
+            }
+        }
+
+        // Pop-up pentru ușa FINALĂ (Nivel 3)
+        if (currentLevelIndex == 2) {
+            int doorX = 39; // Coordonata X a dalei de sus-stânga a ușii
+            int doorY = 6;  // Coordonata Y a dalei de sus-stânga a ușii
+
+            // Verificăm dacă ușa este solidă (închisă)
+            if (currentMap.GetTile(doorX, doorY).IsSolid()) {
+                Entity tempDoorEntity = new Entity(refLink, (float)doorX * Tile.TILE_WIDTH, (float)doorY * Tile.TILE_HEIGHT, Tile.TILE_WIDTH * 2, Tile.TILE_HEIGHT * 2) {
+                    @Override public void Update() {}
+                    @Override public void Draw(Graphics g) { drawInteractionPopup(g); }
+                };
+                tempDoorEntity.Draw(g);
             }
         }
 
@@ -782,26 +838,60 @@ public class GameState extends State {
         float mapScaleX = (float)miniMapWidth / mapPixelWidth;
         float mapScaleY = (float)miniMapHeight / mapPixelHeight;
 
+        int levelIndex = getCurrentLevelIndex();
+        java.util.List<int[][]> layers = currentMap.getTilesGidsLayers();
+
         for (int yTile = 0; yTile < currentMap.GetHeight(); yTile++) {
             for (int xTile = 0; xTile < currentMap.GetWidth(); xTile++) {
-                Tile tile = currentMap.GetTile(xTile, yTile);
-                if (tile != null) {
-                    if (tile.IsSolid()) {
-                        g.setColor(new Color(87, 51, 35));
-                    } else {
-                        g.setColor(new Color(48, 43, 59));
+
+                if (levelIndex == 0) {
+                    // ========== LOGICA PENTRU NIVELUL 1 ==========
+                    final int[] IDURI_DALE_DRUM = {123, 124, 125}; // EXEMPLU
+                    final int[] IDURI_DALE_IARBA = {Tile.GRASS_TILE_GID_SOLID, 83, 84}; // EXEMPLU
+
+                    int gid = layers.get(0)[xTile][yTile];
+                    boolean isPath = false;
+                    for (int pathId : IDURI_DALE_DRUM) { if (gid == pathId) { isPath = true; break; } }
+
+                    boolean isGrass = false;
+                    for (int grassId : IDURI_DALE_IARBA) { if (gid == grassId) { isGrass = true; break; } }
+
+                    if (isPath) g.setColor(new Color(188, 143, 103));
+                    else if (isGrass) g.setColor(new Color(34, 139, 34));
+                    else continue;
+
+                    g.fillRect(miniMapX + (int)(xTile * Tile.TILE_WIDTH * mapScaleX), miniMapY + (int)(yTile * Tile.TILE_HEIGHT * mapScaleY), (int)(Tile.TILE_WIDTH * mapScaleX) + 1, (int)(Tile.TILE_HEIGHT * mapScaleY) + 1);
+
+                } else if (levelIndex == 1) {
+                    // ========== LOGICA PENTRU NIVELUL 2 ==========
+                    Tile tile = currentMap.GetTile(xTile, yTile);
+                    // Desenăm dala DOAR dacă este solidă (perete SAU ușă închisă)
+                    if (tile != null && tile.IsSolid()) {
+                        g.setColor(new Color(100, 100, 100)); // Culoare gri pentru contur
+                        g.fillRect(miniMapX + (int)(xTile * Tile.TILE_WIDTH * mapScaleX),
+                                miniMapY + (int)(yTile * Tile.TILE_HEIGHT * mapScaleY),
+                                (int)(Tile.TILE_WIDTH * mapScaleX) + 1,
+                                (int)(Tile.TILE_HEIGHT * mapScaleY) + 1);
                     }
-                    g.fillRect(miniMapX + (int)(xTile * Tile.TILE_WIDTH * mapScaleX),
-                            miniMapY + (int)(yTile * Tile.TILE_HEIGHT * mapScaleY),
-                            (int)(Tile.TILE_WIDTH * mapScaleX) + 1,
-                            (int)(Tile.TILE_HEIGHT * mapScaleY) + 1);
+                } else {
+                    // ========== LOGICA DEFAULT PENTRU NIVELUL 3 ȘI ALTELE ==========
+                    Tile tile = currentMap.GetTile(xTile, yTile);
+                    if (tile != null && tile.IsSolid()) {
+                        g.setColor(new Color(87, 51, 35));
+                        g.fillRect(miniMapX + (int)(xTile * Tile.TILE_WIDTH * mapScaleX),
+                                miniMapY + (int)(yTile * Tile.TILE_HEIGHT * mapScaleY),
+                                (int)(Tile.TILE_WIDTH * mapScaleX) + 1,
+                                (int)(Tile.TILE_HEIGHT * mapScaleY) + 1);
+                    }
                 }
             }
         }
 
+        // Desenarea entităților pe mini-hartă (chei, talismane, jucător) rămâne la fel
         for(Entity e : entities) {
             boolean isKey = (e instanceof Key) && !((Key) e).isCollected();
             boolean isTalisman = (e instanceof Talisman) && !((Talisman) e).isCollected();
+
             if (isKey || isTalisman) {
                 int entityMiniMapX = miniMapX + (int)(e.GetX() * mapScaleX);
                 int entityMiniMapY = miniMapY + (int)(e.GetY() * mapScaleY);
