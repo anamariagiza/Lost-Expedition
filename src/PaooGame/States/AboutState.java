@@ -4,36 +4,39 @@ import PaooGame.RefLinks;
 import PaooGame.Graphics.Assets;
 
 import java.awt.*;
-import java.awt.event.KeyEvent;
 
-/*!
- * \class public class AboutState extends State
- * \brief Implementeaza notiunea de credentiale (about)
+/**
+ * @class AboutState
+ * @brief Implementeaza ecranul "About" (Despre Joc).
+ * Aceasta stare afiseaza informatii despre proiect, cum ar fi autorii si
+ * contextul dezvoltarii. Este o stare informationala, cu o logica minima,
+ * axata pe desenarea textului si a elementelor grafice.
  */
 public class AboutState extends State
 {
+    /** Atribute finale pentru stilizarea vizuala a ecranului (culori, fonturi).*/
     private final Color backgroundColor = new Color(0, 0, 0); // Fallback color
     private final Color textColor = new Color(255, 255, 255); // Text alb pentru lizibilitate
     private final Color titleColor = new Color(255, 215, 0); // Aur pentru titlu
     private final Font titleFont = new Font("Papyrus", Font.BOLD, 36);
     private final Font textFont = new Font("SansSerif", Font.PLAIN, 18);
     private final Font instructionFont = new Font("SansSerif", Font.PLAIN, 14);
+    /** Flag pentru a gestiona o singura apasare a tastei ESC, prevenind tranzitii multiple.*/
     private boolean escapePressed = false;
 
-    /*!
-     * \fn public AboutState(RefLinks refLink)
-     * \brief Constructorul de initializare al clasei.
-     * \param refLink O referinta catre un obiect "shortcut", obiect ce contine o serie de referinte utile in program.
+    /**
+     * @brief Constructorul clasei AboutState.
+     * @param refLink O referinta catre obiectul RefLinks.
      */
     public AboutState(RefLinks refLink)
     {
         super(refLink);
-        System.out.println("✓ AboutState initializat");
+        System.out.println("AboutState initializat");
     }
 
-    /*!
-     * \fn public void Update()
-     * \brief Actualizeaza starea curenta a meniu about.
+    /**
+     * @brief Actualizeaza starea ecranului "About".
+     * Verifica daca tasta ESC a fost apasata pentru a reveni la meniul principal.
      */
     @Override
     public void Update()
@@ -49,10 +52,9 @@ public class AboutState extends State
         }
     }
 
-    /*!
-     * \fn public void Draw(Graphics g)
-     * \brief Deseneaza (randeaza) pe ecran starea curenta a meniu about.
-     * \param g Contextul grafic in care trebuie sa deseneze starea jocului pe ecran.
+    /**
+     * @brief Deseneaza (randeaza) continutul ecranului "About".
+     * @param g Contextul grafic in care se va desena.
      */
     @Override
     public void Draw(Graphics g)
@@ -63,7 +65,7 @@ public class AboutState extends State
         } else {
             g.setColor(backgroundColor);
             g.fillRect(0, 0, refLink.GetWidth(), refLink.GetHeight());
-            System.err.println("EROARE DEBUG: Fundal 'About' desenat cu culoare solidă (Assets.backgroundMenu este NULL).");
+            //System.err.println("EROARE DEBUG: Fundal 'About' desenat cu culoare solida (Assets.backgroundMenu este NULL).");
         }
 
         // Overlay semi-transparent general peste fundal
@@ -79,12 +81,12 @@ public class AboutState extends State
         int titleWidth = titleFm.stringWidth(title);
         g.drawString(title, (refLink.GetWidth() - titleWidth) / 2, 80);
 
-        // NOU: Dreptunghi semi-transparent în spatele textului informațional
+        // NOU: Dreptunghi semi-transparent in spatele textului informațional
         int rectPadding = 20;
         int rectWidth = 600;
         int rectX = (refLink.GetWidth() - rectWidth) / 2;
 
-        // Conținutul mesajului "DESPRE JOC"
+        // Continutul mesajului "DESPRE JOC"
         g.setFont(textFont); // Setam fontul pentru masurare
         FontMetrics textFm = g.getFontMetrics(); // NOU: Declaram textFm aici
 
@@ -102,7 +104,7 @@ public class AboutState extends State
                 "Speram sa va bucurati de aventura!"
         };
 
-        // Calculează înălțimea totală a dreptunghiului bazat pe text
+        // Calculeaza inaltimea totala a dreptunghiului bazat pe text
         int totalTextHeight = 0;
         for (String line : infoLines) {
             totalTextHeight += textFm.getHeight() + 5;

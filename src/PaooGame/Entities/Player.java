@@ -4,43 +4,59 @@ import PaooGame.Game;
 import PaooGame.Graphics.Assets;
 import PaooGame.Graphics.Animation;
 import PaooGame.States.GameOverState;
-import PaooGame.States.GameState;
-import PaooGame.States.State;
 import PaooGame.Tiles.Tile;
 import PaooGame.Camera.GameCamera;
 import PaooGame.Map.Map;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
-import java.util.ArrayList;
 
-/*!
- * \class public class Player extends Entity
- * \brief Implementeaza notiunea de erou/jucator (player) in joc.
+/**
+ * @class Player
+ * @brief Implementeaza notiunea de erou/jucator (player) in joc.
+ * Aceasta clasa extinde Entity si este controlata direct de utilizator.
+ * Gestioneaza input-ul, miscarea, coliziunile cu mediul, animatiile,
+ * starile de actiune (mers, alergat, sarit, atac), viata si lupta.
  */
 public class Player extends Entity {
 
-    private Game game;
-    private float walkSpeed = 3.0f;
-    private float runSpeed = 6.0f;
+    /** Referinta la obiectul principal al jocului.*/
+    private final Game game;
+    /** Atribute pentru viteza de miscare a jucatorului.*/
+    private final float walkSpeed = 3.0f;
     private float currentSpeed;
 
+    /** Atribute pentru starea de sanatate a jucatorului.*/
     private int health;
-    private int maxHealth = 100;
-    // Animații de mișcare
-    private Animation animDown, animUp, animLeft, animRight;
-    private Animation animIdleDown, animIdleUp, animIdleLeft, animIdleRight;
-    private Animation animRunDown, animRunUp, animRunLeft, animRunRight;
-    private Animation animJumpDown, animJumpUp, animJumpLeft, animJumpRight;
-    private Animation animHurt;
-    private Animation animCombatIdle;
-    // Animații de atac pentru fiecare direcție
-    private Animation animThrustUp, animThrustDown, animThrustLeft, animThrustRight;
-    private Animation animHalfslashUp, animHalfslashDown, animHalfslashLeft, animHalfslashRight;
-    private Animation animSlashUp, animSlashDown, animSlashLeft, animSlashRight;
+    private final int maxHealth = 100;
 
+    /** Toate animatiile de miscare ale jucatorului.*/
+    private final Animation animDown;
+    private final Animation animUp;
+    private final Animation animLeft;
+    private final Animation animRight;
+    private final Animation animIdleDown;
+    private final Animation animIdleUp;
+    private final Animation animIdleLeft;
+    private final Animation animIdleRight;
+    private final Animation animRunDown;
+    private final Animation animRunUp;
+    private final Animation animRunLeft;
+    private final Animation animRunRight;
+    private final Animation animJumpDown;
+    private final Animation animJumpUp;
+    private final Animation animJumpLeft;
+    private final Animation animJumpRight;
+    private final Animation animHurt;
+    private final Animation animHalfslashUp;
+    private final Animation animHalfslashDown;
+    private final Animation animHalfslashLeft;
+    private final Animation animHalfslashRight;
+
+    /** Animatia activa in cadrul curent.*/
     public Animation activeAnimation;
 
+    /** Flag-uri booleene ce definesc starea curenta a jucatorului.*/
     private boolean isMoving;
     private boolean isRunning;
     private boolean isJumping;
@@ -51,10 +67,17 @@ public class Player extends Entity {
     private boolean isHalfslashing;
     private boolean isSlashing;
 
+    /** Enum intern pentru a gestiona directia in care este orientat jucatorul.*/
     private enum Direction { UP, DOWN, LEFT, RIGHT }
+    /** Ultima directie in care s-a miscat jucatorul.*/
     private Direction lastDirection = Direction.DOWN;
-    private int attackDamage = 20;
 
+    /**
+     * @brief Constructorul clasei Player.
+     * @param game Referinta la obiectul principal al jocului.
+     * @param x Coordonata X initiala a jucatorului.
+     * @param y Coordonata Y initiala a jucatorului.
+     */
     public Player(Game game, float x, float y) {
         super(game.GetRefLinks(), x, y, Assets.PLAYER_FRAME_WIDTH, Assets.PLAYER_FRAME_HEIGHT);
         this.game = game;
@@ -66,8 +89,6 @@ public class Player extends Entity {
         int jumpAnimationSpeed = 120;
         int attackAnimationSpeed = 80;
         int hurtAnimationSpeed = 150;
-        int idleCombatSpeed = 200;
-        // Animații care trebuie să ruleze în buclă (loops = true)
         animDown = new Animation(animationSpeed, Assets.playerDown);
         animUp = new Animation(animationSpeed, Assets.playerUp);
         animLeft = new Animation(animationSpeed, Assets.playerLeft);
@@ -80,7 +101,7 @@ public class Player extends Entity {
         animRunUp = new Animation(runAnimationSpeed, Assets.playerRunUp);
         animRunLeft = new Animation(runAnimationSpeed, Assets.playerRunLeft);
         animRunRight = new Animation(runAnimationSpeed, Assets.playerRunRight);
-        // Animații de acțiune care rulează o singură dată (loops = false)
+        /* Animatii care nu sunt in loop */
         animHurt = new Animation(hurtAnimationSpeed, Assets.playerHurt, false);
         animJumpDown = new Animation(jumpAnimationSpeed, Assets.playerJumpDown, false);
         animJumpUp = new Animation(jumpAnimationSpeed, Assets.playerJumpUp, false);
@@ -92,7 +113,7 @@ public class Player extends Entity {
         animHalfslashLeft = new Animation(attackAnimationSpeed, Assets.playerHalfslashLeft, false);
         animHalfslashRight = new Animation(attackAnimationSpeed, Assets.playerHalfslashRight, false);
 
-        // Setări inițiale
+        /* Setari initiale */
         activeAnimation = animIdleDown;
         lastDirection = Direction.DOWN;
         isMoving = false;
@@ -107,19 +128,23 @@ public class Player extends Entity {
         this.bounds = new Rectangle((int)x, (int)y, width, height);
     }
 
+    /**
+     * @brief Actualizeaza starea jucatorului in fiecare cadru.
+     * Gestioneaza starile (ranit, atac, miscare), preia input-ul si centreaza camera.
+     */
     @Override
     public void Update() {
         if (game == null || game.GetKeyManager() == null) return;
         if (isHurt) {
             activeAnimation.Update();
             if (activeAnimation.isFinished()) {
-                isHurt = false; // Revino la starea normală după terminarea animației
+                isHurt = false; // Revine la starea normala dupa terminarea animatiei
                 if (health <= 0) {
-                    // Dacă viața este 0, acum intră în starea de Game Over
+                    // Daca viata este 0, acum intra in starea de Game Over
                     refLink.SetState(new GameOverState(refLink));
                 }
             }
-            return; // Oprește orice altă acțiune (mișcare, atac) cât timp ești lovit
+            return; // Opreste orice alta actiune (miscare, atac) cat timp esti lovit
         }
 
         GetInput();
@@ -141,6 +166,10 @@ public class Player extends Entity {
         }
     }
 
+    /**
+     * @brief Deseneaza jucatorul pe ecran.
+     * @param g Contextul grafic in care se va desena.
+     */
     @Override
     public void Draw(Graphics g) {
         GameCamera camera = game.GetRefLinks().GetGameCamera();
@@ -152,12 +181,79 @@ public class Player extends Entity {
         }
     }
 
+    /**
+     * @brief Aplica daune jucatorului si gestioneaza starea de "ranit" sau de "game over".
+     * @param amount Cantitatea de viata de scazut.
+     */
+    public void takeDamage(int amount) {
+        if(isHurt) return; // Nu permite daune daca animatia de moarte deja ruleaza
+
+        health -= amount;
+        if (health < 0) {
+            health = 0;
+        }
+        //System.out.println("DEBUG: James a luat " + amount + " daune. Viata ramasa: " + health);
+
+        // Logica de "hurt" se activeaza DOAR daca viata ajunge la 0
+        if (health <= 0) {
+            isHurt = true;
+            activeAnimation = animHurt;
+            if (activeAnimation != null) {
+                activeAnimation.reset();
+            }
+        }
+    }
+
+    /**
+     * @brief Seteaza pozitia jucatorului si reseteaza toate flag-urile de stare si actiune.
+     * @param x Noua coordonata X.
+     * @param y Noua coordonata Y.
+     */
+    @Override
+    public void SetPosition(float x, float y) {
+        super.SetPosition(x,y);
+        isMoving = false; isRunning = false; isJumping = false; isAttacking = false;
+        isHurt = false; isCombatIdle = false;
+        isThrusting = false;
+        isHalfslashing = false; isSlashing = false;
+        updateIdleAnimationBasedOnLastDirection();
+    }
+
+    /**
+     * @brief Reseteaza viata jucatorului la valoarea maxima.
+     */
+    public void resetHealth() {
+        health = maxHealth;
+        //System.out.println("DEBUG: Viata lui James a fost resetata la " + health);
+    }
+
+    /**
+     * @brief Seteaza o noua valoare pentru viata jucatorului.
+     * @param health Noua valoare a vietii.
+     */
+    public void setHealth(int health) {
+        this.health = health;
+        if (this.health < 0) { this.health = 0; }
+        //System.out.println("DEBUG: Viata lui James a fost setata la " + this.health);
+    }
+
+    /**
+     * @brief Actualizeaza pozitia dreptunghiului de coliziune pentru a se potrivi cu coordonatele curente.
+     */
+    public void updateBoundingBox() {
+        this.bounds.setLocation((int) x, (int) y);
+    }
+
+    /**
+     * @brief Citeste input-ul de la tastatura si actualizeaza starea si miscarea jucatorului.
+     */
     private void GetInput() {
         isMoving = false;
         float xMove = 0;
         float yMove = 0;
 
         isRunning = game.GetKeyManager().shift;
+        float runSpeed = 6.0f;
         currentSpeed = isRunning ? runSpeed : walkSpeed;
         if (game.GetKeyManager().up) {
             yMove = -currentSpeed; isMoving = true;
@@ -202,40 +298,12 @@ public class Player extends Entity {
         move(xMove, yMove);
     }
 
-    private void updateMovementAnimation() {
-        if (isMoving) {
-            if (isRunning) {
-                switch(lastDirection) {
-                    case UP: activeAnimation = animRunUp; break;
-                    case DOWN: activeAnimation = animRunDown; break;
-                    case LEFT: activeAnimation = animRunLeft; break;
-                    case RIGHT: activeAnimation = animRunRight; break;
-                }
-            } else {
-                switch(lastDirection) {
-                    case UP: activeAnimation = animUp; break;
-                    case DOWN: activeAnimation = animDown; break;
-                    case LEFT: activeAnimation = animLeft; break;
-                    case RIGHT: activeAnimation = animRight; break;
-                }
-            }
-        } else {
-            updateIdleAnimationBasedOnLastDirection();
-        }
-        activeAnimation.Update();
-    }
-
-    private void updateIdleAnimationBasedOnLastDirection() {
-        switch(lastDirection) {
-            case UP:    activeAnimation = animIdleUp; break;
-            case DOWN:  activeAnimation = animIdleDown;  break;
-            case LEFT:  activeAnimation = animIdleLeft;  break;
-            case RIGHT: activeAnimation = animIdleRight; break;
-            default:    activeAnimation = animIdleDown;  break;
-        }
-        activeAnimation.reset();
-    }
-
+    /**
+     * @brief Misca jucatorul si gestioneaza coliziunile cu mediul.
+     * Verifica coliziunile pe fiecare axa separat si are reguli specifice pentru fiecare nivel.
+     * @param xAmt Valoarea de miscare pe axa X.
+     * @param yAmt Valoarea de miscare pe axa Y.
+     */
     private void move(float xAmt, float yAmt) {
         Map currentMap = game.GetRefLinks().GetMap();
         if (currentMap == null) return;
@@ -276,7 +344,7 @@ public class Player extends Entity {
                 int objectGidTop = currentMap.getTilesGidsLayers().get(2)[tx][ty_top];
                 int objectGidBottom = currentMap.getTilesGidsLayers().get(2)[tx][ty_bottom];
 
-                // Un obiect este solid dacă există (!= 0) ȘI NU este o ușă deschisă
+                // Un obiect este solid daca exista (!= 0) sI NU este o usa deschisa
                 boolean isObjectTopSolid = (objectGidTop != 0 && objectGidTop != 74 && objectGidTop != 75 && objectGidTop != 120 && objectGidTop != 121);
                 boolean isObjectBottomSolid = (objectGidBottom != 0 && objectGidBottom != 74 && objectGidBottom != 75 && objectGidBottom != 120 && objectGidBottom != 121);
 
@@ -322,12 +390,12 @@ public class Player extends Entity {
                         leftGid == Tile.DOOR_CLOSED_TOP_RIGHT_GID || rightGid == Tile.DOOR_CLOSED_TOP_RIGHT_GID ||
                         leftGid == Tile.DOOR_CLOSED_BOTTOM_LEFT_GID || rightGid == Tile.DOOR_CLOSED_BOTTOM_LEFT_GID ||
                         leftGid == Tile.DOOR_CLOSED_BOTTOM_RIGHT_GID || rightGid == Tile.DOOR_CLOSED_BOTTOM_RIGHT_GID);
-                // ...
+                // REGULA DOAR PENTRU NIVELUL 3
             } else if (levelIndex == 2) {
                 int objectGidLeft = currentMap.getTilesGidsLayers().get(2)[tx_left][ty];
                 int objectGidRight = currentMap.getTilesGidsLayers().get(2)[tx_right][ty];
 
-                // Un obiect este solid dacă există (!= 0) ȘI NU este o ușă deschisă
+                // Un obiect este solid daca exista (!= 0) sI NU este o usa deschisa
                 boolean isObjectLeftSolid = (objectGidLeft != 0 && objectGidLeft != 74 && objectGidLeft != 75 && objectGidLeft != 120 && objectGidLeft != 121);
                 boolean isObjectRightSolid = (objectGidRight != 0 && objectGidRight != 74 && objectGidRight != 75 && objectGidRight != 120 && objectGidRight != 121);
 
@@ -358,84 +426,102 @@ public class Player extends Entity {
         this.bounds.setLocation((int)x, (int)y);
     }
 
+    /**
+     * @brief Actualizeaza animatia activa in functie de starea de miscare (mers, alergat, static).
+     */
+    private void updateMovementAnimation() {
+        if (isMoving) {
+            if (isRunning) {
+                switch(lastDirection) {
+                    case UP: activeAnimation = animRunUp; break;
+                    case DOWN: activeAnimation = animRunDown; break;
+                    case LEFT: activeAnimation = animRunLeft; break;
+                    case RIGHT: activeAnimation = animRunRight; break;
+                }
+            } else {
+                switch(lastDirection) {
+                    case UP: activeAnimation = animUp; break;
+                    case DOWN: activeAnimation = animDown; break;
+                    case LEFT: activeAnimation = animLeft; break;
+                    case RIGHT: activeAnimation = animRight; break;
+                }
+            }
+        } else {
+            updateIdleAnimationBasedOnLastDirection();
+        }
+        activeAnimation.Update();
+    }
+
+    /**
+     * @brief Seteaza animatia de "idle" (static) corespunzatoare ultimei directii in care era orientat jucatorul.
+     */
+    private void updateIdleAnimationBasedOnLastDirection() {
+        switch(lastDirection) {
+            case UP:    activeAnimation = animIdleUp; break;
+            case LEFT:  activeAnimation = animIdleLeft;  break;
+            case RIGHT: activeAnimation = animIdleRight; break;
+            default:    activeAnimation = animIdleDown;  break;
+        }
+        activeAnimation.reset();
+    }
+
+    /**
+     * @brief Returneaza viata curenta a jucatorului.
+     */
+    public int getHealth() { return health; }
+
+    /**
+     * @brief Returneaza viata maxima a jucatorului.
+     */
+    public int getMaxHealth() { return maxHealth; }
+
+    /**
+     * @brief Returneaza cadrul (imaginea) curent al animatiei active.
+     */
     public BufferedImage GetActiveFrame() {
         return activeAnimation.getCurrentFrame();
     }
 
+    /**
+     * @brief Returneaza obiectul animatiei active.
+     */
     public Animation getActiveAnimation() {
         return activeAnimation;
     }
 
+    /**
+     * @brief Verifica daca jucatorul este in starea "ranit" (animatia de moarte).
+     */
     public boolean isHurt() {
         return isHurt;
     }
 
+    /**
+     * @brief Verifica daca jucatorul alearga.
+     */
     public boolean isRunning() {
         return isRunning;
     }
 
+    /**
+     * @brief Returneaza ultima directie in care a fost orientat jucatorul.
+     */
     public Direction getLastDirection() {
         return lastDirection;
     }
 
-    @Override public float GetX() { return x; }
-    @Override public float GetY() { return y; }
-    @Override public int GetWidth() { return width; }
-    @Override public int GetHeight() { return height; }
-    @Override public Rectangle GetBounds() { return bounds; }
-
-    @Override
-    public void SetPosition(float x, float y) {
-        super.SetPosition(x,y);
-        isMoving = false; isRunning = false; isJumping = false; isAttacking = false;
-        isHurt = false; isCombatIdle = false;
-        isThrusting = false;
-        isHalfslashing = false; isSlashing = false;
-        updateIdleAnimationBasedOnLastDirection();
-    }
-
-    public int getHealth() { return health; }
-    public int getMaxHealth() { return maxHealth; }
-
-    public void takeDamage(int amount) {
-        if(isHurt) return; // Nu permite daune dacă animația de moarte deja rulează
-
-        health -= amount;
-        if (health < 0) {
-            health = 0;
-        }
-        System.out.println("DEBUG: James a luat " + amount + " daune. Viata ramasa: " + health);
-
-        // Logica de "hurt" se activează DOAR dacă viața ajunge la 0
-        if (health <= 0) {
-            isHurt = true;
-            activeAnimation = animHurt;
-            if (activeAnimation != null) {
-                activeAnimation.reset();
-            }
-        }
-    }
-
-    public void setHealth(int health) {
-        this.health = health;
-        if (this.health < 0) { this.health = 0; }
-        System.out.println("DEBUG: Viata lui James a fost setata la " + this.health);
-    }
-
-    public void resetHealth() {
-        health = maxHealth;
-        System.out.println("DEBUG: Viata lui James a fost resetata la " + health);
-    }
-
-    private Animation safeAnimation(BufferedImage[] frames, int speed) {
-        BufferedImage defaultFrame = new BufferedImage(Assets.PLAYER_FRAME_WIDTH, Assets.PLAYER_FRAME_HEIGHT, BufferedImage.TYPE_INT_ARGB);
-        return (frames != null && frames.length > 0) ? new Animation(speed, frames) : new Animation(100, new BufferedImage[]{defaultFrame});
-    }
-
+    /**
+     * @brief Returneaza daunele pe care le provoaca jucatorul.
+     */
     public int getAttackDamage() {
-        return attackDamage;
+        /* Daunele provocate de un atac al jucatorului.*/
+        return 20;
     }
 
+    /**
+     * @brief Calculeaza si returneaza dreptunghiul de coliziune pentru atacul curent.
+     * @return Un obiect Rectangle reprezentand zona de atac, sau null daca jucatorul nu ataca.
+     */
     public Rectangle getAttackBounds() {
         if (isAttacking) {
             int attackWidth = 40;
@@ -454,11 +540,23 @@ public class Player extends Entity {
         return null;
     }
 
+    /**
+     * @brief Verifica daca jucatorul este in timpul unei animatii de atac.
+     */
     public boolean isAttacking() {
         return isAttacking;
     }
 
-    public void updateBoundingBox() {
-        this.bounds.setLocation((int) x, (int) y);
-    }
+    /**
+     * @brief Getters suprascrisi din clasa Entity.
+     */
+    @Override public float GetX() { return x; }
+
+    @Override public float GetY() { return y; }
+
+    @Override public int GetWidth() { return width; }
+
+    @Override public int GetHeight() { return height; }
+    
+    @Override public Rectangle GetBounds() { return bounds; }
 }

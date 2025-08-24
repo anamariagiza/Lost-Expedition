@@ -1,24 +1,25 @@
 package PaooGame.Tiles;
 
-/*!
- * \class public class GrassTile extends Tile
- * \brief Abstractizeaza notiunea de dala de tip iarba.
+/**
+ * @class GrassTile
+ * @brief O dala specializata pentru iarba solida.
+ *
+ * Reprezinta o dala de tip iarba care blocheaza miscarea entitatilor.
  */
 public class GrassTile extends Tile
 {
-    /*!
-     * \fn public GrassTile(int gid)
-     * \brief Constructorul de initializare al clasei
-     * \param gid Id-ul dalei util in desenarea hartii.
+    /**
+     * @brief Constructorul clasei GrassTile.
+     * @param gid GID-ul dalei din Tiled.
      */
     public GrassTile(int gid)
     {
         super(gid);
     }
 
-    /*!
-     * \fn public boolean IsSolid()
-     * \brief Suprascrie metoda IsSolid() din clasa de baza in sensul ca va fi luat in calcul in caz de coliziune.
+    /**
+     * @brief Suprascrie metoda IsSolid pentru a indica faptul ca dala este solida.
+     * @return Returneaza intotdeauna true.
      */
     @Override
     public boolean IsSolid()

@@ -3,39 +3,33 @@ package PaooGame.GameWindow;
 import javax.swing.*;
 import java.awt.*;
 
-/*!
- * \class GameWindow
- * \brief Implementeaza notiunea de fereastra a jocului.
- * Membrul wndFrame este un obiect de tip JFrame care va avea utilitatea unei
- * ferestre grafice si totodata si cea a unui container (toate elementele
- * grafice vor fi continute de fereastra).
+/**
+ * @class GameWindow
+ * @brief Gestioneaza fereastra principala a jocului.
+ * * Aceasta clasa este responsabila pentru crearea si configurarea ferestrei (JFrame)
+ * in care va fi desenat jocul. Contine, de asemenea, panza (Canvas)
+ * pe care se realizeaza randarea efectiva.
  */
 public class GameWindow
 {
+    /** Fereastra principala a jocului (obiectul JFrame).*/
     private JFrame  wndFrame;
-    /*!< fereastra principala a jocului*/
-    private String  wndTitle;
-    /*!< titlul ferestrei*/
-    private int     wndWidth;
-    /*!< latimea ferestrei in pixeli*/
-    private int     wndHeight;
-    /*!< inaltimea ferestrei in pixeli*/
+    /** Titlul si dimensiunile finale ale ferestrei.*/
+    private final String  wndTitle;
+    private final int     wndWidth;
+    private final int     wndHeight;
 
+    /** Suprafata de desenare (panza) pe care va fi randat jocul.*/
     private Canvas  canvas;
-    /*!< "panza/tablou" in care se poate desena*/
 
+    /** Stocheaza dimensiunile si pozitia ferestrei pentru a putea reveni din modul fullscreen.*/
     private Rectangle originalBounds;
 
-    /*!
-     * \fn GameWindow(String title, int width, int height)
-     * \brief Constructorul cu parametri al clasei GameWindow
-     * Retine proprietatile ferestrei proprietatile (titlu, latime, inaltime)
-     * in variabilele membre deoarece vor fi necesare pe parcursul jocului.
-     * Crearea obiectului va trebui urmata de crearea ferestrei propriuzise
-     * prin apelul metodei BuildGameWindow()
-     * \param title Titlul ferestrei.
-     * \param width Latimea ferestrei in pixeli.
-     * \param height Inaltimea ferestrei in pixeli.
+    /**
+     * @brief Constructorul clasei GameWindow.
+     * @param title Titlul ferestrei.
+     * @param width Latimea ferestrei.
+     * @param height Inaltimea ferestrei.
      */
     public GameWindow(String title, int width, int height){
         wndTitle    = title;
@@ -44,11 +38,10 @@ public class GameWindow
         wndFrame    = null;
     }
 
-    /*!
-     * \fn private void BuildGameWindow()
-     * \brief Construieste/creaza fereastra si seteaza toate proprietatile
-     * necesare: dimensiuni, pozitionare in centrul ecranului, operatia de
-     * inchidere, invalideaza redimensionarea ferestrei, afiseaza fereastra.
+    /**
+     * @brief Construieste si afiseaza fereastra jocului.
+     * * Seteaza titlul, dimensiunile, operatia de inchidere si alte proprietati ale JFrame-ului.
+     * Creeaza si adauga panza (Canvas) la fereastra.
      */
     public void BuildGameWindow()
     {
@@ -71,10 +64,9 @@ public class GameWindow
         originalBounds = wndFrame.getBounds();
     }
 
-    /*!
-     * \fn public void setFullScreen(boolean fullScreen)
-     * \brief Comuta modul de vizualizare al ferestrei intre fullscreen si fereastra.
-     * \param fullScreen true pentru fullscreen, false pentru fereastra.
+    /**
+     * @brief Comuta modul de vizualizare al ferestrei intre fullscreen si fereastra.
+     * @param fullScreen true pentru fullscreen, false pentru fereastra.
      */
     public void setFullScreen(boolean fullScreen) {
         GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
@@ -101,27 +93,27 @@ public class GameWindow
         }
     }
 
-    /*!
-     * \fn public int GetWndWidth()
-     * \brief Returneaza latimea ferestrei.
+    /**
+     * @brief Returneaza latimea ferestrei.
+     * @return Latimea ferestrei in pixeli.
      */
     public int GetWndWidth()
     {
         return wndFrame.getWidth();
     }
 
-    /*!
-     * \fn public int GetWndHeight()
-     * \brief Returneaza inaltimea ferestrei.
+    /**
+     * @brief Returneaza inaltimea ferestrei.
+     * @return Inaltimea ferestrei in pixeli.
      */
     public int GetWndHeight()
     {
         return wndFrame.getHeight();
     }
 
-    /*!
-     * \fn public Canvas GetCanvas()
-     * \brief Returneaza referinta catre canvas-ul din fereastra pe care se poate desena.
+    /**
+     * @brief Returneaza referinta catre canvas-ul din fereastra pe care se poate desena.
+     * @return Obiectul Canvas al ferestrei.
      */
     public Canvas GetCanvas() {
         return canvas;

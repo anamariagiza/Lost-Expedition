@@ -7,12 +7,16 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.Rectangle;
 
-/*!
- * \class public class HelpState extends State
- * \brief Implementeaza notiunea de ecran de ajutor.
+/**
+ * @class HelpState
+ * @brief Implementeaza ecranul de "Help" (Ajutor/Instructiuni).
+ * Aceasta stare ofera jucatorului informatii esentiale despre controalele
+ * si obiectivele jocului. Este o stare simpla, informationala, care poate fi
+ * accesata atat din meniul principal, cat si din meniul de pauza.
  */
 public class HelpState extends State {
 
+    /** Atribute finale pentru stilizarea vizuala a ecranului.*/
     private final Color backgroundColor = new Color(0, 0, 0);
     private final Color textColor = Color.WHITE;
     private final Color titleColor = new Color(255, 215, 0);
@@ -20,19 +24,30 @@ public class HelpState extends State {
     private final Font textFont = new Font("SansSerif", Font.PLAIN, 18);
     private final Font instructionFont = new Font("SansSerif", Font.PLAIN, 14);
 
+    /** Dreptunghiul de coliziune pentru textul de revenire (pentru clic cu mouse-ul).*/
     private Rectangle backButtonBounds = null;
+    /** Textul instructiunii de revenire.*/
     private final String backInstruction = "Apasa ESC pentru a reveni.";
 
+    /** Stocheaza ultimele dimensiuni ale ferestrei pentru a detecta redimensionarea.*/
     private int lastWidth, lastHeight;
 
+    /**
+     * @brief Constructorul clasei HelpState.
+     * @param refLink O referinta catre obiectul RefLinks.
+     */
     public HelpState(RefLinks refLink) {
         super(refLink);
-        System.out.println("✓ HelpState initializat");
+        System.out.println("HelpState initializat");
 
         lastWidth = refLink.GetWidth();
         lastHeight = refLink.GetHeight();
     }
 
+    /**
+     * @brief Actualizeaza starea ecranului "Help".
+     * Gestioneaza revenirea la starea anterioara prin apasarea tastei ESC sau clic.
+     */
     @Override
     public void Update() {
         if (refLink.GetWidth() != lastWidth || refLink.GetHeight() != lastHeight) {
@@ -48,16 +63,10 @@ public class HelpState extends State {
         handleMouseInput();
     }
 
-    private void handleMouseInput() {
-        if (refLink.GetMouseManager() == null || backButtonBounds == null) return;
-        if (backButtonBounds.contains(refLink.GetMouseManager().getMouseX(), refLink.GetMouseManager().getMouseY())) {
-            if (refLink.GetMouseManager().isMouseJustClicked()) {
-                refLink.SetState(refLink.GetPreviousState());
-            }
-        }
-    }
-
-
+    /**
+     * @brief Deseneaza (randeaza) continutul ecranului "Help".
+     * @param g Contextul grafic in care se va desena.
+     */
     @Override
     public void Draw(Graphics g) {
         if (Assets.backgroundMenu != null) {
@@ -80,15 +89,15 @@ public class HelpState extends State {
         g.setColor(textColor);
         FontMetrics textFm = g.getFontMetrics();
         String[] infoLines = {
-                "Mişcare: W, A, S, D",
+                "Miscare: W, A, S, D",
                 "Alergare: Shift",
-                "Săritură: Space",
-                "Interacţiune: E",
+                "Saritura: Space",
+                "Interactiune: E",
                 "Atac: K",
-                "Meniu Pauză: P",
+                "Meniu Pauza: P",
                 "",
                 "Obiectivele misiunii: Rezolvaţi puzzle-uri stravechi, navigaţi prin ruine",
-                "periculoase şi luptaţi împotriva mercenarilor pentru a găsi El Dorado."
+                "periculoase si luptati impotriva inamicului pentru a gasi comoara."
         };
 
         int startY = 150;
@@ -124,5 +133,17 @@ public class HelpState extends State {
 
         g.setColor(titleColor);
         g.drawRect(20, 20, refLink.GetWidth() - 40, refLink.GetHeight() - 40);
+    }
+
+    /**
+     * @brief Gestioneaza input-ul de la mouse pentru a reveni la meniul anterior.
+     */
+    private void handleMouseInput() {
+        if (refLink.GetMouseManager() == null || backButtonBounds == null) return;
+        if (backButtonBounds.contains(refLink.GetMouseManager().getMouseX(), refLink.GetMouseManager().getMouseY())) {
+            if (refLink.GetMouseManager().isMouseJustClicked()) {
+                refLink.SetState(refLink.GetPreviousState());
+            }
+        }
     }
 }

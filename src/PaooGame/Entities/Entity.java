@@ -3,28 +3,31 @@ package PaooGame.Entities;
 import PaooGame.RefLinks;
 import PaooGame.Graphics.Assets;
 import java.awt.*;
-import java.awt.image.BufferedImage;
 
-/*!
- * \class public abstract class Entity
- * \brief Clasa de baza abstracta pentru toate entitatile din joc (jucator, inamici, obiecte interactive).
- * Ofera proprietati si metode comune precum pozitia, dimensiunea si bounding box-ul.
+/**
+ * @class Entity
+ * @brief Clasa de baza abstracta pentru toate entitatile din joc.
+ * Aceasta clasa defineste proprietatile si metodele comune pentru toate obiectele
+ * care nu sunt dale (tiles), cum ar fi jucatorul, inamicii, obiectele interactive etc.
+ * Ofera o fundatie pentru pozitie, dimensiune, coliziuni si interactiuni.
  */
 public abstract class Entity {
-
+    /** Referinta catre obiectul RefLinks pentru acces facil la componentele jocului.*/
     protected RefLinks refLink;
+    /** Coordonatele X si Y ale pozitiei entitatii in lumea jocului (in pixeli).*/
     protected float x, y;
+    /** Latimea si inaltimea entitatii (in pixeli).*/
     protected int width, height;
+    /** Dreptunghiul de coliziune al entitatii.*/
     protected Rectangle bounds;
 
-    /*!
-     * \fn public Entity(RefLinks refLink, float x, float y, int width, int height)
-     * \brief Constructorul de initializare al clasei Entity.
-     * \param refLink Referinta catre obiectul RefLinks.
-     * \param x Coordonata X initiala.
-     * \param y Coordonata Y initiala.
-     * \param width Latimea entitatii.
-     * \param height Inaltimea entitatii.
+    /**
+     * @brief Constructorul de initializare al clasei Entity.
+     * @param refLink Referinta catre obiectul RefLinks.
+     * @param x Coordonata X initiala.
+     * @param y Coordonata Y initiala.
+     * @param width Latimea entitatii.
+     * @param height Inaltimea entitatii.
      */
     public Entity(RefLinks refLink, float x, float y, int width, int height) {
         this.refLink = refLink;
@@ -35,22 +38,24 @@ public abstract class Entity {
         this.bounds = new Rectangle((int)x, (int)y, width, height);
     }
 
-    /*!
-     * \fn public abstract void Update()
-     * \brief Actualizeaza starea entitatii in fiecare cadru de joc.
+    /**
+     * @brief Metoda abstracta pentru actualizarea starii entitatii in fiecare cadru.
+     * Trebuie implementata de toate subclasele pentru a defini logica specifica.
      */
     public abstract void Update();
 
-    /*!
-     * \fn public abstract void Draw(Graphics g)
-     * \brief Deseneaza entitatea pe ecran.
-     * \param g Contextul grafic in care sa se realizeze desenarea.
+    /**
+     * @brief Metoda abstracta pentru desenarea entitatii pe ecran.
+     * Trebuie implementata de toate subclasele.
+     * @param g Contextul grafic in care se va realiza desenarea.
      */
     public abstract void Draw(Graphics g);
 
-    /*!
-     * \fn public void drawInteractionPopup(Graphics g)
-     * \brief Deseneaza pop-up-ul cu tasta E deasupra entitatii.
+    /**
+     * @brief Deseneaza un pop-up de interactiune ("E") deasupra entitatii.
+     * Daca jucatorul se afla la o distanta suficient de mica, un indicator
+     * vizual este afisat pentru a semnala ca se poate interactiona cu entitatea.
+     * @param g Contextul grafic in care se va desena.
      */
     public void drawInteractionPopup(Graphics g) {
         if(refLink.GetPlayer() == null) return;
@@ -62,10 +67,10 @@ public abstract class Entity {
             int popupHeight = 32;
 
             // Coordonatele pe ecran
-            int drawX = (int)((x - refLink.GetGameCamera().getxOffset()) + width/2 - popupWidth/2);
+            int drawX = (int)((x - refLink.GetGameCamera().getxOffset()) + (float) width /2 - (float) popupWidth /2);
             int drawY = (int)((y - refLink.GetGameCamera().getyOffset()) - popupHeight - 10);
 
-            // Desenăm fundalul semi-transparent
+            // Desenam fundalul semi-transparent
             g.setColor(new Color(0, 0, 0, 150));
             g.fillRect(drawX, drawY, popupWidth, popupHeight);
 
@@ -78,43 +83,63 @@ public abstract class Entity {
         }
     }
 
-    // Getters și Setters
+    /**
+     * @brief Returneaza coordonata X a entitatii.
+     */
     public float GetX() {
         return x;
     }
 
+    /**
+     * @brief Returneaza coordonata Y a entitatii.
+     */
     public float GetY() {
         return y;
     }
 
+    /**
+     * @brief Returneaza latimea entitatii.
+     */
     public int GetWidth() {
         return width;
     }
 
+    /**
+     * @brief Returneaza inaltimea entitatii.
+     */
     public int GetHeight() {
         return height;
     }
 
+    /**
+     * @brief Returneaza dreptunghiul de coliziune al entitatii.
+     */
     public Rectangle GetBounds() {
         return bounds;
     }
 
-    // Setters
+    /**
+     * @brief Seteaza noua coordonata X si actualizeaza dreptunghiul de coliziune.
+     * @param x Noua coordonata X.
+     */
     public void SetX(float x) {
         this.x = x;
         this.bounds.x = (int) x;
     }
 
+    /**
+     * @brief Seteaza noua coordonata Y si actualizeaza dreptunghiul de coliziune.
+     * @param y Noua coordonata Y.
+     */
     public void SetY(float y) {
         this.y = y;
         this.bounds.y = (int) y;
     }
 
-    /*!
-     * \fn public void SetPosition(float x, float y)
-     * \brief Seteaza pozitia entitatii si actualizeaza bounding box-ul.
-     * \param x Coordonata X noua.
-     * \param y Coordonata Y noua.
+    /**
+     * @brief Seteaza pozitia completa a entitatii si actualizeaza dreptunghiul de coliziune.
+     * @param x Noua coordonata X.
+     * @param y Noua coordonata Y.
      */
     public void SetPosition(float x, float y) {
         this.x = x;

@@ -1,33 +1,38 @@
 package PaooGame.Map;
 
-import PaooGame.Entities.Player;
 import PaooGame.Tiles.Tile;
 import PaooGame.RefLinks;
 import PaooGame.Camera.GameCamera;
 
 import java.awt.*;
 
-/*!
- * \class public class FogOfWar
- * \brief Implementeaza notiunea de "Fog of War" pentru harta jocului.
- * Controleaza vizibilitatea dalelor pe masura ce jucatorul exploreaza.
+/**
+ * @class FogOfWar
+ * @brief Implementeaza notiunea de "ceata de razboi" (Fog of War) pentru harta jocului.
+ * Aceasta clasa gestioneaza doua aspecte ale vizibilitatii:
+ * 1. Dezvaluirea permanenta a hartii (`revealedTiles`): Odata ce o zona este
+ * explorata, ea ramane vizibila (dar intunecata).
+ * 2. Un "cerc de lumina" dinamic in jurul jucatorului, care arata zona
+ * vizibila in timp real.
  */
 public class FogOfWar {
 
-    private RefLinks refLink;
-    private int mapWidthTiles;
-    private int mapHeightTiles;
-    private boolean[][] revealedTiles; // True daca dala a fost descoperita permanent
+    /** Referinta catre obiectul RefLinks.*/
+    private final RefLinks refLink;
+    /** Latimea si inaltimea hartii in numar de dale.*/
+    private final int mapWidthTiles;
+    private final int mapHeightTiles;
+    /** Matrice booleana ce stocheaza daca o dala a fost sau nu descoperita permanent.*/
+    private final boolean[][] revealedTiles;
 
+    /** Raza de vizibilitate a jucatorului, masurata in dale.*/
     private static final int VISION_RADIUS_TILES = 5;
-    // Raza de vizibilitate a jucatorului in dale
 
-    /*!
-     * \fn public FogOfWar(RefLinks refLink, int mapWidthTiles, int mapHeightTiles)
-     * \brief Constructorul clasei FogOfWar.
-     * \param refLink Referinta catre obiectul RefLinks.
-     * \param mapWidthTiles Latimea hartii in dale.
-     * \param mapHeightTiles Inaltimea hartii in dale.
+    /**
+     * @brief Constructorul clasei FogOfWar.
+     * @param refLink Referinta catre obiectul RefLinks.
+     * @param mapWidthTiles Latimea hartii in numar de dale.
+     * @param mapHeightTiles Inaltimea hartii in numar de dale.
      */
     public FogOfWar(RefLinks refLink, int mapWidthTiles, int mapHeightTiles) {
         this.refLink = refLink;
@@ -35,13 +40,13 @@ public class FogOfWar {
         this.mapHeightTiles = mapHeightTiles;
         revealedTiles = new boolean[mapWidthTiles][mapHeightTiles];
         // Initial, toate dalele sunt ascunse (false)
-        System.out.println("DEBUG FogOfWar: Initializat cu dimensiunile " + mapWidthTiles + "x" + mapHeightTiles);
+        //System.out.println("DEBUG FogOfWar: Initializat cu dimensiunile " + mapWidthTiles + "x" + mapHeightTiles);
     }
 
-    /*!
-     * \fn public void update()
-     * \brief Actualizeaza starea Fog of War pe baza pozitiei jucatorului.
-     * Marcheaza dalele ca fiind descoperite permanent.
+    /**
+     * @brief Actualizeaza starea de dezvaluire a hartii pe baza pozitiei jucatorului.
+     * Aceasta metoda marcheaza dalele din jurul jucatorului ca fiind descoperite
+     * permanent in matricea `revealedTiles`.
      */
     public void update() {
         if (refLink.GetPlayer() == null) return;
@@ -66,7 +71,13 @@ public class FogOfWar {
         }
     }
 
-    // Metoda adaugata pentru a rezolva eroarea de compilare
+    /**
+     * @brief Randeaza efectul de "cerc de lumina" dinamic in jurul jucatorului.
+     * Foloseste un `RadialGradientPaint` pentru a crea un efect de gradient circular
+     * care este complet transparent in centrul (pozitia jucatorului) si devine
+     * opac (negru) la marginea razei de vizibilitate.
+     * @param g Contextul grafic in care se va desena.
+     */
     public void render(Graphics g) {
         if (refLink.GetPlayer() == null) return;
         GameCamera camera = refLink.GetGameCamera();
@@ -93,19 +104,17 @@ public class FogOfWar {
         g2d.dispose();
     }
 
-    /*!
-     * \fn public boolean isTileVisible(int x, int y)
-     * \brief Verifica daca o dala este in raza vizuala curenta a jucatorului.
-     * \param x Coordonata X a dalei.
-     * \param y Coordonata Y a dalei.
-     * \return True daca dala este in raza vizuala, false altfel.
+    /**
+     * @brief Verifica daca o dala este vizibila in prezent (in cercul de lumina).
+     * @param x Coordonata X a dalei de verificat.
+     * @param y Coordonata Y a dalei de verificat.
+     * @return True daca dala este in raza de vizibilitate curenta a jucatorului, false altfel.
      */
     public boolean isTileVisible(int x, int y) {
         if (refLink.GetPlayer() == null) return false;
         if (x < 0 || x >= mapWidthTiles || y < 0 || y >= mapHeightTiles) return false;
         int playerTileX = (int) ((refLink.GetPlayer().GetX() + refLink.GetPlayer().GetWidth() / 2) / Tile.TILE_WIDTH);
         int playerTileY = (int) ((refLink.GetPlayer().GetY() + refLink.GetPlayer().GetHeight() / 2) / Tile.TILE_HEIGHT);
-        // Ensure player tile coordinates are within bounds
         playerTileX = Math.max(0, Math.min(mapWidthTiles - 1, playerTileX));
         playerTileY = Math.max(0, Math.min(mapHeightTiles - 1, playerTileY));
 
@@ -113,12 +122,11 @@ public class FogOfWar {
         return distance <= VISION_RADIUS_TILES;
     }
 
-    /*!
-     * \fn public boolean isTileRevealed(int x, int y)
-     * \brief Verifica daca o dala a fost descoperita permanent (explorata).
-     * \param x Coordonata X a dalei.
-     * \param y Coordonata Y a dalei.
-     * \return True daca dala a fost descoperita, false altfel.
+    /**
+     * @brief Verifica daca o dala a fost descoperita permanent (explorata).
+     * @param x Coordonata X a dalei de verificat.
+     * @param y Coordonata Y a dalei de verificat.
+     * @return True daca dala a fost vizitata cel putin o data, false altfel.
      */
     public boolean isTileRevealed(int x, int y) {
         if (x < 0 || x >= mapWidthTiles || y < 0 || y >= mapHeightTiles) {
@@ -127,9 +135,8 @@ public class FogOfWar {
         return revealedTiles[x][y];
     }
 
-    /*!
-     * \fn public void revealAllTiles()
-     * \brief Dezvaluie toate dalele (pentru debug sau cheat codes).
+    /**
+     * @brief Dezvaluie instantaneu intreaga harta. Util pentru debug.
      */
     public void revealAllTiles() {
         for (int x = 0; x < mapWidthTiles; x++) {
@@ -137,12 +144,11 @@ public class FogOfWar {
                 revealedTiles[x][y] = true;
             }
         }
-        System.out.println("DEBUG FogOfWar: Toate dalele au fost dezvaluite!");
+        //System.out.println("DEBUG FogOfWar: Toate dalele au fost dezvaluite!");
     }
 
-    /*!
-     * \fn public void resetFogOfWar()
-     * \brief Reseteaza fog of war-ul (ascunde toate dalele din nou).
+    /**
+     * @brief Reseteaza ceata de razboi, ascunzand din nou toata harta.
      */
     public void resetFogOfWar() {
         for (int x = 0; x < mapWidthTiles; x++) {
@@ -150,20 +156,19 @@ public class FogOfWar {
                 revealedTiles[x][y] = false;
             }
         }
-        System.out.println("DEBUG FogOfWar: Fog of War resetat!");
+        //System.out.println("DEBUG FogOfWar: Fog of War resetat!");
     }
 
-    /*!
-     * \fn public int getVisionRadius()
-     * \brief Returneaza raza de vizibilitate a jucatorului.
+    /**
+     * @brief Returneaza raza de vizibilitate a jucatorului, in dale.
      */
     public int getVisionRadius() {
         return VISION_RADIUS_TILES;
     }
 
-    /*!
-     * \fn public float getExplorationPercentage()
-     * \brief Calculeaza procentajul hartii explorat.
+    /**
+     * @brief Calculeaza si returneaza procentajul hartii care a fost explorat.
+     * @return Procentajul de explorare (0-100).
      */
     public float getExplorationPercentage() {
         int totalTiles = mapWidthTiles * mapHeightTiles;

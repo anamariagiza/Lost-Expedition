@@ -1,11 +1,15 @@
 package PaooGame;
 
-public class Main
-{
-    public static void main(String[] args)
-    {
-        // Poti schimba acest constructor pentru a începe de la un nivel diferit.
-        // De exemplu: 'new Game("Lost Expedition", 1500, 843, 3)' pentru a porni de la nivelul 3.
+/**
+ * @class Main
+ * @brief Clasa principala a aplicatiei, care contine punctul de intrare.
+ */
+public class Main {
+    /**
+     * @brief Punctul de intrare (entry point) al programului.
+     * @param args Argumentele din linia de comanda (neutilizate).
+     */
+    public static void main(String[] args) {
         Game paooGame = new Game("Lost Expedition", 1500, 843);
         paooGame.StartGame();
     }

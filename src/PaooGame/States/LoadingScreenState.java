@@ -7,27 +7,36 @@ import PaooGame.Map.Map;
 import PaooGame.Entities.Player;
 
 import java.awt.*;
-import java.awt.image.BufferedImage;
 
-/*!
- * \class public class LoadingScreenState extends State
- * \brief Implementeaza starea de incarcare a jocului (splash screen cu bara de progres).
- * In aceasta stare se va afisa logo-ul si o bara de progres pe masura ce se incarca toate asset-urile mari
- * ale jocului in background.
+/**
+ * @class LoadingScreenState
+ * @brief Implementeaza starea de incarcare a jocului (splash screen cu bara de progres).
+ * Aceasta stare este afisata la pornirea jocului si are rolul de a incarca toate
+ * resursele grele (imagini, sunete, harti) intr-un fir de executie secundar.
+ * Acest lucru previne blocarea ferestrei principale si ofera utilizatorului
+ * un feedback vizual despre progresul incarcarii.
  */
 public class LoadingScreenState extends State {
 
-    private long startTime;
+    /** Timpul (in ms) la care a fost creata starea, pentru a asigura o durata minima de afisare.*/
+    private final long startTime;
+    /** Durata minima (in ms) pentru care ecranul de incarcare va fi afisat.*/
     private final int MIN_LOADING_TIME_MS = 2000;
+    /** Flag-uri volatile pentru comunicarea sigura intre firul de executie principal si cel de incarcare.*/
     private volatile boolean assetsLoaded = false;
     private volatile boolean tilesInitialized = false;
     private volatile float progress = 0.0f;
+    /** Firul de executie secundar in care se realizeaza incarcarea resurselor.*/
     private Thread loadingThread;
 
+    /**
+     * @brief Constructorul clasei LoadingScreenState.
+     * @param refLink O referinta catre obiectul RefLinks.
+     */
     public LoadingScreenState(RefLinks refLink) {
         super(refLink);
         startTime = System.currentTimeMillis();
-        System.out.println("✓ LoadingScreenState initializat. Incepe thread-ul de incarcare.");
+        System.out.println("LoadingScreenState initializat. Incepe thread-ul de incarcare.");
 
         loadingThread = new Thread(() -> {
             try {
@@ -36,9 +45,9 @@ public class LoadingScreenState extends State {
                 Assets.LoadGameAssets();
                 progress = 0.5f;
 
-                // Verifică o animație specifică în loc de "AllDirections"
+                // Verifica o animatie specifica in loc de "AllDirections"
                 if (Assets.playerIdleDown == null || Assets.playerIdleDown.length == 0 || Assets.playerIdleDown[0] == null) {
-                    System.err.println("Eroare critica: Cadrele de animatie pentru 'Idle' ale playerului nu au fost incarcate corect. Animațiile nu vor functiona.");
+                    System.err.println("Eroare critica: Cadrele de animatie pentru 'Idle' ale playerului nu au fost incarcate corect. Animatiile nu vor functiona.");
                     assetsLoaded = false;
                 } else {
                     assetsLoaded = true;
@@ -75,6 +84,11 @@ public class LoadingScreenState extends State {
         loadingThread.start();
     }
 
+    /**
+     * @brief Actualizeaza starea ecranului de incarcare.
+     * Verifica daca procesul de incarcare s-a terminat si daca a trecut durata
+     * minima de afisare. Daca ambele conditii sunt indeplinite, trece la MenuState.
+     */
     @Override
     public void Update() {
         if (loadingThread.isAlive()) {
@@ -93,6 +107,10 @@ public class LoadingScreenState extends State {
         }
     }
 
+    /**
+     * @brief Deseneaza (randeaza) continutul ecranului de incarcare.
+     * @param g Contextul grafic in care se va desena.
+     */
     @Override
     public void Draw(Graphics g) {
         g.setColor(Color.BLACK);

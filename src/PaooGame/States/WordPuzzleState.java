@@ -11,23 +11,33 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * @class WordPuzzleState
+ * @brief Implementeaza un mini-joc de tip puzzle cu cuvinte.
+ * In aceasta stare, jucatorul trebuie sa formeze o propozitie tinta facand clic
+ * pe literele amestecate pe ecran, intr-un interval de timp limitat.
+ */
 public class WordPuzzleState extends State {
-    // --- Variabile Puzzle ---
+    /** Variabile constante ale puzzle-ului.*/
     private final String HINT_TEXT = "Calatorie neasteptata.";
     private final String TARGET_WORD_DISPLAY = "LOST EXPEDITION";
     private final String TARGET_WORD_LOGIC = "LOSTEXPEDITION";
     private StringBuilder currentInput = new StringBuilder();
     private boolean solved = false;
 
-    // --- Variabile Cronometru & Penalizare ---
-    private long puzzleStartTime;
-    private final long TIME_LIMIT_MS = 100000; // 100 secunde
+    /** Variabile pentru cronometru si penalizare in caz de esec.*/
+    private final long puzzleStartTime;
+    private final long TIME_LIMIT_MS = 100000;
     private final int DAMAGE_PENALTY = 20;
 
-    // --- Variabile Interacțiune ---
+    /** Variabile pentru a gestiona interactiunea cu mouse-ul.*/
     private long lastClickTime = 0;
     private final long CLICK_COOLDOWN = 200;
 
+    /**
+     * @class Letter
+     * @brief Clasa interna ajutatoare pentru a stoca datele fiecarei litere din puzzle.
+     */
     private static class Letter {
         char character;
         Rectangle bounds;
@@ -40,14 +50,20 @@ public class WordPuzzleState extends State {
         }
     }
 
+    /** Lista tuturor literelor care pot fi selectate in puzzle.*/
     private List<Letter> letters;
 
+    /** Matrice de coordonate relative pentru a pozitiona literele pe ecran.*/
     private final float[][] relativePositions = {
             {0.15f, 0.30f}, {0.23f, 0.50f}, {0.31f, 0.28f}, {0.39f, 0.48f}, {0.47f, 0.26f},
             {0.55f, 0.51f}, {0.63f, 0.31f}, {0.71f, 0.52f}, {0.79f, 0.29f}, {0.87f, 0.49f},
             {0.28f, 0.65f}, {0.43f, 0.66f}, {0.58f, 0.64f}, {0.73f, 0.65f}
     };
 
+    /**
+     * @brief Constructorul clasei WordPuzzleState.
+     * @param refLink O referinta catre obiectul RefLinks.
+     */
     public WordPuzzleState(RefLinks refLink) {
         super(refLink);
         this.puzzleStartTime = System.currentTimeMillis();
@@ -64,15 +80,18 @@ public class WordPuzzleState extends State {
         }
     }
 
+    /**
+     * @brief Actualizeaza logica puzzle-ului in fiecare cadru.
+     */
     @Override
     public void Update() {
         if (solved) return;
 
-        // Verifică dacă timpul a expirat
+        // Verifica daca timpul a expirat
         if (System.currentTimeMillis() - puzzleStartTime > TIME_LIMIT_MS) {
-            System.out.println("Timpul a expirat! Puzzle eșuat.");
+            System.out.println("Timpul a expirat! Puzzle esuat.");
 
-            // Aplică penalizarea direct prin RefLinks
+            // Aplica penalizarea direct prin RefLinks
             Player player = refLink.GetPlayer();
             if (player != null) {
                 player.takeDamage(DAMAGE_PENALTY);
@@ -102,7 +121,7 @@ public class WordPuzzleState extends State {
             }
         }
 
-        // Logica de verificare si resetare a cuvântului
+        // Logica de verificare si resetare a cuvantului
         if (!TARGET_WORD_DISPLAY.startsWith(currentInput.toString())) {
             currentInput.setLength(0);
             for (Letter l : letters) {
@@ -123,6 +142,10 @@ public class WordPuzzleState extends State {
         }
     }
 
+    /**
+     * @brief Deseneaza (randeaza) starea curenta a puzzle-ului.
+     * @param g Contextul grafic in care se va desena.
+     */
     @Override
     public void Draw(Graphics g) {
         int screenWidth = refLink.GetWidth();
@@ -135,24 +158,24 @@ public class WordPuzzleState extends State {
         g.setColor(new Color(0, 0, 0, 200));
         g.fillRect(0, 0, screenWidth, screenHeight);
 
-        // Desenează indiciul
+        // Deseneaza indiciul
         g.setColor(Color.WHITE);
         g.setFont(new Font("Arial", Font.BOLD, 32));
         FontMetrics fmTitle = g.getFontMetrics();
         int titleWidth = fmTitle.stringWidth(HINT_TEXT);
         g.drawString(HINT_TEXT, (screenWidth - titleWidth) / 2, screenHeight / 10);
 
-        // Desenează cronometrul
+        // Deseneaza cronometrul
         long timeLeftMs = TIME_LIMIT_MS - (System.currentTimeMillis() - puzzleStartTime);
         if (timeLeftMs < 0) timeLeftMs = 0;
-        String timerStr = String.format("Timp Rămas: %.1f", timeLeftMs / 1000.0);
+        String timerStr = String.format("Timp Ramas: %.1f", timeLeftMs / 1000.0);
         g.setColor(Color.RED);
         g.setFont(new Font("Arial", Font.BOLD, 24));
         FontMetrics fmTimer = g.getFontMetrics();
         int timerWidth = fmTimer.stringWidth(timerStr);
         g.drawString(timerStr, screenWidth - timerWidth - 20, 40);
 
-        // Desenează chenarul de progres
+        // Deseneaza chenarul de progres
         int boxWidth = (int)(screenWidth * 0.6);
         int boxHeight = 60;
         int boxX = (screenWidth - boxWidth) / 2;
@@ -165,7 +188,7 @@ public class WordPuzzleState extends State {
         int inputWidth = fmInput.stringWidth(currentInput.toString());
         g.drawString(currentInput.toString(), boxX + (boxWidth - inputWidth) / 2, boxY + fmInput.getAscent() + 5);
 
-        // Calculează dinamic pozițiile literelor și le desenează
+        // Calculeaza dinamic pozitiile literelor si le deseneaza
         g.setFont(new Font("Arial", Font.BOLD, 28));
         FontMetrics fmLetter = g.getFontMetrics();
         for (int i = 0; i < letters.size(); i++) {

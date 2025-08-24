@@ -3,7 +3,6 @@ package PaooGame.Map;
 import PaooGame.Graphics.ImageLoader;
 import PaooGame.Tiles.Tile;
 import PaooGame.RefLinks;
-import PaooGame.Camera.GameCamera;
 import PaooGame.Graphics.Assets;
 
 import java.awt.*;
@@ -18,21 +17,37 @@ import org.w3c.dom.NodeList;
 import java.util.ArrayList;
 import java.util.List;
 
-/*!
- * \class public class Map
- * \brief Implementeaza notiunea de harta a jocului.
+/**
+ * @class Map
+ * @brief Gestioneaza incarcarea, stocarea si accesul la hartile jocului.
+ * Aceasta clasa citeste datele unei harti dintr-un fisier in format TMX,
+ * parseaza straturile de dale (layers) si ofera metode pentru a interactiona
+ * cu harta, cum ar fi obtinerea unei dale de la o anumita coordonata.
  */
 public class Map {
-    private RefLinks refLink;
+    /** Referinta catre obiectul RefLinks.*/
+    private final RefLinks refLink;
+    /** Latimea si inaltimea hartii in numar de dale.*/
     private int width, height;
+    /** O lista de matrici, fiecare reprezentand un strat (layer) de GID-uri de dale.*/
     private List<int[][]> tilesGidsLayers;
+    /** Imaginea tileset-ului corespunzator hartii curente.*/
     private BufferedImage currentMapTilesetImage;
+    /** Obiectul care gestioneaza ceata de razboi pentru aceasta harta.*/
     private FogOfWar fogOfWar;
 
+    /**
+     * @brief Constructorul clasei Map.
+     * @param refLink Referinta catre obiectul RefLinks.
+     */
     public Map(RefLinks refLink) {
         this.refLink = refLink;
     }
 
+    /**
+     * @brief Incarca o harta dintr-un fisier TMX.
+     * @param path Calea catre fisierul .tmx in resurse (ex: "/maps/level_1.tmx").
+     */
     public void LoadMapFromFile(String path) {
         if (path.contains("level_1.tmx")) {
             this.currentMapTilesetImage = Assets.jungleTilesetImage;
@@ -50,9 +65,8 @@ public class Map {
         fogOfWar = new FogOfWar(refLink, width, height);
     }
 
-    /*!
-     * \fn public void Update()
-     * \brief Actualizeaza starea hartii (daca e cazul, pentru animatii etc.).
+    /**
+     * @brief Actualizeaza starea hartii (in acest caz, doar ceata de razboi).
      */
     public void Update() {
         if (fogOfWar != null) {
@@ -60,23 +74,20 @@ public class Map {
         }
     }
 
-    /*!
-     * \fn public void Draw(Graphics g)
-     * \brief Deseneaza harta pe ecran, ajustand pozitiile cu offset-ul camerei si zoom.
-     * \param g Contextul grafic in care sa se realizeze desenarea.
+    /**
+     * @brief Deseneaza harta pe ecran. Metoda este goala deoarece randarea se face in GameState.
+     * @param g Contextul grafic.
      */
     public void Draw(Graphics g) {
-        // Logica de desenare a fost mutată în GameState.java pentru a aplica fog of war-ul corect.
-        // Această metodă poate fi lăsată goală sau eliminată complet.
+        // Logica de desenare a fost mutata in GameState.java pentru a aplica fog of war-ul corect.
     }
 
-    /*!
-     * \fn public void changeTileGid(int x, int y, int newGid, int layerIndex)
-     * \brief Schimba GID-ul unei dale la coordonatele specificate in stratul specificat.
-     * \param x Coordonata X (coloana) a dalei.
-     * \param y Coordonata Y (rand) a dalei.
-     * \param newGid Noul GID al dalei.
-     * \param layerIndex Indexul stratului in care se face modificarea.
+    /**
+     * @brief Schimba GID-ul unei dale la coordonatele si stratul specificate.
+     * @param x Coordonata X (coloana) a dalei.
+     * @param y Coordonata Y (rand) a dalei.
+     * @param newGid Noul GID al dalei.
+     * @param layerIndex Indexul stratului in care se face modificarea.
      */
     public void changeTileGid(int x, int y, int newGid, int layerIndex) {
         if (layerIndex >= 0 && layerIndex < tilesGidsLayers.size()) {
@@ -86,10 +97,35 @@ public class Map {
         }
     }
 
-    /*!
-     * \fn private void loadMap(String path)
-     * \brief Incarca harta dintr-un fisier TMX (XML) folosind parsarea manuala.
-     * \param path Calea relativa pentru localizarea fisierul .tmx (ex: "/maps/level1.tmx").
+    /**
+     * @brief Returneaza o referinta catre dala de la coordonatele (x, y).
+     * @param x Numarul coloanei dalei.
+     * @param y Numarul randului dalei.
+     * @return Obiectul Tile corespunzator.
+     */
+    public Tile GetTile(int x, int y) {
+        // Verificam daca coordonatele sunt in afara hartii
+        if (x < 0 || x >= width || y < 0 || y >= height) {
+            return Tile.GetTile(Tile.WALL_TILE_GID_SOLID); // Returneaza un perete solid pentru zonele din afara hartii
+        }
+
+        // Cautam dala de pe stratul cel mai de sus (de la ultimul la primul)
+        for (int i = tilesGidsLayers.size() - 1; i >= 0; i--) {
+            int gid = tilesGidsLayers.get(i)[x][y];
+
+            // Daca gasim o dala care nu este goala (transparenta), o returnam imediat
+            if (gid != 0) {
+                return Tile.GetTile(gid);
+            }
+        }
+
+        // Daca toate straturile la aceste coordonate sunt goale, returnam o dala goala, nesolida
+        return Tile.GetDefaultTile();
+    }
+
+    /**
+     * @brief Parseaza un fisier TMX si populeaza structurile de date ale hartii.
+     * @param path Calea catre fisierul .tmx.
      */
     private void loadMap(String path) {
         tilesGidsLayers = new ArrayList<>();
@@ -156,59 +192,29 @@ public class Map {
         }
     }
 
-    /*!
-     * \fn public Tile GetTile(int x, int y)
-     * \brief Intoarce o referinta catre dala cu numarul de ordine (x, y).
-     * \param x Numarul dalei in ordine orizontala.
-     * \param y Numarul dalei in ordine verticala.
-     */
-    public Tile GetTile(int x, int y) {
-        // Verificăm dacă coordonatele sunt în afara hărții
-        if (x < 0 || x >= width || y < 0 || y >= height) {
-            return Tile.GetTile(Tile.WALL_TILE_GID_SOLID); // Returnează un perete solid pentru zonele din afara hărții
-        }
-
-        // Căutăm dala de pe stratul cel mai de sus (de la ultimul la primul)
-        for (int i = tilesGidsLayers.size() - 1; i >= 0; i--) {
-            int gid = tilesGidsLayers.get(i)[x][y];
-
-            // Dacă găsim o dală care nu este goală (transparentă), o returnăm imediat
-            if (gid != 0) {
-                return Tile.GetTile(gid);
-            }
-        }
-
-        // Dacă toate straturile la aceste coordonate sunt goale, returnăm o dală goală, nesolidă
-        return Tile.GetDefaultTile();
-    }
-
-    /*!
-     * \fn public int GetWidth()
-     * \brief Returneaza latimea hartii.
+    /**
+     * @brief Returneaza latimea hartii in numar de dale.
      */
     public int GetWidth() {
         return width;
     }
 
-    /*!
-     * \fn public int GetHeight()
-     * \brief Returneaza inaltimea hartii.
+    /**
+     * @brief Returneaza inaltimea hartii in numar de dale.
      */
     public int GetHeight() {
         return height;
     }
 
-    /*!
-     * \fn public List<int[][]> getTilesGidsLayers()
-     * \brief Returneaza toate straturile de GID-uri ale hartii.
+    /**
+     * @brief Returneaza lista de straturi (layers) ale hartii.
      */
     public List<int[][]> getTilesGidsLayers() {
         return tilesGidsLayers;
     }
 
-    /*!
-     * \fn public BufferedImage getCurrentMapTilesetImage()
-     * \brief Returneaza imaginea tileset-ului principal pentru harta curenta.
+    /**
+     * @brief Returneaza imaginea tileset-ului pentru harta curenta.
      */
     public BufferedImage getCurrentMapTilesetImage() {
         return currentMapTilesetImage;

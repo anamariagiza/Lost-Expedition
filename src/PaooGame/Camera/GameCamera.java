@@ -7,39 +7,52 @@ import PaooGame.States.GameState;
 import PaooGame.Map.Map;
 import PaooGame.States.State;
 
-/*!
- * \class public class GameCamera
- * \brief Implementeaza notiunea de camera a jocului.
- * Camera decide ce portiune din harta este vizibila pe ecran.
+/**
+ * @class GameCamera
+ * @brief Implementeaza notiunea de camera a jocului.
+ * Camera decide ce portiune din harta este vizibila pe ecran la un moment dat.
+ * Aceasta urmareste jucatorul si se asigura ca nu se afiseaza spatii goale
+ * in afara limitelor hartii.
  */
 public class GameCamera {
 
-    private Game game;
+    /** Referinta finala catre obiectul principal al jocului, injectata la initializare.*/
+    private final Game game;
+    /** Offset-ul camerei pe axele X si Y. Reprezinta coordonata coltului stanga-sus a camerei in lumea jocului.*/
     private float xOffset, yOffset;
 
+    /**
+     * @brief Constructorul clasei GameCamera.
+     * @param game Referinta catre obiectul principal al jocului.
+     * @param xOffset Pozitia initiala a camerei pe axa X.
+     * @param yOffset Pozitia initiala a camerei pe axa Y.
+     */
     public GameCamera(Game game, float xOffset, float yOffset) {
         this.game = game;
         this.xOffset = xOffset;
         this.yOffset = yOffset;
     }
 
+    /**
+     * @brief Centreaza camera pe o entitate data (de obicei, jucatorul).
+     * Calculeaza offset-ul necesar pentru ca entitatea sa apara in centrul ferestrei.
+     * @param p Entitatea (Player) pe care camera trebuie sa o urmareasca.
+     */
     public void centerOnEntity(Player p) {
         xOffset = p.GetX() - (game.GetGameWindow().GetWndWidth() / 2f) + (p.GetWidth() / 2f);
         yOffset = p.GetY() - (game.GetGameWindow().GetWndHeight() / 2f) + (p.GetHeight() / 2f);
         checkBlankSpace();
     }
 
-    public void move(float xAmt, float yAmt) {
-        xOffset += xAmt;
-        yOffset += yAmt;
-        checkBlankSpace();
-    }
-
+    /**
+     * @brief Verifica si corecteaza pozitia camerei pentru a nu afisa spatiu in afara hartii.
+     * Daca offset-ul camerei depaseste limitele hartii (stanga, dreapta, sus sau jos),
+     * acesta este ajustat pentru a ramane in interiorul limitelor.
+     */
     private void checkBlankSpace() {
         Map currentMap = null;
         State currentState = State.GetState();
-        if (currentState instanceof GameState) {
-            GameState gameState = (GameState) currentState;
+        if (currentState instanceof GameState gameState) {
             currentMap = gameState.GetMap();
         }
 
@@ -73,21 +86,20 @@ public class GameCamera {
         }
     }
 
+    /**
+     * @brief Returneaza offset-ul curent al camerei pe axa X.
+     * @return Valoarea offset-ului pe axa X.
+     */
     public float getxOffset() {
         return xOffset;
     }
 
+    /**
+     * @brief Returneaza offset-ul curent al camerei pe axa Y.
+     * @return Valoarea offset-ului pe axa Y.
+     */
     public float getyOffset() {
         return yOffset;
     }
 
-    public void setxOffset(float xOffset) {
-        this.xOffset = xOffset;
-        checkBlankSpace();
-    }
-
-    public void setyOffset(float yOffset) {
-        this.yOffset = yOffset;
-        checkBlankSpace();
-    }
 }

@@ -5,37 +5,39 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.net.URL;
 
-/*! \class public class ImageLoader
-    \brief Clasa ce contine o metoda statica pentru incarcarea unei imagini in memorie.
+
+/**
+ * @class ImageLoader
+ * @brief O clasa utilitara ce contine o metoda statica pentru incarcarea unei imagini in memorie.
+ * Rolul acestei clase este de a abstractiza procesul de citire a unui fisier de imagine
+ * din resursele proiectului si de a-l converti intr-un obiect BufferedImage.
  */
 public class ImageLoader
 {
-    /*! \fn  public static BufferedImage loadImage(String path)
-        \brief Incarca o imagine intr-un obiect BufferedImage si returneaza o referinta catre acesta.
-
-        \param path Calea relativa pentru localizarea fisierul imagine.
+    /**
+     * @brief Incarca o imagine dintr-un fisier si returneaza un obiect BufferedImage.
+     * @param path Calea relativa catre fisierul imagine, incepand de la radacina folderului de resurse (ex: "/textures/logo.png").
+     * @return Un obiect BufferedImage care contine imaginea incarcata, sau null in caz de eroare.
      */
     public static BufferedImage LoadImage(String path)
     {
         URL imageUrl = null;
         try
         {
-            System.out.println("DEBUG: Se incearca incarcarea resursei de la: " + path);
+            //System.out.println("DEBUG: Se incearca incarcarea resursei de la: " + path);
             imageUrl = ImageLoader.class.getResource(path);
             System.out.println("DEBUG: URL rezultat: " + imageUrl);
 
             if (imageUrl == null) {
-                System.err.println("DEBUG: Resursa NU a fost gasita la calea: " + path + " (URL este null).");
+                //System.err.println("DEBUG: Resursa NU a fost gasita la calea: " + path + " (URL este null).");
                 return null;
             }
 
             BufferedImage image = ImageIO.read(imageUrl);
-            // --- ADAUGA ACEASTA LINIE NOUA ---
-            System.out.println("DEBUG: ImageIO.read() pentru " + path + " a returnat: " + (image != null ? "NON-NULL (" + image.getWidth() + "x" + image.getHeight() + ")" : "NULL"));
-            // --- SFARSIT LINIE NOUA ---
+            //System.out.println("DEBUG: ImageIO.read() pentru " + path + " a returnat: " + (image != null ? "NON-NULL (" + image.getWidth() + "x" + image.getHeight() + ")" : "NULL"));
 
             if (image == null) {
-                System.err.println("DEBUG: ImageIO.read() a returnat NULL pentru calea: " + path + ". Fisierul ar putea fi corupt sau nu este o imagine valida.");
+                //System.err.println("DEBUG: ImageIO.read() a returnat NULL pentru calea: " + path + ". Fisierul ar putea fi corupt sau nu este o imagine valida.");
             }
             return image;
 

@@ -3,15 +3,19 @@ package PaooGame.States;
 import PaooGame.Graphics.Assets;
 import PaooGame.RefLinks;
 import java.awt.*;
-import java.awt.event.KeyEvent;
 import java.awt.Rectangle;
 
-/*!
- * \class public class MenuState extends State
- * \brief Implementeaza notiunea de menu pentru joc cu functionalitate completa.
+/**
+ * @class MenuState
+ * @brief Implementeaza meniul principal al jocului.
+ * Aceasta stare este centrul de navigare al jocului. Afiseaza titlul, fundalul
+ * si optiunile principale (Joc Nou, Incarcare Joc, Setari etc.). Gestioneaza
+ * input-ul de la tastatura si mouse pentru a permite utilizatorului sa navigheze
+ * si sa selecteze o optiune, tranzitionand apoi la starea corespunzatoare.
  */
 public class MenuState extends State
 {
+    /** Atribute finale pentru stilizarea vizuala a ecranului.*/
     private final Color backgroundColor = new Color(0, 0, 0);
     private final Color buttonColor = new Color(255, 255, 255);
     private final Color textColor = new Color(175, 146, 0);
@@ -19,23 +23,32 @@ public class MenuState extends State
     private final Color disabledColor = new Color(100, 100, 100);
     private final Font titleFont = new Font("Papyrus", Font.BOLD, 36);
     private final Font buttonFont = new Font("Papyrus", Font.BOLD, 18);
-    private String[] menuOptions = {"NEW GAME", "LOAD GAME", "SETTINGS", "HELP", "ABOUT", "QUIT"};
+    /** Atribute pentru gestionarea meniului si a optiunilor sale.*/
+    private final String[] menuOptions = {"NEW GAME", "LOAD GAME", "SETTINGS", "HELP", "ABOUT", "QUIT"};
     private Rectangle[] buttonBounds;
     private int selectedOption = 0;
+    /** Flag-uri pentru a gestiona o singura apasare a tastelor de navigare si selectie.*/
     private boolean enterPressed = false;
     private boolean upPressed = false;
     private boolean downPressed = false;
 
+    /** Stocheaza ultimele dimensiuni ale ferestrei pentru a detecta redimensionarea.*/
     private int lastWidth, lastHeight;
-    private long stateEnterTime;
-    private final long INPUT_COOLDOWN_MS = 200;
+    /** Stocheaza momentul intrarii in stare pentru a adauga un mic delay la input.*/
+    private final long stateEnterTime;
     private long lastDebugTime = 0;
 
-    private boolean saveGameExists;
+    /** Stocheaza daca exista o salvare in baza de date.*/
+    private final boolean saveGameExists;
+
+    /**
+     * @brief Constructorul clasei MenuState.
+     * @param refLink O referinta catre obiectul RefLinks.
+     */
     public MenuState(RefLinks refLink)
     {
         super(refLink);
-        System.out.println("✓ MenuState initializat (Constructor)");
+        System.out.println("MenuState initializat (Constructor)");
         stateEnterTime = System.currentTimeMillis();
         refLink.GetKeyManager().clearKeys();
 
@@ -49,19 +62,9 @@ public class MenuState extends State
         setupButtons();
     }
 
-    private void setupButtons() {
-        buttonBounds = new Rectangle[menuOptions.length];
-        int startY = 200;
-        int gap = 60;
-        int buttonWidth = 200;
-        int buttonHeight = 40;
-        for (int i = 0; i < menuOptions.length; i++) {
-            int x = (refLink.GetWidth() - buttonWidth) / 2;
-            int y = startY + i * gap;
-            buttonBounds[i] = new Rectangle(x, y - buttonHeight / 2, buttonWidth, buttonHeight);
-        }
-    }
-
+    /**
+     * @brief Actualizeaza starea meniului principal in fiecare cadru.
+     */
     @Override
     public void Update()
     {
@@ -71,6 +74,7 @@ public class MenuState extends State
             lastHeight = refLink.GetHeight();
         }
 
+        long INPUT_COOLDOWN_MS = 200;
         if (System.currentTimeMillis() - stateEnterTime < INPUT_COOLDOWN_MS) {
             return;
         }
@@ -84,103 +88,10 @@ public class MenuState extends State
         }
     }
 
-    private void handleInput()
-    {
-        if (refLink.GetKeyManager() == null) {
-            System.err.println("KeyManager este null!");
-            return;
-        }
-
-        // Navigare sus
-        if(refLink.GetKeyManager().up && !upPressed)
-        {
-            upPressed = true;
-            selectedOption--;
-            if(selectedOption < 0)
-                selectedOption = menuOptions.length - 1;
-            if (!saveGameExists && selectedOption == 1) {
-                selectedOption--;
-                if (selectedOption < 0) selectedOption = menuOptions.length - 1;
-            }
-        }
-        else if(!refLink.GetKeyManager().up)
-        {
-            upPressed = false;
-        }
-
-        // Navigare jos
-        if(refLink.GetKeyManager().down && !downPressed)
-        {
-            downPressed = true;
-            selectedOption++;
-            if(selectedOption >= menuOptions.length)
-                selectedOption = 0;
-            if (!saveGameExists && selectedOption == 1) {
-                selectedOption++;
-                if (selectedOption >= menuOptions.length) selectedOption = 0;
-            }
-        }
-        else if(!refLink.GetKeyManager().down)
-        {
-            downPressed = false;
-        }
-
-        // Selectare optiune (Enter sau Space)
-        boolean enterKey = refLink.GetKeyManager().enter;
-        boolean spaceKey = refLink.GetKeyManager().space;
-
-        if((enterKey || spaceKey) && !enterPressed)
-        {
-            enterPressed = true;
-            executeSelectedOption();
-        }
-        else if(!enterKey && !spaceKey)
-        {
-            enterPressed = false;
-        }
-    }
-
-    private void handleMouseInput() {
-        if (refLink.GetMouseManager() == null || buttonBounds == null) return;
-        for (int i = 0; i < buttonBounds.length; i++) {
-            if (buttonBounds[i].contains(refLink.GetMouseManager().getMouseX(), refLink.GetMouseManager().getMouseY())) {
-                selectedOption = i;
-                if (refLink.GetMouseManager().isMouseJustClicked()) {
-                    executeSelectedOption();
-                }
-                break;
-            }
-        }
-    }
-
-
-    private void executeSelectedOption()
-    {
-        switch(selectedOption)
-        {
-            case 0: // NEW GAME
-                refLink.SetState(new GameState(refLink));
-                break;
-            case 1: // LOAD GAME
-                if (saveGameExists) {
-                    refLink.SetState(new GameState(refLink, true));
-                }
-                break;
-            case 2: // SETTINGS
-                refLink.SetState(new SettingsState(refLink));
-                break;
-            case 3: // HELP (opțiunea nouă)
-                refLink.SetState(new HelpState(refLink));
-                break;
-            case 4: // ABOUT
-                refLink.SetState(new AboutState(refLink));
-                break;
-            case 5: // QUIT
-                System.exit(0);
-                break;
-        }
-    }
-
+    /**
+     * @brief Deseneaza (randeaza) continutul meniului principal.
+     * @param g Contextul grafic in care se va desena.
+     */
     @Override
     public void Draw(Graphics g)
     {
@@ -262,6 +173,127 @@ public class MenuState extends State
             int instrWidth = instrFm.stringWidth(instruction);
             g.drawString(instruction, (refLink.GetWidth() - instrWidth) / 2, instrY);
             instrY += 15;
+        }
+    }
+
+    /**
+     * @brief Calculeaza pozitiile si dimensiunile butoanelor din meniu.
+     */
+    private void setupButtons() {
+        buttonBounds = new Rectangle[menuOptions.length];
+        int startY = 200;
+        int gap = 60;
+        int buttonWidth = 200;
+        int buttonHeight = 40;
+        for (int i = 0; i < menuOptions.length; i++) {
+            int x = (refLink.GetWidth() - buttonWidth) / 2;
+            int y = startY + i * gap;
+            buttonBounds[i] = new Rectangle(x, y - buttonHeight / 2, buttonWidth, buttonHeight);
+        }
+    }
+
+    /**
+     * @brief Gestioneaza input-ul de la tastatura pentru navigarea in meniu.
+     */
+    private void handleInput()
+    {
+        if (refLink.GetKeyManager() == null) {
+            System.err.println("KeyManager este null!");
+            return;
+        }
+
+        // Navigare sus
+        if(refLink.GetKeyManager().up && !upPressed)
+        {
+            upPressed = true;
+            selectedOption--;
+            if(selectedOption < 0)
+                selectedOption = menuOptions.length - 1;
+            if (!saveGameExists && selectedOption == 1) {
+                selectedOption--;
+                if (selectedOption < 0) selectedOption = menuOptions.length - 1;
+            }
+        }
+        else if(!refLink.GetKeyManager().up)
+        {
+            upPressed = false;
+        }
+
+        // Navigare jos
+        if(refLink.GetKeyManager().down && !downPressed)
+        {
+            downPressed = true;
+            selectedOption++;
+            if(selectedOption >= menuOptions.length)
+                selectedOption = 0;
+            if (!saveGameExists && selectedOption == 1) {
+                selectedOption++;
+                if (selectedOption >= menuOptions.length) selectedOption = 0;
+            }
+        }
+        else if(!refLink.GetKeyManager().down)
+        {
+            downPressed = false;
+        }
+
+        // Selectare optiune (Enter sau Space)
+        boolean enterKey = refLink.GetKeyManager().enter;
+        boolean spaceKey = refLink.GetKeyManager().space;
+
+        if((enterKey || spaceKey) && !enterPressed)
+        {
+            enterPressed = true;
+            executeSelectedOption();
+        }
+        else if(!enterKey && !spaceKey)
+        {
+            enterPressed = false;
+        }
+    }
+
+    /**
+     * @brief Gestioneaza input-ul de la mouse pentru selectarea optiunilor.
+     */
+    private void handleMouseInput() {
+        if (refLink.GetMouseManager() == null || buttonBounds == null) return;
+        for (int i = 0; i < buttonBounds.length; i++) {
+            if (buttonBounds[i].contains(refLink.GetMouseManager().getMouseX(), refLink.GetMouseManager().getMouseY())) {
+                selectedOption = i;
+                if (refLink.GetMouseManager().isMouseJustClicked()) {
+                    executeSelectedOption();
+                }
+                break;
+            }
+        }
+    }
+
+    /**
+     * @brief Executa actiunea corespunzatoare optiunii de meniu selectate.
+     */
+    private void executeSelectedOption()
+    {
+        switch(selectedOption)
+        {
+            case 0: // NEW GAME
+                refLink.SetState(new GameState(refLink));
+                break;
+            case 1: // LOAD GAME
+                if (saveGameExists) {
+                    refLink.SetState(new GameState(refLink, true));
+                }
+                break;
+            case 2: // SETTINGS
+                refLink.SetState(new SettingsState(refLink));
+                break;
+            case 3: // HELP
+                refLink.SetState(new HelpState(refLink));
+                break;
+            case 4: // ABOUT
+                refLink.SetState(new AboutState(refLink));
+                break;
+            case 5: // QUIT
+                System.exit(0);
+                break;
         }
     }
 }

@@ -4,7 +4,16 @@ import java.awt.image.BufferedImage;
 import java.awt.Rectangle;
 import java.util.ArrayList;
 
+/**
+ * @class Assets
+ * @brief Clasa statica ce gestioneaza toate resursele grafice ale jocului.
+ * Aceasta clasa pre-incarca toate imaginile necesare la pornirea jocului
+ * si le stocheaza in campuri statice pentru a fi accesibile rapid din orice
+ * parte a codului, fara a fi nevoie sa se citeasca in mod repetat de pe disc.
+ */
 public class Assets {
+
+    /** Tilesets si Imagini de Baza.*/
     public static SpriteSheet gameSpriteSheet;
     public static BufferedImage jungleTilesetImage;
     public static BufferedImage level2TilesetImage;
@@ -13,6 +22,7 @@ public class Assets {
     public static BufferedImage gameLogo;
     public static BufferedImage backgroundMenu;
 
+    /** Constante pentru Dimensiunile Cadrelor.*/
     public static final int PLAYER_FRAME_WIDTH = 64;
     public static final int PLAYER_FRAME_HEIGHT = 64;
 
@@ -29,11 +39,12 @@ public class Assets {
     public static final int DEFAULT_AGENT_WIDTH = 64;
     public static final int DEFAULT_AGENT_HEIGHT = 64;
 
+    /** Animatii Animale.*/
     public static BufferedImage[] monkeyWalkAnim;
     public static BufferedImage[] jaguarWalkAnim;
     public static BufferedImage[] batAnim;
 
-    // PLAYER ANIMATIONS (DOAR CELE FOLOSITE)
+    /** Animatii Jucator (Player).*/
     public static BufferedImage[] playerDown, playerUp, playerLeft, playerRight;
     public static BufferedImage[] playerIdleDown, playerIdleUp, playerIdleLeft, playerIdleRight;
     public static BufferedImage[] playerRunDown, playerRunUp, playerRunLeft, playerRunRight;
@@ -41,36 +52,44 @@ public class Assets {
     public static BufferedImage[] playerHurt;
     public static BufferedImage[] playerHalfslashUp, playerHalfslashDown, playerHalfslashLeft, playerHalfslashRight;
 
-    // AGENT ANIMATIONS (DOAR CELE FOLOSITE)
+    /** Animatii Inamic (Agent).*/
     public static BufferedImage[] agentDown, agentUp, agentLeft, agentRight;
     public static BufferedImage[] agentIdleDown, agentIdleUp, agentIdleLeft, agentIdleRight;
     public static BufferedImage[] agentRunDown, agentRunUp, agentRunLeft, agentRunRight;
     public static BufferedImage[] agentHurt;
     public static BufferedImage[] agentHalfslashUp, agentHalfslashDown, agentHalfslashLeft, agentHalfslashRight;
-    // Asigură-te că această linie există în constructorul clasei Agent
 
+    /** Animatii NPC.*/
     public static BufferedImage[] npcIdleAnim;
+
+    /** Obiecte si Interfata Utilizator (UI).*/
     public static BufferedImage spikeTrapImage;
     public static BufferedImage keyImage;
     public static BufferedImage talismanImage;
     public static BufferedImage puzzleTableImage;
     public static BufferedImage woodSignImage;
     public static BufferedImage popupImage;
+
+    /** Resurse Puzzle-uri.*/
     public static BufferedImage puzzle1Sun;
     public static BufferedImage puzzle1Moon;
     public static BufferedImage puzzle1Star;
     public static BufferedImage puzzle1Bolt;
     public static BufferedImage puzzle2Gems;
     public static BufferedImage puzzle3Scroll;
-
     public static BufferedImage[] puzzle5CardFaces;
     public static BufferedImage puzzle5CardBack;
 
+    /** Resurse Capcane si Nivel 3.*/
     public static BufferedImage trapDisabled;
     public static BufferedImage[] trapActiveAnim;
     public static BufferedImage chestClosed;
     public static BufferedImage chestOpened;
 
+    /**
+     * @brief Metoda de initializare initiala.
+     * Incarca doar resursele absolut necesare pentru afisarea ecranului de incarcare.
+     */
     public static void Init() {
         gameLogo = ImageLoader.LoadImage("/textures/logo.png");
         if (gameLogo == null) {
@@ -78,22 +97,28 @@ public class Assets {
         }
     }
 
+    /**
+     * @brief Incarca toate resursele grafice ale jocului in memorie.
+     * Aceasta metoda este de obicei apelata dintr-un ecran de incarcare.
+     */
     public static void LoadGameAssets() {
-        // BACKGROUNDS & TILESETS
+        // Incarcarea fundalului meniului
         backgroundMenu = ImageLoader.LoadImage("/textures/menu_background.jpg");
+
+        // Incarcarea sprite sheet-urilor pentru cele 3 nivele
         jungleTilesetImage = ImageLoader.LoadImage("/textures/gentle forest.png");
         gameSpriteSheet = new SpriteSheet(jungleTilesetImage);
         level2TilesetImage = ImageLoader.LoadImage("/textures/tileset_level2.png");
         level3TilesetImage = ImageLoader.LoadImage("/textures/tileset_level3.png");
 
-        // OBIECTE
+        // Incarcarea obiectelor
         keyImage = ImageLoader.LoadImage("/textures/objects/key.png");
         talismanImage = ImageLoader.LoadImage("/textures/objects/talisman.png");
         popupImage = ImageLoader.LoadImage("/textures/objects/pop_up.png");
         puzzleTableImage = ImageLoader.LoadImage("/textures/objects/table.png");
         woodSignImage = ImageLoader.LoadImage("/textures/objects/wood_sign.png");
 
-        // PUZZLES
+        // Incarcarea elementelor de puzzle pentru nivelul 2
         puzzle1Sun = ImageLoader.LoadImage("/textures/puzzles/sun.png");
         puzzle1Moon = ImageLoader.LoadImage("/textures/puzzles/moon.png");
         puzzle1Star = ImageLoader.LoadImage("/textures/puzzles/star.png");
@@ -111,7 +136,7 @@ public class Assets {
             }
         }
 
-        // --- PLAYER ANIMATIONS ---
+        // Incarcarea animatiilor pentru player
         BufferedImage playerIdleSheet = ImageLoader.LoadImage("/textures/player/idle.png");
         if (playerIdleSheet != null) {
             playerIdleUp = cropFramesFromArbitrarySheet(playerIdleSheet, PLAYER_FRAME_WIDTH, PLAYER_FRAME_HEIGHT, 1, 2, 0, 0);
@@ -151,9 +176,7 @@ public class Assets {
             playerHalfslashRight = cropFramesFromArbitrarySheet(playerHalfslashSheet, PLAYER_FRAME_WIDTH, PLAYER_FRAME_HEIGHT, 1, 7, 3, 0);
         }
 
-        // -- Animații nefolosite pentru Player au fost eliminate de aici --
-
-        // --- AGENT ANIMATIONS ---
+        //Incarcarea animatiilor pentru agent
         BufferedImage agentIdleSheet = ImageLoader.LoadImage("/textures/agent/idle.png");
         if (agentIdleSheet != null) {
             agentIdleUp = cropFramesFromArbitrarySheet(agentIdleSheet, DEFAULT_AGENT_WIDTH, DEFAULT_AGENT_HEIGHT, 1, 2, 0, 0);
@@ -186,9 +209,7 @@ public class Assets {
             agentHalfslashRight = cropFramesFromArbitrarySheet(agentHalfslashSheet, DEFAULT_AGENT_WIDTH, DEFAULT_AGENT_HEIGHT, 1, 7, 3, 0);
         }
 
-        // -- Animații nefolosite pentru Agent au fost eliminate de aici --
-
-        // --- ANIMALS & NPCS ---
+        // Incarcarea animatiilor pentru NPC si animale
         BufferedImage monkeySheet = ImageLoader.LoadImage("/textures/animals/monkey.png");
         if (monkeySheet != null) {
             Rectangle[] monkeyFramesData = {
@@ -228,11 +249,12 @@ public class Assets {
             npcIdleAnim = cropFramesFromArbitrarySheet(npcIdleSheet, NPC_FRAME_WIDTH, NPC_FRAME_HEIGHT, 1, 6, 0, 0);
         }
 
-        // --- TRAPS & LEVEL 3 ASSETS ---
+        // Incarcarea animatiei pentru capcana
         BufferedImage spikesSheet = ImageLoader.LoadImage("/textures/traps/spikes.png");
         if (spikesSheet != null) {
             spikeTrapImage = spikesSheet.getSubimage(0, 0, 39, 25);
         }
+        // Incarcarea animatiei pentru capcanele de la nivelul 3
         if (level3TilesetImage != null) {
             trapDisabled = getTileImageByGID(45, level3TilesetImage);
             trapActiveAnim = new BufferedImage[3];
@@ -244,6 +266,17 @@ public class Assets {
         }
     }
 
+    /**
+     * @brief Metoda ajutatoare pentru a decupa cadre dintr-un spritesheet cu o grila regulata.
+     * @param sheet Imaginea spritesheet completa.
+     * @param frameWidth Latimea unui singur cadru.
+     * @param frameHeight Inaltimea unui singur cadru.
+     * @param numRowsToCrop Numarul de randuri de decupat.
+     * @param numColsToCrop Numarul de coloane de decupat.
+     * @param startRow Randul de start (index 0).
+     * @param startCol Coloana de start (index 0).
+     * @return Un vector de BufferedImage continand cadrele decupate.
+     */
     private static BufferedImage[] cropFramesFromArbitrarySheet(BufferedImage sheet, int frameWidth, int frameHeight, int numRowsToCrop, int numColsToCrop, int startRow, int startCol) {
         if (sheet == null) {
             return null;
@@ -269,6 +302,12 @@ public class Assets {
         return frames.toArray(new BufferedImage[0]);
     }
 
+    /**
+     * @brief Metoda ajutatoare pentru a decupa cadre dintr-un spritesheet unde cadrele au dimensiuni variabile.
+     * @param sheet Imaginea spritesheet completa.
+     * @param framesData Un vector de Rectangle, unde fiecare dreptunghi defineste pozitia si dimensiunea unui cadru.
+     * @return Un vector de BufferedImage continand cadrele decupate.
+     */
     private static BufferedImage[] cropFramesFromVariableRectangles(BufferedImage sheet, Rectangle[] framesData) {
         if (sheet == null || framesData == null || framesData.length == 0) {
             return null;
@@ -291,6 +330,12 @@ public class Assets {
         return frames;
     }
 
+    /**
+     * @brief Metoda utilitara pentru a extrage imaginea unei dale dintr-un tileset, pe baza GID-ului.
+     * @param gid Global ID-ul dalei (din Tiled). GID-urile incep de la 1.
+     * @param tilesetImage Imaginea completa a tileset-ului.
+     * @return Un BufferedImage continand doar dala specificata.
+     */
     public static BufferedImage getTileImageByGID(int gid, BufferedImage tilesetImage) {
         if (gid == 0 || tilesetImage == null) {
             return null;

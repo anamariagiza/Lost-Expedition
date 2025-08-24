@@ -8,18 +8,26 @@ import PaooGame.States.WordPuzzleState; // Importă noua clasă
 import java.awt.*;
 import java.awt.event.KeyEvent;
 
-/*!
- * \class public class PuzzleTrigger extends Entity
- * \brief Implementeaza un obiect invizibil care reprezinta o masuta cu un puzzle.
- * Acest obiect este punctul de interactiune pentru a lansa un puzzle.
+/**
+ * @class PuzzleTrigger
+ * @brief Implementeaza un obiect invizibil care functioneaza ca punct de interactiune pentru a lansa un puzzle.
+ * Aceasta entitate este de obicei plasata peste un obiect vizual (cum ar fi o masa)
+ * si asteapta ca jucatorul sa apese tasta de interactiune. La activare, schimba
+ * starea jocului intr-o stare de puzzle corespunzatoare (PuzzleState sau WordPuzzleState).
  */
 public class PuzzleTrigger extends Entity {
 
-    private int puzzleId;
+    /* ID-ul unic al puzzle-ului pe care il activeaza acest declansator.*/
+    private final int puzzleId;
 
-    /*!
-     * \fn public PuzzleTrigger(RefLinks refLink, float x, float y, int width, int height, int puzzleId)
-     * \brief Constructorul de initializare al clasei PuzzleTrigger.
+    /**
+     * @brief Constructorul clasei PuzzleTrigger.
+     * @param refLink Referinta catre obiectul RefLinks.
+     * @param x Coordonata X a zonei de activare.
+     * @param y Coordonata Y a zonei de activare.
+     * @param width Latimea zonei de activare.
+     * @param height Inaltimea zonei de activare.
+     * @param puzzleId ID-ul puzzle-ului asociat.
      */
     public PuzzleTrigger(RefLinks refLink, float x, float y, int width, int height, int puzzleId) {
         super(refLink, x, y, width, height);
@@ -27,18 +35,34 @@ public class PuzzleTrigger extends Entity {
         SetPosition(x, y);
     }
 
-    /*!
-     * \fn public void Update()
-     * \brief Actualizeaza starea trigger-ului (verifica interacțiunea cu jucatorul).
+    /**
+     * @brief Actualizeaza starea declansatorului in fiecare cadru.
+     * Apeleaza metoda care verifica interactiunea cu jucatorul.
      */
     @Override
     public void Update() {
         checkPlayerInteraction();
     }
 
-    /*!
-     * \fn private void checkPlayerInteraction()
-     * \brief Verifica interacțiunea jucatorului cu masuta de puzzle.
+    /**
+     * @brief Deseneaza elementele vizuale ale entitatii.
+     * Deoarece este un obiect invizibil, deseneaza doar pop-up-ul de interactiune ("E")
+     * si doar daca puzzle-ul asociat nu a fost inca rezolvat.
+     * @param g Contextul grafic in care se va desena.
+     */
+    @Override
+    public void Draw(Graphics g) {
+        // Nu desenăm pop-up dacă puzzle-ul e deja rezolvat
+        GameState gameState = refLink.GetGameState();
+        if (gameState != null && !gameState.isPuzzleSolved(puzzleId)) {
+            drawInteractionPopup(g);
+        }
+    }
+
+    /**
+     * @brief Verifica daca jucatorul este in zona si a apasat tasta de interactiune.
+     * Daca sunt indeplinite conditiile, si puzzle-ul nu este deja rezolvat,
+     * schimba starea curenta a jocului in starea de puzzle corespunzatoare.
      */
     private void checkPlayerInteraction() {
         Player player = refLink.GetPlayer();
@@ -66,22 +90,9 @@ public class PuzzleTrigger extends Entity {
         }
     }
 
-    /*!
-     * \fn public void Draw(Graphics g)
-     * \brief Deseneaza un dreptunghi de debug pentru a vizualiza zona de coliziune a trigger-ului.
-     */
-    @Override
-    public void Draw(Graphics g) {
-        // Nu desenăm pop-up dacă puzzle-ul e deja rezolvat
-        GameState gameState = refLink.GetGameState();
-        if (gameState != null && !gameState.isPuzzleSolved(puzzleId)) {
-            drawInteractionPopup(g);
-        }
-    }
-
-    /*!
-     * \fn public int getPuzzleId()
-     * \brief Returneaza ID-ul puzzle-ului.
+    /**
+     * @brief Returneaza ID-ul puzzle-ului asociat cu acest declansator.
+     * @return ID-ul puzzle-ului.
      */
     public int getPuzzleId() {
         return puzzleId;

@@ -7,40 +7,42 @@ import PaooGame.Tiles.Tile;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 
-/*!
- * \class public class Animal extends Entity
- * \brief Implementeaza un tip de inamic simplu: un animal salbatic.
- * Se misca pe o traiectorie predefinita si provoaca daune periodice jucatorului la contact.
+/**
+ * @class Animal
+ * @brief Implementeaza un tip de inamic simplu: un animal salbatic.
+ * Aceasta clasa extinde Entity si defineste un inamic care se misca
+ * pe o traiectorie orizontala predefinita (patrulare). Provoaca daune
+ * jucatorului la contact. Clasa poate reprezenta diferite tipuri de animale
+ * (JAGUAR, MONKEY, BAT), fiecare cu propriile atribute.
  */
 public class Animal extends Entity {
 
+    /** @enum AnimalType @brief Defineste tipurile de animale care pot fi create.*/
     public enum AnimalType {
         JAGUAR,
         MONKEY,
         BAT
     }
 
-    private AnimalType type;
-    private Animation anim;
-    private float speed;
-    private float patrolStartX, patrolEndX;
+    /** Atributele specifice ale unui animal, incluzand animatia, viteza si parametrii de patrulare.*/
+    private final Animation anim;
+    private final float speed;
+    private final float patrolStartX;
+    private final float patrolEndX;
     private boolean movingRight = true;
-    private float moveX;
-    private int damage;
+    private final int damage;
 
-    /*!
-     * \fn public Animal(RefLinks refLink, float x, float y, float patrolStartX, float patrolEndX, AnimalType type)
-     * \brief Constructorul de initializare al clasei Animal cu specificarea tipului.
-     * \param refLink Referinta catre obiectul RefLinks.
-     * \param x Coordonata X initiala.
-     * \param y Coordonata Y initiala.
-     * \param patrolStartX Limita de start a patrularii pe axa X.
-     * \param patrolEndX Limita de final a patrularii pe axa X.
-     * \param type Tipul animalului (JAGUAR, MONKEY, BAT).
+    /**
+     * @brief Constructorul clasei Animal.
+     * @param refLink Referinta catre obiectul RefLinks.
+     * @param x Coordonata X initiala a animalului.
+     * @param y Coordonata Y initiala a animalului.
+     * @param patrolStartX Limita stanga a patrularii (in pixeli).
+     * @param patrolEndX Limita dreapta a patrularii (in pixeli).
+     * @param type Tipul animalului de creat, din enum-ul AnimalType.
      */
     public Animal(RefLinks refLink, float x, float y, float patrolStartX, float patrolEndX, AnimalType type) {
         super(refLink, x, y, getAnimalWidth(type), getAnimalHeight(type));
-        this.type = type;
         this.patrolStartX = patrolStartX;
         this.patrolEndX = patrolEndX;
         this.speed = getAnimalSpeed(type);
@@ -48,70 +50,79 @@ public class Animal extends Entity {
         SetPosition(x, y);
         this.damage = getAnimalDamage(type);
 
-        BufferedImage[] frames = null;
-        switch (type) {
-            case JAGUAR:
-                frames = Assets.jaguarWalkAnim;
-                break;
-            case MONKEY:
-                frames = Assets.monkeyWalkAnim;
-                break;
-            case BAT:
-                frames = Assets.batAnim;
-                break;
-        }
+        BufferedImage[] frames = switch (type) {
+            case JAGUAR -> Assets.jaguarWalkAnim;
+            case MONKEY -> Assets.monkeyWalkAnim;
+            case BAT -> Assets.batAnim;
+        };
 
         if (frames != null && frames.length > 0) {
             anim = new Animation(150, frames);
         } else {
-            System.err.println("DEBUG Animal: Animatia pentru " + type + " este null sau goala. Desenam placeholder.");
+            //System.err.println("DEBUG Animal: Animatia pentru " + type + " este null sau goala. Desenam placeholder.");
             anim = new Animation(100, new BufferedImage[]{new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB)});
         }
     }
 
+    /**
+     * @brief Metode statice ajutatoare (helper) care functioneaza ca o fabrica de configuratii.
+     * Returneaza atributele specifice (latime, inaltime, viteza, daune) pentru un anumit tip de animal.
+     * @param type Tipul de animal pentru care se cer atributele.
+     * @return Valoarea atributului corespunzator.
+     */
     private static int getAnimalWidth(AnimalType type) {
-        switch (type) {
-            case JAGUAR: return Assets.JAGUAR_FRAME_WIDTH;
-            case MONKEY: return Assets.MONKEY_FRAME_WIDTH;
-            case BAT:    return Assets.BAT_FRAME_WIDTH;
-            default:     return Tile.TILE_WIDTH;
-        }
+        return switch (type) {
+            case JAGUAR -> Assets.JAGUAR_FRAME_WIDTH;
+            case MONKEY -> Assets.MONKEY_FRAME_WIDTH;
+            case BAT -> Assets.BAT_FRAME_WIDTH;
+            default -> Tile.TILE_WIDTH;
+        };
     }
 
     private static int getAnimalHeight(AnimalType type) {
-        switch (type) {
-            case JAGUAR: return Assets.JAGUAR_FRAME_HEIGHT;
-            case MONKEY: return Assets.MONKEY_FRAME_HEIGHT;
-            case BAT:    return Assets.BAT_FRAME_HEIGHT;
-            default:     return Tile.TILE_HEIGHT;
-        }
+        return switch (type) {
+            case JAGUAR -> Assets.JAGUAR_FRAME_HEIGHT;
+            case MONKEY -> Assets.MONKEY_FRAME_HEIGHT;
+            case BAT -> Assets.BAT_FRAME_HEIGHT;
+            default -> Tile.TILE_HEIGHT;
+        };
     }
 
     private static float getAnimalSpeed(AnimalType type) {
-        switch (type) {
-            case JAGUAR: return 1.5f;
-            case MONKEY: return 1.0f;
-            case BAT:    return 2.0f;
-            default:     return 1.0f;
-        }
+        return switch (type) {
+            case JAGUAR -> 1.5f;
+            case MONKEY -> 1.0f;
+            case BAT -> 2.0f;
+            default -> 1.0f;
+        };
     }
 
     private static int getAnimalDamage(AnimalType type) {
-        switch (type) {
-            case JAGUAR: return 50;
-            case MONKEY: return 30;
-            case BAT:    return 20;
-            default:     return 0;
-        }
+        return switch (type) {
+            case JAGUAR -> 50;
+            case MONKEY -> 30;
+            case BAT -> 20;
+            default -> 0;
+        };
     }
 
+    /**
+     * @brief Actualizeaza starea animalului in fiecare cadru.
+     * Actualizeaza animatia si logica de miscare.
+     */
     @Override
     public void Update() {
         anim.Update();
         moveAnimal();
     }
 
+    /**
+     * @brief Implementeaza logica de miscare a animalului (patrulare orizontala).
+     * Animalul se misca intre punctele patrolStartX si patrolEndX. Cand atinge
+     * o limita, isi schimba directia de miscare.
+     */
     private void moveAnimal() {
+        float moveX;
         if (movingRight) {
             moveX = speed;
             if (x + moveX + width >= patrolEndX) {
@@ -127,6 +138,12 @@ public class Animal extends Entity {
         bounds.setLocation((int)x, (int)y);
     }
 
+    /**
+     * @brief Deseneaza animalul pe ecran.
+     * Include logica de a oglindi orizontal imaginea in functie de directia
+     * de miscare, pentru a crea un efect natural.
+     * @param g Contextul grafic in care se va desena.
+     */
     @Override
     public void Draw(Graphics g) {
         int drawX = (int)((x - refLink.GetGameCamera().getxOffset()));
@@ -146,6 +163,10 @@ public class Animal extends Entity {
         }
     }
 
+    /**
+     * @brief Returneaza daunele pe care le provoaca animalul la contact.
+     * @return Valoarea daunelor.
+     */
     public int getDamage() {
         return damage;
     }

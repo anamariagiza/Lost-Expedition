@@ -2,37 +2,37 @@ package PaooGame.Graphics;
 
 import java.awt.image.BufferedImage;
 
-/*! \class public class SpriteSheet
-    \brief Clasa retine o referinta catre o imagine formata din dale (sprite sheet)
-
-    Metoda crop() returneaza o dala de dimensiuni fixe (o subimagine) din sprite sheet
-    de la adresa (x * latimeDala, y * inaltimeDala)
+/**
+ * @class SpriteSheet
+ * @brief Gestioneaza o imagine de tip foaie de sprite-uri (spritesheet).
+ * Aceasta clasa retine o referinta catre o imagine mare care contine
+ * mai multe imagini mai mici (dale, cadre de animatie) aranjate intr-o grila.
+ * Ofera o metoda simpla, `crop`, pentru a extrage o singura imagine (dala)
+ * din aceasta grila pe baza coordonatelor ei (rand si coloana).
  */
 public class SpriteSheet
 {
-    private BufferedImage       spriteSheet;              /*!< Referinta catre obiectul BufferedImage ce contine sprite sheet-ul.*/
-    // !!! ACESTE VALORI TREBUIE SA CORESPUNDA EXACT CU DIMENSIUNEA REALĂ A UNEI DALE DIN gentle forest.png !!!
-    // Si, de asemenea, trebuie sa se potriveasca cu "Tile Width" si "Tile Height" din Tiled Editor.
-    private static final int    tileWidth   = 48;   /*!< Latimea unei dale din sprite sheet.*/
-    private static final int    tileHeight  = 48;   /*!< Inaltime unei dale din sprite sheet.*/
+    /** Referinta catre obiectul BufferedImage ce contine foaia de sprite-uri.*/
+    private final BufferedImage       spriteSheet;
 
-    /*! \fn public SpriteSheet(BufferedImage sheet)
-        \brief Constructor, initializeaza spriteSheet.
+    /** Latimea si inaltimea fixa a unei dale in pixeli.*/
+    private static final int    tileWidth   = 48;
+    private static final int    tileHeight  = 48;
 
-        \param img Un obiect BufferedImage valid.
+    /**
+     * @brief Constructorul clasei SpriteSheet.
+     * @param buffImg Un obiect BufferedImage valid care contine intreaga foaie de sprite-uri.
      */
     public SpriteSheet(BufferedImage buffImg)
     {
-        /// Retine referinta catre BufferedImage object.
         spriteSheet = buffImg;
     }
 
-    /*! \fn public BufferedImage crop(int x, int y)
-        \brief Returneaza un obiect BufferedImage ce contine o subimage (dala).
-
-        Subimaginea este regasita in sprite sheet specificad coltul stanga sus
-        al imaginii si apoi latimea si inaltimea (totul in pixeli). Coltul din stanga sus al imaginii
-        se obtine inmultind numarul de ordine al dalei cu dimensiunea in pixeli a unei dale.
+    /**
+     * @brief Extrage o singura imagine (dala) din foaia de sprite-uri.
+     * @param x Indexul coloanei de unde se va decupa dala (incepand de la 0).
+     * @param y Indexul randului de unde se va decupa dala (incepand de la 0).
+     * @return Un obiect BufferedImage continand dala decupata, sau null daca decuparea esueaza.
      */
     public BufferedImage crop(int x, int y)
     {
@@ -46,25 +46,29 @@ public class SpriteSheet
             System.err.println("ATENTIE (SpriteSheet.crop): Zona de decupare depaseste limitele sprite sheet-ului! x=" + x + ", y=" + y + ", cropX=" + cropX + ", cropY=" + cropY + ", Sheet Dim: " + spriteSheet.getWidth() + "x" + spriteSheet.getHeight() + ".");
             return null;
         }
+        // Metoda getSubimage() extrage o sub-imagine dreptunghiulara.
         return spriteSheet.getSubimage(cropX, cropY, tileWidth, tileHeight);
     }
 
-    /*! \fn public BufferedImage getSpriteSheet()
-        \brief Returneaza referinta catre intregul obiect BufferedImage ce contine sprite sheet-ul.
+    /**
+     * @brief Returneaza referinta catre intreaga foaie de sprite-uri.
+     * @return Obiectul BufferedImage al foii de sprite-uri.
      */
     public BufferedImage getSpriteSheet() {
         return spriteSheet;
     }
 
-    /*! \fn public static int getTileWidth()
-        \brief Returneaza latimea unei dale.
+    /**
+     * @brief Returneaza latimea standard a unei dale.
+     * @return Latimea dalei in pixeli.
      */
     public static int getTileWidth() {
         return tileWidth;
     }
 
-    /*! \fn public static int getTileHeight()
-        \brief Returneaza inaltimea unei dale.
+    /**
+     * @brief Returneaza inaltimea standard a unei dale.
+     * @return Inaltimea dalei in pixeli.
      */
     public static int getTileHeight() {
         return tileHeight;

@@ -1,23 +1,23 @@
 package PaooGame.Tiles;
 
-/*!
- * \class public class WallTile extends Tile
- * \brief Abstractizeaza notiunea de dala de tip perete.
+/**
+ * @class WallTile
+ * @brief O dala specializata pentru pereti.
+ * Reprezinta o dala de tip perete care blocheaza miscarea entitatilor.
  */
 public class WallTile extends Tile {
 
-    /*!
-     * \fn public WallTile(int gid)
-     * \brief Constructorul de initializare al clasei WallTile.
-     * \param gid GID-ul dalei din Tiled.
+    /**
+     * @brief Constructorul clasei WallTile.
+     * @param gid GID-ul dalei din Tiled.
      */
     public WallTile(int gid) {
         super(gid);
     }
 
-    /*!
-     * \fn public boolean IsSolid()
-     * \brief Suprascrie metoda IsSolid() din clasa de baza pentru a returna intotdeauna true.
+    /**
+     * @brief Suprascrie metoda IsSolid pentru a indica faptul ca dala este solida.
+     * @return Returneaza intotdeauna true.
      */
     @Override
     public boolean IsSolid() {

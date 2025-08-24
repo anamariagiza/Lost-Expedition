@@ -4,29 +4,34 @@ import PaooGame.RefLinks;
 
 import java.awt.*;
 
-/*!
- * \class State
- * \brief Implementeaza notiunea abstracta de stare a jocului/programului.
- * Un joc odata ce este lansat in executie nu trebuie "sa arunce jucatorul direct in lupta", este nevoie de
- * un meniu care sa contine optiuni: New Game, Load Game, Settings, About etc. Toate aceste optiuni nu sunt altceva
- * decat stari ale programului (jocului) ce trebuiesc incarcate si afisate functie de starea curenta.
+/**
+ * @class State
+ * @brief Clasa abstracta ce defineste structura de baza pentru toate starile jocului.
+ * Implementeaza sablonul de proiectare State. O stare reprezinta o anumita
+ * parte a jocului (meniu, nivel, pauza). Utilizarea starilor permite o
+ * separare clara a logicii si a randarii pentru fiecare componenta a jocului.
  */
 public abstract class State
 {
-    ///Urmatoarele atribute sunt statice pentru a evita dealocarea spatiului de memorie la trecerea dintr-o stare in alta.
-    private static State previousState  = null; /*!< Referinta catre starea anterioara a jocului.*/
-    private static State currentState   = null; /*!< Referinta catre starea curenta a jocului: game, meniu, settings, about etc.*/
+    /** Referinta statica catre starea anterioara a jocului.*/
+    private static State previousState  = null;
+    /** Referinta statica catre starea curenta a jocului. Accesibila global.*/
+    private static State currentState   = null;
+    /** Referinta catre obiectul de legaturi (handler).*/
     protected RefLinks refLink;
 
+    /**
+     * @brief Constructorul clasei State.
+     * @param refLink Referinta catre obiectul RefLinks pentru a accesa componentele jocului.
+     */
     public State(RefLinks refLink)
     {
         this.refLink = refLink;
     }
 
-    /*!
-     * \fn public static void SetState(State state)
-     * \brief Seteaza starea curenta a jocului.
-     * \param state Noua stare a programului (jocului).
+    /**
+     * @brief Seteaza starea curenta a jocului.
+     * @param state Noua stare care va deveni activa.
      */
     public static void SetState(State state)
     {
@@ -34,22 +39,31 @@ public abstract class State
         currentState = state;
     }
 
+    /**
+     * @brief Returneaza starea curenta a jocului.
+     * @return Starea activa in acest moment.
+     */
     public static State GetState()
     {
         return currentState;
     }
 
-    /*!
-     * \fn public static State GetPreviousStateStatic()
-     * \brief Returneaza referinta catre starea anterioara a jocului (metoda statica).
-     * Utila pentru a reveni la starea din care s-a intrat in starea curenta (ex: din PauseState la GameState).
+    /**
+     * @brief Returneaza referinta catre starea anterioara a jocului.
+     * Utila pentru a reveni la starea din care s-a intrat in starea curenta.
      */
     public static State GetPreviousStateStatic() {
         return previousState;
     }
 
-    ///Metoda abstracta destinata actualizarii starii curente
+    /**
+     * @brief Metoda abstracta pentru actualizarea logicii starii.
+     */
     public abstract void Update();
-    ///Metoda abstracta destinata desenarii starii curente
+
+    /**
+     * @brief Metoda abstracta pentru desenarea elementelor grafice ale starii.
+     * @param g Contextul grafic in care se va desena.
+     */
     public abstract void Draw(Graphics g);
 }

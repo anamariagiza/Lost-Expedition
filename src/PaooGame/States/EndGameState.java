@@ -3,81 +3,52 @@ package PaooGame.States;
 import PaooGame.Graphics.Assets;
 import PaooGame.RefLinks;
 import java.awt.*;
-import java.awt.event.KeyEvent;
 
+/**
+ * @class EndGameState
+ * @brief Implementeaza starea de final de joc (ecranul de victorie).
+ * Aceasta stare este activata atunci cand jucatorul termina jocul cu succes.
+ * Afiseaza un mesaj de felicitare si ofera optiuni pentru a reveni la meniul
+ * principal sau pentru a parasi jocul.
+ */
 public class EndGameState extends State {
 
+    /** Atribute finale pentru stilizarea vizuala a ecranului.*/
     private final Color backgroundColor = new Color(0, 0, 0, 200);
     private final Color textColor = new Color(255, 215, 0);
     private final Color buttonColor = new Color(255, 255, 255);
     private final Color selectedColor = new Color(160, 82, 45);
     private final Font titleFont = new Font("Impact", Font.BOLD, 64);
     private final Font textFont = new Font("Papyrus", Font.BOLD, 28);
-    private String[] menuOptions = {"RETURN TO MAIN MENU", "QUIT"};
+    /** Atribute pentru gestionarea meniului si a optiunilor sale.*/
+    private final String[] menuOptions = {"RETURN TO MAIN MENU", "QUIT"};
     private int selectedOption = 0;
+    /** Flag-uri pentru a gestiona o singura apasare a tastelor de navigare si selectie.*/
     private boolean enterPressed = false;
     private boolean upPressed = false;
     private boolean downPressed = false;
 
+    /**
+     * @brief Constructorul clasei EndGameState.
+     * @param refLink O referinta catre obiectul RefLinks.
+     */
     public EndGameState(RefLinks refLink) {
         super(refLink);
         System.out.println("✓ EndGameState initializat");
     }
 
+    /**
+     * @brief Actualizeaza starea ecranului de final de joc.
+     */
     @Override
     public void Update() {
         handleInput();
     }
 
-    private void handleInput() {
-        if (refLink.GetKeyManager() == null) {
-            return;
-        }
-
-        if (refLink.GetKeyManager().up && !upPressed) {
-            upPressed = true;
-            selectedOption--;
-            if (selectedOption < 0) {
-                selectedOption = menuOptions.length - 1;
-            }
-        } else if (!refLink.GetKeyManager().up) {
-            upPressed = false;
-        }
-
-        if (refLink.GetKeyManager().down && !downPressed) {
-            downPressed = true;
-            selectedOption++;
-            if (selectedOption >= menuOptions.length) {
-                selectedOption = 0;
-            }
-        } else if (!refLink.GetKeyManager().down) {
-            downPressed = false;
-        }
-
-        boolean enterKey = refLink.GetKeyManager().enter;
-        boolean spaceKey = refLink.GetKeyManager().space;
-
-        if ((enterKey || spaceKey) && !enterPressed) {
-            enterPressed = true;
-            executeSelectedOption();
-        } else if (!enterKey && !spaceKey) {
-            enterPressed = false;
-        }
-    }
-
-    private void executeSelectedOption() {
-        switch (selectedOption) {
-            case 0:
-                System.out.println("Revenire la meniul principal...");
-                refLink.SetState(new MenuState(refLink));
-                break;
-            case 1:
-                System.out.println("Inchidere joc...");
-                System.exit(0);
-                break;
-        }
-    }
-
+    /**
+     * @brief Deseneaza (randeaza) continutul ecranului de final de joc.
+     * @param g Contextul grafic in care se va desena.
+     */
     @Override
     public void Draw(Graphics g) {
         if (Assets.backgroundMenu != null) {
@@ -125,6 +96,61 @@ public class EndGameState extends State {
 
             g.setColor(textColor);
             g.drawRect(x, y - buttonHeight / 2, buttonWidth, buttonHeight);
+        }
+    }
+
+    /**
+     * @brief Gestioneaza input-ul de la tastatura pentru navigarea in meniu.
+     */
+    private void handleInput() {
+        if (refLink.GetKeyManager() == null) {
+            return;
+        }
+
+        if (refLink.GetKeyManager().up && !upPressed) {
+            upPressed = true;
+            selectedOption--;
+            if (selectedOption < 0) {
+                selectedOption = menuOptions.length - 1;
+            }
+        } else if (!refLink.GetKeyManager().up) {
+            upPressed = false;
+        }
+
+        if (refLink.GetKeyManager().down && !downPressed) {
+            downPressed = true;
+            selectedOption++;
+            if (selectedOption >= menuOptions.length) {
+                selectedOption = 0;
+            }
+        } else if (!refLink.GetKeyManager().down) {
+            downPressed = false;
+        }
+
+        boolean enterKey = refLink.GetKeyManager().enter;
+        boolean spaceKey = refLink.GetKeyManager().space;
+
+        if ((enterKey || spaceKey) && !enterPressed) {
+            enterPressed = true;
+            executeSelectedOption();
+        } else if (!enterKey && !spaceKey) {
+            enterPressed = false;
+        }
+    }
+
+    /**
+     * @brief Executa actiunea corespunzatoare optiunii de meniu selectate.
+     */
+    private void executeSelectedOption() {
+        switch (selectedOption) {
+            case 0:
+                System.out.println("Revenire la meniul principal...");
+                refLink.SetState(new MenuState(refLink));
+                break;
+            case 1:
+                System.out.println("Inchidere joc...");
+                System.exit(0);
+                break;
         }
     }
 }
